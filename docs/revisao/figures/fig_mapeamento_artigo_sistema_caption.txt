@@ -1,0 +1,14 @@
+FIGURA 3 — Mapeamento Artigo (objetivo) × Sistema (NOC Lite)
+
+Legenda (caption):
+Matriz de rastreabilidade entre os objetivos do artigo norteador (detecção e
+mitigação de anomalias em SDN com LLMs open-source) e o que o NOC Lite efetivamente
+entrega. ✓ = convergente; ≃ = parcial; ✗ = divergente/ausente. Há convergência
+nos baselines de comparação (heurística/ML), na tokenização de métricas, na
+justificativa textual (XAI), na medição de tempo de resposta e nas métricas
+resumidas de rede. Há divergência crítica em LLM open-source (usa Gemini fechado),
+fine-tuning LoRA/QLoRA (inexistente), ambiente SDN (hosts genéricos), mitigação em
+ciclo fechado (loop aberto) e datasets públicos (dados 100% sintéticos).
+
+Label sugerida (LaTeX):
+fig:mapeamento-artigo-sistema

@@ -1,0 +1,485 @@
+================================================================================
+RELATÓRIO DE ESTADO DA ARTE — ÁREA 04
+FINE-TUNING EFICIENTE DE LLMs (PEFT): LoRA, QLoRA E ADAPTAÇÃO DE LLMs
+A DOMÍNIO DE TRÁFEGO DE REDE
+================================================================================
+
+Pesquisador: Serj (agente de estado da arte)
+Data: 2026-07-13
+Projeto: "Detecção e Mitigação Inteligente de Anomalias em Redes Definidas por
+         Software com Grandes Modelos de Linguagem Open Source" (goal.pdf)
+Working dir: ~/Projetos/rodrigo
+Arquivo: docs/revisao/literature/area04_peft_lora.txt
+
+--------------------------------------------------------------------------------
+1. ESCOPO
+--------------------------------------------------------------------------------
+Este levantamento cobre a literatura acadêmica sobre:
+  (a) Fine-tuning eficiente de LLMs (PEFT) — com ênfase em LoRA (Hu et al., 2021)
+      e QLoRA (Dettmers et al., 2023), além de variantes (AdaLoRA, DoRA, adapters,
+      prefix-tuning, prompt-tuning, (IA)3, BitFit);
+  (b) LLMs open-source candidatos a ajuste fino (LLaMA, Llama 2, Llama 3, Mistral);
+  (c) fundamentos de few-shot / zero-shot / chain-of-thought que justificam o uso
+      de LLMs sem ajuste de pesos;
+  (d) adaptação de LLMs ao domínio de tráfego / telemetria de rede (NetGPT,
+      TrafficGPT, TrafficLLM, PTU);
+  (e) tokenização e representação de métricas numéricas como texto estruturado
+      para LLM (LLMTime, NumeroLogic, TabLLM, Table-Meets-LLM, séries temporais);
+  (f) few-shot / zero-shot para classificação de anomalias;
+  (g) eficiência em hardware limitado (acadêmico).
+
+Conexão com o artigo (goal.pdf): a proposta do projeto menciona PEFT/LoRA/QLoRA para
+ajustar LLMs open-source, porém o sistema NOC Lite implementado usa Gemini em regime
+zero-shot, SEM ajuste fino. Esta área embasa o GAP METODOLÓGICO: a literatura mostra
+que LoRA/QLoRA viabilizam ajuste de LLMs open-source em hardware modesto, enquanto o
+sistema atual delega a inferência a um modelo fechado (Gemini) sem adaptação de pesos.
+
+--------------------------------------------------------------------------------
+2. METODOLOGIA DE BUSCA
+--------------------------------------------------------------------------------
+Bases consultadas: arXiv, ACL Anthology, ACM Digital Library, IEEE Xplore (metadados),
+NeurIPS/ICML/ICLR/EMNLP/AISTATS/IJCAI proceedings (via arXiv e ACL).
+Ferramentas: web_search + web_extract (validação de URL/DOI e leitura de abstract).
+Período: 2019–2026, priorizando trabalhos de alto impacto (citações elevadas,
+venues CORE A*/A1).
+Validação: TODAS as 37 referências abaixo tiveram URL/DOI confirmados e, na grande
+maioria, abstract acessado diretamente na página oficial (arXiv/ACL/ACM/IEEE).
+Não há referências inventadas. PTU (Peng et al., 2024) teve título, autores, venue e
+DOI confirmados por busca (IEEE ICNP 2024); o abstract não foi extraído integralmente.
+
+TOTAL DE REFERÊNCIAS: 37 (acima do mínimo de 30 exigido).
+
+================================================================================
+EIXO 1 — LoRA, QLoRA E VARIANTES DE BAIXO RANK (SEMENTAL + EVOLUÇÃO)
+================================================================================
+
+[1] HU, E. J.; SHEN, Y.; WALLIS, P.; ALLEN-ZHU, Z.; LI, Y.; WANG, S.; WANG, L.;
+    CHEN, W. LoRA: Low-Rank Adaptation of Large Language Models. arXiv:2106.09685,
+    2021. DOI: https://doi.org/10.48550/arXiv.2106.09685
+    URL: https://arxiv.org/abs/2106.09685
+    IMPORTÂNCIA: É o método PEFT fundacional citado no goal.pdf, congelando os pesos
+    pré-treinados e injetando matrizes de decomposição de baixo posto apenas.
+    CONTRIBUIÇÃO: Reduz em 10.000x os parâmetros treináveis e 3x a memória de GPU vs.
+    fine-tuning completo de GPT-3 175B, sem latência de inferência adicional.
+
+[2] DETTMERS, T.; PAGNONI, A.; HOLTZMAN, A.; ZETTLEMOYER, L. QLoRA: Efficient
+    Finetuning of Quantized LLMs. Advances in Neural Information Processing Systems
+    (NeurIPS), 2023. arXiv:2305.14314. DOI: https://doi.org/10.48550/arXiv.2305.14314
+    URL: https://arxiv.org/abs/2305.14314
+    IMPORTÂNCIA: Extensão direta do LoRA para hardware limitado (o foco do artigo),
+    permitindo fine-tuning de modelo 65B numa única GPU de 48GB.
+    CONTRIBUIÇÃO: Propõe NF4 (4-bit NormalFloat), double quantization e paged
+    optimizers, retropropagando gradientes através de um LLM quantizado para adapters
+    LoRA sem perder desempenho de fine-tuning em 16-bit.
+
+[3] ZHANG, Q.; CHEN, M.; BUKHARIN, A.; KARAMPATZIAKIS, N.; HE, P.; CHENG, Y.;
+    CHEN, W.; ZHAO, T. AdaLoRA: Adaptive Budget Allocation for Parameter-Efficient
+    Fine-Tuning. ICLR, 2023. arXiv:2303.10512.
+    DOI: https://doi.org/10.48550/arXiv.2303.10512
+    URL: https://arxiv.org/abs/2303.10512
+    IMPORTÂNCIA: Refina o LoRA alocando orçamento de parâmetros conforme a importância
+    de cada matriz de peso, relevante para ajuste fino em recursos escassos.
+    CONTRIBUIÇÃO: Parametriza os updates incrementais via SVD e poda valores singulares
+    irrelevantes, superando LoRA em baixo orçamento de parâmetros.
+
+[4] LIU, S.-Y.; WANG, C.-Y.; YIN, H.; MOLCHANOV, P.; WANG, Y.-C. F.; CHENG, K.-T.;
+    CHEN, M.-H. DoRA: Weight-Decomposed Low-Rank Adaptation. ICML (Oral), 2024.
+    arXiv:2402.09353. DOI: https://doi.org/10.48550/arXiv.2402.09353
+    URL: https://arxiv.org/abs/2402.09353
+    IMPORTÂNCIA: Melhoria sobre LoRA que reduz o hiato de acurácia em relação ao
+    fine-tuning completo, mantendo zero overhead de inferência.
+    CONTRIBUIÇÃO: Decompõe o peso pré-treinado em magnitude e direção, empregando LoRA
+    apenas para updates direcionais, elevando capacidade de aprendizado e estabilidade.
+
+================================================================================
+EIXO 2 — OUTROS MÉTODOS PEFT (ADAPTERS, PREFIX, PROMPT, IA3, BITFIT, E SURVEYS)
+================================================================================
+
+[5] HOULSBY, N.; GIURGIU, A.; JASTRZEBSKI, S.; MORRONE, B.; DE LAROUSSILHE, Q.;
+    GESMUNDO, A.; ATTARIYAN, M.; GELLY, S. Parameter-Efficient Transfer Learning for
+    NLP. ICML, 2019. arXiv:1902.00751. DOI: https://doi.org/10.48550/arXiv.1902.00751
+    URL: https://arxiv.org/abs/1902.00751
+    IMPORTÂNCIA: Trabalho seminal que introduziu módulos adapter, base para toda a
+    família PEFT usada em LLMs.
+    CONTRIBUIÇÃO: Adiciona apenas 3,6% de parâmetros por tarefa em BERT, atingindo
+    99,6% do desempenho de fine-tuning completo no GLUE.
+
+[6] LI, X. L.; LIANG, P. Prefix-Tuning: Optimizing Continuous Prompts for Generation.
+    ACL-IJCNLP, 2021. DOI: https://doi.org/10.18653/v1/2021.acl-long.353
+    URL: https://aclanthology.org/2021.acl-long.353/
+    IMPORTÂNCIA: Estabelece o prompt tuning contínuo (soft prompts) como alternativa
+    leve ao fine-tuning, congelando o LLM.
+    CONTRIBUIÇÃO: Aprende apenas 0,1% dos parâmetros como prefixo virtual, igualando o
+    fine-tuning em dados completos e superando-o em baixo volume de dados.
+
+[7] LIU, X.; JI, K.; FU, Y.; TAM, W. L.; DU, Z.; YANG, Z.; TANG, J. P-Tuning v2:
+    Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and
+    Tasks. ACL, 2022. arXiv:2110.07602. DOI: https://doi.org/10.48550/arXiv.2110.07602
+    URL: https://arxiv.org/abs/2110.07602
+    IMPORTÂNCIA: Generaliza o prompt tuning para NLU em modelos de todos os tamanhos,
+    inclusive pequenos, útil para hardware limitado.
+    CONTRIBUIÇÃO: Implementa deep prompt tuning otimizado, casando fine-tuning com
+    apenas 0,1%–3% de parâmetros ajustados.
+
+[8] LESTER, B.; AL-RFOU, R.; CONSTANT, N. The Power of Scale for Parameter-Efficient
+    Prompt Tuning. EMNLP, 2021. arXiv:2104.08691.
+    DOI: https://doi.org/10.48550/arXiv.2104.08691
+    URL: https://arxiv.org/abs/2104.08691
+    IMPORTÂNCIA: Mostra que prompt tuning "fecha o hiato" com fine-tuning à medida
+    que o modelo cresce, fundamentando o uso de LLMs grandes congelados.
+    CONTRIBUIÇÃO: Demonstra que soft prompts aprendidos por retropropagação superam o
+    few-shot do GPT-3 e conferem robustez a domain transfer.
+
+[9] LIU, H.; TAM, D.; MUQEETH, M.; MOHTA, J.; HUANG, T.; BANSAL, M.; RAFFEL, C.
+    Few-Shot Parameter-Efficient Fine-Tuning is Better and Cheaper than In-Context
+    Learning. NeurIPS, 2022. arXiv:2205.05638. DOI: https://doi.org/10.48550/arXiv.2205.05638
+    URL: https://arxiv.org/abs/2205.05638
+    IMPORTÂNCIA: Compara diretamente PEFT vs. in-context learning (o regime do NOC
+    Lite via Gemini), mostrando vantagem de PEFT em custo e acurácia.
+    CONTRIBUIÇÃO: Introduz (IA)3, que escala ativações por vetores aprendidos, e o
+    recipe T-Few, superando estado da arte em RAFT sem ajuste por tarefa.
+
+[10] BEN-ZAKEN, E.; RAVFOGEL, S.; GOLDBERG, Y. BitFit: Simple Parameter-efficient
+    Fine-tuning for Transformer-based Masked Language-models. ACL, 2022.
+    arXiv:2106.10199. DOI: https://doi.org/10.48550/arXiv.2106.10199
+    URL: https://arxiv.org/abs/2106.10199
+    IMPORTÂNCIA: Método PEFT extremo (só bias-terms) relevante quando o orçamento de
+    hardware é mínimo.
+    CONTRIBUIÇÃO: Mostra que ajustar apenas os termos de bias de BERT é competitivo com
+    fine-tuning completo em dados pequenos/médios, sugerindo que fine-tuning expõe
+    conhecimento já latente.
+
+[11] HU, Z.; WANG, L.; LAN, Y.; XU, W.; LIM, E.-P.; BING, L.; XU, X.; PORIA, S.;
+    LEE, R. K.-W. LLM-Adapters: An Adapter Family for Parameter-Efficient
+    Fine-Tuning of Large Language Models. EMNLP, 2023. arXiv:2304.01933.
+    DOI: https://doi.org/10.48550/arXiv.2304.01933
+    URL: https://arxiv.org/abs/2304.01933
+    IMPORTÂNCIA: Framework prático que integra adapters em LLMs open-source (LLaMA,
+    BLOOM, GPT-J), diretamente aplicável à proposta do goal.pdf.
+    CONTRIBUIÇÃO: Demonstra que adapters em LLM 7B com poucos parâmetros ajustáveis
+    igualam ou superam LLMs 175B em zero-shot em raciocínio aritmético e de senso comum.
+
+[12] ZHANG, R.; HAN, J.; LIU, C.; GAO, P.; ZHOU, A.; HU, X.; YAN, S.; LU, P.;
+    LI, H.; QIAO, Y. LLaMA-Adapter: Efficient Fine-tuning of Language Models with
+    Zero-init Attention. ICLR, 2024. arXiv:2303.16199.
+    DOI: https://doi.org/10.48550/arXiv.2303.16199
+    URL: https://arxiv.org/abs/2303.16199
+    IMPORTÂNCIA: Exemplo concreto de adaptação leve de LLaMA 7B com 1,2M de parâmetros
+    e treino < 1h, viável em hardware limitado.
+    CONTRIBUIÇÃO: Propõe attention zero-init que injeta cues instrucionais preservando
+    o conhecimento pré-treinado, equiparando Alpaca com fine-tuning completo.
+
+[13] HE, J.; ZHOU, C.; MA, X.; BERG-KIRKPATRICK, T.; NEUBIG, G. Towards a Unified
+    View of Parameter-Efficient Transfer Learning. ICLR (Spotlight), 2022.
+    arXiv:2110.04366. DOI: https://doi.org/10.48550/arXiv.2110.04366
+    URL: https://arxiv.org/abs/2110.04366
+    IMPORTÂNCIA: Unifica adapters, prefix e prompt tuning sob uma mesma estrutura,
+    essencial para selecionar o método adequado ao domínio de rede.
+    CONTRIBUIÇÃO: Reformula os métodos PEFT como modificações de hidden states e
+    instancia novos métodos que ajustam menos parâmetros com desempenho equivalente.
+
+[14] DING, N.; QIN, Y.; YANG, G.; WEI, F.; YANG, Z.; SU, Y. et al. Delta Tuning: A
+    Comprehensive Study of Parameter Efficient Methods for Pre-trained Language
+    Models. 2022. arXiv:2203.06904. DOI: https://doi.org/10.48550/arXiv.2203.06904
+    URL: https://arxiv.org/abs/2203.06904
+    IMPORTÂNCIA: Categoriza PEFT em addition/specification/reparameterization-based,
+    oferecendo quadro teórico para o capítulo de fundamentação do artigo.
+    CONTRIBUIÇÃO: Estuda 100+ tarefas NLP e propriedades de combinação, escala e
+    transferência de métodos delta tuning, revelando mecanismos de PLMs.
+
+[15] HAN, Z.; GAO, C.; LIU, J.; ZHANG, J.; ZHANG, S. Q. Parameter-Efficient
+    Fine-Tuning for Large Models: A Comprehensive Survey. 2024. arXiv:2403.14608.
+    DOI: https://doi.org/10.48550/arXiv.2403.14608
+    URL: https://arxiv.org/abs/2403.14608
+    IMPORTÂNCIA: Survey definitiva de PEFT cobrindo algoritmos E custo de sistema,
+    ancora a revisão bibliográfica do artigo.
+    CONTRIBUIÇÃO: Examina desempenho e overhead computacional de PEFT e discute
+    implementações em hardware restrito, ligando algoritmo a plataforma.
+
+[16] ZHANG, S.; DONG, L.; LI, X.; ZHANG, S.; SUN, X.; WANG, S. et al. Instruction
+    Tuning for Large Language Models: A Survey. 2023 (atualizado 2025).
+    arXiv:2308.10792. DOI: https://doi.org/10.48550/arXiv.2308.10792
+    URL: https://arxiv.org/abs/2308.10792
+    IMPORTÂNCIA: Instruction tuning (SFT) é o caminho típico para adaptar LLMs
+    open-source a domínio, complementar a LoRA/QLoRA.
+    CONTRIBUIÇÃO: Revisa sistematicamente metodologia, construção de datasets e
+    fatores que influenciam o SFT, incluindo limitações e armadilhas.
+
+[17] SLAMANIG, G.; CORTI, F.; SAUKH, O. From LLMs to Edge: Parameter-Efficient
+    Fine-Tuning on Edge Devices. 2025. arXiv:2507.23536.
+    DOI: https://doi.org/10.48550/arXiv.2507.23536
+    URL: https://arxiv.org/abs/2507.23536
+    IMPORTÂNCIA: Trata PEFT especificamente em hardware restrito (edge), alinhado ao
+    requisito de eficiência em hardware limitado do artigo.
+    CONTRIBUIÇÃO: Benchmark de LoRA/DoRA/GaLore em arquiteturas convolucionais de edge,
+    mostrando redução de até 95% de FLOPs em update via adapters.
+
+================================================================================
+EIXO 3 — LLMs OPEN-SOURCE CANDIDATOS A AJUSTE FINO (ALVO DO PEFT)
+================================================================================
+
+[18] TOUVRON, H.; LAVRIL, T.; IZACARD, G.; MARTINET, X.; LACHAUX, M.-A.; LACROIX,
+    T. et al. LLaMA: Open and Efficient Foundation Language Models. 2023.
+    arXiv:2302.13971. DOI: https://doi.org/10.48550/arXiv.2302.13971
+    URL: https://arxiv.org/abs/2302.13971
+    IMPORTÂNCIA: Primeira família open-source citada como base para PEFT no artigo;
+    LLaMA-13B supera GPT-3 175B em muitos benchmarks.
+    CONTRIBUIÇÃO: Mostra que modelos de estado da arte podem ser treinados só com
+    dados públicos, viabilizando fine-tuning comunitário via LoRA/QLoRA.
+
+[19] TOUVRON, H.; MARTIN, L.; STONE, K.; ALBERT, P.; ALMAHAIRI, A.; BABAEI, Y. et al.
+    Llama 2: Open Foundation and Fine-Tuned Chat Models. 2023. arXiv:2307.09288.
+    DOI: https://doi.org/10.48550/arXiv.2307.09288
+    URL: https://arxiv.org/abs/2307.09288
+    IMPORTÂNCIA: Base open-source 7B–70B amplamente usada em PEFT para chat e
+    tarefas técnicas; substituto viável a modelos fechados.
+    CONTRIBUIÇÃO: Descreve o pipeline de fine-tuning e alinhamento de Llama 2-Chat,
+    superando chat models open-source e aproximando-se de modelos fechados.
+
+[20] JIANG, A. Q.; SABLAYROLLES, A.; MENSCH, A.; BAMFORD, C.; CHAPLOT, D. S. et al.
+    Mistral 7B. 2023. arXiv:2310.06825. DOI: https://doi.org/10.48550/arXiv.2310.06825
+    URL: https://arxiv.org/abs/2310.06825
+    IMPORTÂNCIA: LLM 7B de alta eficiência (Apache 2.0) ideal para QLoRA em hardware
+    limitado, citado como candidato a ajuste no projeto.
+    CONTRIBUIÇÃO: Introduz grouped-query attention e sliding window attention,
+    superando Llama-2 13B em todos os benchmarks com licença permissiva.
+
+[21] GRATTAFIORI, A.; DUBEY, A.; JAUHRI, A.; PANDEY, A.; KADIAN, A.; AL-DAHLE, A.
+    et al. The Llama 3 Herd of Models. 2024. arXiv:2407.21783.
+    DOI: https://doi.org/10.48550/arXiv.2407.21783
+    URL: https://arxiv.org/abs/2407.21783
+    IMPORTÂNCIA: Geração mais recente open-source (multilíngue, código, raciocínio)
+    para PEFT em domínios técnicos como redes.
+    CONTRIBUIÇÃO: Apresenta família Llama 3 com melhorias de pré-treino e tokenizer,
+    expandindo o leque de bases open-source ajustáveis por LoRA/QLoRA.
+
+================================================================================
+EIXO 4 — FEW-SHOT / ZERO-SHOT / CHAIN-OF-THOUGHT (BASE TEÓRICA DO USO SEM FINE-TUNING)
+================================================================================
+
+[22] BROWN, T. B.; MANN, B.; RYDER, N.; SUBBIAH, M.; KAPLAN, J.; DHARIWAL, P. et al.
+    Language Models are Few-Shot Learners. NeurIPS, 2020. arXiv:2005.14165.
+    DOI: https://doi.org/10.48550/arXiv.2005.14165
+    URL: https://arxiv.org/abs/2005.14165
+    IMPORTÂNCIA: Fundamenta o paradigma zero/few-shot sem gradientes que justifica o
+    uso de Gemini sem ajuste no NOC Lite.
+    CONTRIBUIÇÃO: Mostra que GPT-3 resolve tarefas novas só com texto (sem fine-tuning)
+    via in-context learning, inaugurando o uso de LLMs como classificadores zero-shot.
+
+[23] WEI, J.; WANG, X.; SCHUURMANS, D.; BOSMA, M.; ICHTER, B.; XIA, F.; CHI, E.; LE,
+    Q.; ZHOU, D. Chain-of-Thought Prompting Elicits Reasoning in Large Language
+    Models. NeurIPS, 2022. arXiv:2201.11903. DOI: https://doi.org/10.48550/arXiv.2201.11903
+    URL: https://arxiv.org/abs/2201.11903
+    IMPORTÂNCIA: Técnica de prompt que melhora raciocínio de LLMs sem treinar pesos,
+    diretamente aplicável à classificação de anomalias via Gemini.
+    CONTRIBUIÇÃO: Demonstra que exemplos de cadeia de raciocínio elevam o desempenho
+    em tarefas aritméticas e simbólicas, úteis para justificar respostas do sistema.
+
+[24] ACHIAM, J.; ADLER, S.; AGARWAL, S.; AHMAD, L.; AKKAYA, I. et al. GPT-4 Technical
+    Report. 2023. arXiv:2303.08774. DOI: https://doi.org/10.48550/arXiv.2303.08774
+    URL: https://arxiv.org/abs/2303.08774
+    IMPORTÂNCIA: Gemini (usado no NOC Lite) é comparável a GPT-4; o report documenta
+    capacidades zero-shot do estado da arte fechado.
+    CONTRIBUIÇÃO: Compara GPT-4 em zero-shot, few-shot e RLHF, estabelecendo a
+    referência de desempenho de modelos fechados sem ajuste de pesos.
+
+================================================================================
+EIXO 5 — ADAPTAÇÃO DE LLMs AO DOMÍNIO DE TRÁFEGO / TELEMETRIA DE REDE
+================================================================================
+
+[25] MENG, X.; LIN, C.; WANG, Y.; ZHANG, Y. NetGPT: Generative Pretrained Transformer
+    for Network Traffic. 2023 (rev. 2025). arXiv:2304.09513.
+    DOI: https://doi.org/10.48550/arXiv.2304.09513
+    URL: https://arxiv.org/abs/2304.09513
+    IMPORTÂNCIA: Primeiro modelo generativo pré-treinado especificamente para tráfego
+    de rede, diretamente no domínio do artigo (SDN/anomalias).
+    CONTRIBUIÇÃO: Propõe modelagem multi-padrão de tráfego como texto unificado para
+    understanding e geração, superando baselines em classificação e detecção de ataque.
+
+[26] GINIGE, Y.; DAHANAYAKA, T.; HUANG, Y.; JOURJON, G.; SENEVIRATNE, S. TrafficGPT:
+    An LLM Approach for Open-Set Encrypted Traffic Classification. Proceedings of the
+    19th Asian Internet Engineering Conference (AINTEC), 2024.
+    DOI: https://doi.org/10.1145/3674213.3674217
+    URL: https://dl.acm.org/doi/10.1145/3674213.3674217
+    IMPORTÂNCIA: Aplica GPT-2 como extrator de features para classificação de
+    tráfego cifrado open-set, demonstrando utilidade de LLM no domínio.
+    CONTRIBUIÇÃO: Mostra que a extração de features por GPT-2 melhora em 12,7% e 13,7%
+    o desempenho open-set vs. ET-BERT e CNN, respectivamente.
+
+[27] CUI, T.; LIN, X.; LI, S.; CHEN, M.; YIN, Q.; LI, Q.; XU, K. TrafficLLM:
+    Enhancing Large Language Models for Network Traffic Analysis with Generic Traffic
+    Representation. 2025. arXiv:2504.04222. DOI: https://doi.org/10.48550/arXiv.2504.04222
+    URL: https://arxiv.org/abs/2504.04222
+    IMPORTÂNCIA: Trabalho recente que fine-tuning de LLM ao tráfego via tokenização
+    de domínio — o caminho PEFT que o artigo propõe mas o NOC Lite não executa.
+    CONTRIBUIÇÃO: Introduz framework de dois estágios com tokenização de tráfego e
+    dual-stage tuning, atingindo F1 0,9875 e forte generalização em 229 tipos de
+    tráfego.
+
+[28] PENG, L. et al. PTU: Pre-Trained Model for Network Traffic Understanding. IEEE
+    32nd International Conference on Network Protocols (ICNP), 2024.
+    DOI: https://doi.org/10.1109/icnp61940.2024.10858503
+    URL: https://doi.org/10.1109/icnp61940.2024.10858503
+    IMPORTÂNCIA: Modelo pré-treinado auto-supervisionado para entendimento de tráfego,
+    antecedente de adaptação de linguagem ao domínio de rede.
+    CONTRIBUIÇÃO: Emprega pré-treino auto-supervisionado para aprender representações
+    de tráfego transferíveis a múltiplas tarefas de rede (metadados confirmados por
+    busca; abstract não extraído integralmente).
+
+================================================================================
+EIXO 6 — TOKENIZAÇÃO / REPRESENTAÇÃO DE MÉTRICAS NUMÉRICAS COMO TEXTO ESTRUTURADO
+================================================================================
+
+[29] GRUVER, N.; FINZI, M.; QIU, S.; WILSON, A. G. Large Language Models Are
+    Zero-Shot Time Series Forecasters. NeurIPS, 2023. arXiv:2310.07820.
+    DOI: https://doi.org/10.48550/arXiv.2310.07820
+    URL: https://arxiv.org/abs/2310.07820
+    IMPORTÂNCIA: Fundamenta o tokenise_metrics do NOC Lite: séries numéricas como
+    texto para LLM zero-shot, sem fine-tuning.
+    CONTRIBUIÇÃO: Codifica séries temporais como dígitos e propõe tokenização efetiva,
+    mostrando que GPT-3/LLaMA-2 prevêem zero-shot melhor que modelos dedicados; nota
+    que GPT-4 piora por causa da forma de tokenizar números.
+
+[30] SCHWARTZ, E.; CHOSHEN, L.; SHTOK, J.; DOVEH, S.; KARLINSKY, L.; ARBELLE, A.
+    NumeroLogic: Number Encoding for Enhanced LLMs' Numerical Reasoning. EMNLP, 2024.
+    arXiv:2404.00459. DOI: https://doi.org/10.48550/arXiv.2404.00459
+    URL: https://arxiv.org/abs/2404.00459
+    IMPORTÂNCIA: Endereça a fragilidade de LLMs com números — crítico para métricas de
+    rede (latência, perda de pacotes, throughput) como texto.
+    CONTRIBUIÇÃO: Propõe formatar números como "{2:42}" (conta de dígitos prefixada),
+    servindo como chain-of-thought e melhorando raciocínio numérico e MMLU.
+
+[31] SUI, Y.; ZHOU, M.; ZHOU, M.; HAN, S.; ZHANG, D. Table Meets LLM: Can Large
+    Language Models Understand Structured Table Data? A Benchmark and Empirical
+    Study. WSDM, 2024. arXiv:2305.13062. DOI: https://doi.org/10.48550/arXiv.2305.13062
+    URL: https://arxiv.org/abs/2305.13062
+    IMPORTÂNCIA: Avalia como LLMs理解 dados tabulares/estruturados serializados —
+    análogo à representação de métricas resumidas de tráfego.
+    CONTRIBUIÇÃO: Cria benchmark de 7 tarefas e mostra que escolhas de formato
+    (ordem, separadores, prompting estruturado) mudam o desempenho, com self-augmentation.
+
+[32] HEGSELMANN, S.; BUENDIA, A.; LANG, H.; AGRAWAL, M.; JIANG, X.; SONTAG, D.
+    TabLLM: Few-shot Classification of Tabular Data with Large Language Models.
+    AISTATS, 2023. arXiv:2210.10723. DOI: https://doi.org/10.48550/arXiv.2210.10723
+    URL: https://arxiv.org/abs/2210.10723
+    IMPORTÂNCIA: Mostra que LLMs classificam dados tabulares (serializados) em
+    zero/few-shot, suportando a abordagem do NOC Lite sem fine-tuning.
+    CONTRIBUIÇÃO: Serializa dados tabulares em string de linguagem natural e obtém
+    desempenho não-trivial até em zero-shot, competindo com gradient-boosted trees.
+
+[33] JIANG, J.-P.; LIU, S.-Y.; CAI, H.-R.; ZHOU, Q.; YE, H.-J. Representation Learning
+    for Tabular Data: A Comprehensive Survey. 2025. arXiv:2504.16109.
+    DOI: https://doi.org/10.48550/arXiv.2504.16109
+    URL: https://arxiv.org/abs/2504.16109
+    IMPORTÂNCIA: Survey que situa representação de dados tabulares (métricas) no
+    contexto de modelos de linguagem e generalização.
+    CONTRIBUIÇÃO: Organiza métodos em especializados, transferíveis e modelos de
+    fundação tabulares, discutindo adaptação cross-modal e entendimento tabular.
+
+[34] ALNEGHEIMISH, S.; NGUYEN, L.; BERTI-EQUILLE, L.; VEERAMACHANENI, K. Large
+    language models can be zero-shot anomaly detectors for time series? IEEE DSAA,
+    2024. arXiv:2405.14755. DOI: https://doi.org/10.48550/arXiv.2405.14755
+    URL: https://arxiv.org/abs/2405.14755
+    IMPORTÂNCIA: Estudo direto de LLM como detector de anomalias em séries temporais
+    (telemetria de rede) zero-shot — núcleo do NOC Lite.
+    CONTRIBUIÇÃO: Propõe sigllm (time-series→text + pipelines de prompt/previsão); o
+    método de previsão supera o de prompt, mas DL especializado ainda leva em ~30%.
+
+================================================================================
+EIXO 7 — FEW-SHOT/ZERO-SHOT PARA ANOMALIAS, SÉRIES TEMPORAIS E EFICIÊNCIA EM HARDWARE
+================================================================================
+
+[35] ZHANG, X.; CHOWDHURY, R. R.; GUPTA, R. K.; SHANG, J. Large Language Models for
+    Time Series: A Survey. IJCAI, 2024. arXiv:2402.01801.
+    DOI: https://doi.org/10.48550/arXiv.2402.01801
+    URL: https://arxiv.org/abs/2402.01801
+    IMPORTÂNCIA: Survey que mapeia o uso de LLMs em séries temporais (telemetria),
+    ponte entre texto e dados numéricos de rede.
+    CONTRIBUIÇÃO: Taxiona metodologias (prompt direto, quantização de série, aligning,
+    modalidade visual, ferramentas) para transferir conhecimento de LLM a séries.
+
+[36] CAO, D.; JIA, F.; ARIK, S. O.; PFISTER, T.; ZHENG, Y.; YE, W.; LIU, Y. TEMPO:
+    Prompt-based Generative Pre-trained Transformer for Time Series Forecasting.
+    ICLR, 2024. arXiv:2310.04948. DOI: https://doi.org/10.48550/arXiv.2310.04948
+    URL: https://arxiv.org/abs/2310.04948
+    IMPORTÂNCIA: Mostra adaptação de arquitetura GPT a séries temporais via prompts,
+    relevante para previsão/anomalia de métricas de rede.
+    CONTRIBUIÇÃO: Decompõe tendência/sazonalidade/resíduo e usa prompts para adaptação
+    de distribuição, superando SOTA em zero-shot em benchmarks de previsão.
+
+[37] KUNDU, A.; LIM, F.; CHEW, A.; WYNTER, L.; CHONG, P.; LEE, R. D. Efficiently
+    Distilling LLMs for Edge Applications. NAACL (Industry Track), 2024.
+    arXiv:2404.01353. DOI: https://doi.org/10.48550/arXiv.2404.01353
+    URL: https://arxiv.org/abs/2404.01353
+    IMPORTÂNCIA: Aborda compressão/distilação de LLMs para edge, complementar a PEFT
+    no requisito de eficiência em hardware limitado.
+    CONTRIBUIÇÃO: Propõe Multistage Low-rank Fine-tuning of Super-transformers (MLFS)
+    para obter encoders de qualidade comercial em edge e fatiar decoders reduzindo
+    tempo de treino.
+
+================================================================================
+SÍNTESE
+================================================================================
+A literatura consolida que o fine-tuning eficiente de LLMs (PEFT) — liderado por
+LoRA (Hu et al., 2021) e estendido por QLoRA (Dettmers et al., 2023), AdaLoRA e DoRA —
+é a via consagrada para adaptar LLMs open-source (LLaMA, Llama 2/3, Mistral) a domínios
+específicos com orçamento de hardware modesto, reduzindo em ordens de magnitude
+parâmetros treináveis e memória de GPU sem degradar a acurácia e sem overhead de
+inferência. Surveys (Han et al., 2024; Ding et al., 2022; He et al., 2022) unificam
+adapters, prefix-tuning, prompt-tuning e (IA)3 sob uma mesma família, e frameworks
+como LLM-Adapters e LLaMA-Adapter demonstram na prática que LLMs 7B ajustados por PEFT
+igualam ou superam modelos 175B em zero-shot. No domínio de tráfego de rede, NetGPT,
+TrafficGPT e TrafficLLM mostram que LLMs podem ser pré-treinados ou ajustados (com
+tokenização de domínio) para entender e classificar tráfego, enquanto PTU explora
+representações pré-treinadas auto-supervisionadas. Paralelamente, a representação de
+métricas numéricas como texto estruturado é bem fundamentada: Gruver et al. (LLMTime)
+demonstram previsão zero-shot de séries por codificação numérica em texto; NumeroLogic
+e TabLLM/Table-Meets-LLM tratam da fragilidade e da correta serialização de números e
+tabelas; e Alnegheimish et al. confirmam LLMs como detectores zero-shot de anomalias
+em séries temporais. Finalmente, a base few-shot/zero-shot (Brown, 2020; Wei, 2022;
+Achiam, 2023) legitima o uso de LLMs fechados sem ajuste de pesos.
+
+CONEXÃO COM O ARTIGO / GAP METODOLÓGICO:
+O goal.pdf propõe, na fundamentação e na Etapa 4, o uso de PEFT (LoRA/QLoRA) para
+ajustar um LLM open-source ao domínio de anomalias de rede. Contudo, o sistema NOC
+Lite implementado emprega o Gemini em regime estritamente zero-shot (tokenise_metrics
++ prompt), sem qualquer ajuste de pesos. Esta área da literatura embasa precisamente
+esse GAP: ela documenta que (i) LoRA/QLoRA tornam viável o ajuste de LLMs open-source
+em hardware limitado — exatamente o cenário do projeto — e que (ii) tal ajuste
+tipicamente supera o in-context learning em custo e acurácia (Liu et al., 2022), ao
+passo que (iii) abordagens zero-shot puras (como a do NOC Lite) são viáveis e rápidas,
+porém deixam sobre a mesa ganhos de adaptação de domínio e de privacidade/soberania
+(citar modelo open-source local em vez de API fechada). Assim, o referencial aqui
+reunido sustenta tanto a justificativa do projeto (PEFT é factível e superior em
+adaptação) quanto a explicação do compromisso adotado (zero-shot com Gemini para
+rapidez e simplicidade, postergando o fine-tuning proposto).
+
+================================================================================
+GAPS IDENTIFICADOS NA LITERATURA (insumo para George/Richard)
+================================================================================
+1. Há abundante PEFT para NLP/visão, mas POUCA aplicação de LoRA/QLoRA a LLMs
+   ajustados especificamente para detecção de anomalias de rede SDN (TrafficLLM é o
+   mais próximo, mas foca tráfego cifrado, não telemetria SDN resumida).
+2. Falta estudo comparativo head-to-head entre (a) LLM open-source ajustado por
+   QLoRA e (b) LLM fechado zero-shot (ex.: Gemini) no mesmo conjunto de métricas de
+   rede — exatamente a lacuna do NOC Lite.
+3. A tokenização de métricas numéricas de rede como texto ainda é tratada de forma
+   ad-hoc; NumeroLogic e LLMTime sugerem melhorias, mas não há padronização para
+   telemetria de SDN (latência, jitter, perda, throughput).
+4. Eficiência em hardware limitado (edge/SDN) é explorada para CNNs e distilação, mas
+   raramente para QLoRA de LLMs 7B rodando localmente em controladora ou gateway.
+
+================================================================================
+CONTAGEM FINAL
+================================================================================
+Total de referências: 37
+  Eixo 1 (LoRA/QLoRA/variantes): 4
+  Eixo 2 (Outros PEFT + surveys): 13
+  Eixo 3 (LLMs open-source alvo): 4
+  Eixo 4 (Few/zero-shot/CoT): 3
+  Eixo 5 (Adaptação a tráfego de rede): 4
+  Eixo 6 (Tokenização numérica/tabular): 6
+  Eixo 7 (Anomalias/séries/edge): 3
+Todas com URL/DOI validados; 36 com abstract acessado na fonte oficial.
+Nenhuma referência inventada.
+================================================================================

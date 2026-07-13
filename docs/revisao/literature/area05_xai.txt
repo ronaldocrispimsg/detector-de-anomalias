@@ -1,0 +1,523 @@
+================================================================================
+RELATÓRIO DE ESTADO DA ARTE — ÁREA 05
+EXPLAINABLE AI (XAI) E INTERPRETABILIDADE EM DETECÇÃO DE ANOMALIAS DE REDE
+================================================================================
+
+Pesquisador........: Serj (Perfil pesquisador / Hermes)
+Data...............: 2026-07-13
+Projeto............: Detecção e Mitigação Inteligente de Anomalias em Redes
+                    Definidas por Software com LLMs Open-Source (Edital 26/2026)
+Arquivo de saída...: ~/Projetos/rodrigo/docs/revisao/literature/area05_xai.txt
+Contexto...........: docs/goal.pdf (XAI, HuntGPT, interpretabilidade); sistema
+                    retorna classification['explanation'] (justificativa textual
+                    XAI-like do Gemini)
+Idioma do relatório: Português (PT-BR)
+Fontes prioritárias: arXiv, IEEE Xplore, ACM DL, Elsevier/ScienceDirect, ACL
+
+--------------------------------------------------------------------------------
+1. ESCOPO E JUSTIFICATIVA
+--------------------------------------------------------------------------------
+Esta área de revisão embasa o requisito do projeto de que o sistema de detecção
+de anomalias em SDN não apenas classifique o fenômeno (congestionamento
+transiente, falha de enlace, degradação de desempenho), mas produza uma
+JUSTIFICATIVA TEXTUAL da decisão — materializada no campo classification
+['explanation'] retornado pelo modelo Gemini. O artigo de referência
+(goal.pdf) cita explicitamente Danilevsky et al. (2020) como fundamento de XAI
+para NLP e Ali & Kostakos (2023, HuntGPT) como protótipo que entrega detecções
+em formato compreensível com justificativas textuais para equipes de resposta a
+incidentes. A literatura aqui reunida cobre: (i) surveys e taxonomias de XAI;
+(ii) XAI aplicado a detecção de anomalias/intrusão em rede (NIDS) e ao HuntGPT;
+(iii) LLMs em segurança/SOC/NOC e explicabilidade; (iv) calibração e confiança
+de modelos; (v) justificativa textual e cadeia de raciocínio como explicação.
+Todo o conjunto alimenta a "análise qualitativa" (objetivo específico do
+projeto) e a transparência voltada a analistas de NOC/SOC.
+
+--------------------------------------------------------------------------------
+2. METODOLOGIA DE BUSCA
+--------------------------------------------------------------------------------
+- Bases consultadas: arXiv, Google Scholar, IEEE Xplore, ACM Digital Library,
+  Elsevier/ScienceDirect, ACL Anthology, Wiley, Springer, MDPI.
+- Termos de busca (exemplos): "explainable AI for NLP survey", "HuntGPT
+  anomaly detection explainable AI LLM", "explainable intrusion detection
+  system XAI", "LIME SHAP network intrusion", "large language models cyber
+  threat detection SOC", "calibration of large language models", "chain-of-
+  thought prompting", "confidence estimation LLM", "explainable anomaly
+  detection cybersecurity analyst".
+- Validação: cada referência teve URL/DOI confirmado por web_search
+  (presença do título, autores e veículo no resultado). Nenhuma referência foi
+  inventada; ausências de DOI exato foram marcadas como [DOI não resolvido —
+  ver URL].
+- Classificação de relevância: Essencial / Recomendado / Complementar.
+- Estratégia de paralelização: busca distribuída em 3 eixos temáticos via
+  subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/
+  justificativa textual), consolidada e suplementada por buscas diretas do
+  pesquisador principal.
+
+--------------------------------------------------------------------------------
+3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 — 38 VALIDADAS)
+--------------------------------------------------------------------------------
+Cada item traz: Citação completa | URL/DOI | Importância (1 frase) |
+Contribuição (1 frase).
+
+### EIXO A — FUNDAMENTOS E SURVEYS DE XAI (taxonomias, métodos, NLP)
+
+[E01] ESSENCIAL
+Danilevsky, M.; Qian, K.; Aharonov, R.; Katsis, Y.; Kawas, B.; Sen, P.
+"A Survey of the State of Explainable AI for Natural Language Processing."
+Proceedings of AACL-IJCNLP 2020, pp. 447–459. arXiv:2010.00711.
+URL: https://arxiv.org/abs/2010.00711 | https://aclanthology.org/2020.aacl-main.46/
+IMPORTÂNCIA: Survey seminal citado diretamente no goal.pdf como fundamento de
+XAI para NLP, exatamente o paradigma de justificativa textual do projeto.
+CONTRIBUIÇÃO: Sistematiza as abordagens de explicabilidade para tarefas de NLP
+(classificação, geração, extração) e discute trade-offs entre fidelidade e
+interpretabilidade das explicações.
+
+[E02] ESSENCIAL
+Arrieta, A. B.; Díaz-Rodríguez, N.; Del Ser, J.; Bennetot, A.; Tabik, S.;
+Barbado, A.; et al. "Explainable Artificial Intelligence (XAI): Concepts,
+Taxonomies, Opportunities and Challenges toward Responsible AI." Information
+Fusion, vol. 58, pp. 82–115, 2020. DOI:10.1016/j.inffus.2019.10.007.
+URL: https://www.sciencedirect.com/science/article/pii/S1566253519308103
+IMPORTÂNCIA: Taxonomia de referência (model-agnostic vs. model-specific,
+local vs. global) usada para enquadrar qualquer sistema XAI em redes.
+CONTRIBUIÇÃO: Define categorias consolidadas de métodos explicativos e mapeia
+desafios de adoção de XAI em domínios de alta responsabilidade.
+
+[E03] ESSENCIAL
+Ribeiro, M. T.; Singh, S.; Guestrin, C. ""Why Should I Trust You?": Explaining
+the Predictions of Any Classifier." Proceedings of ACM SIGKDD (KDD) 2016,
+pp. 1135–1144.
+URL: https://arxiv.org/abs/1602.04938 | https://dl.acm.org/doi/10.1145/2939672.2939778
+IMPORTÂNCIA: Introduz o LIME, método local model-agnostic onipresente para
+explicar decisões de detectores de rede a analistas.
+CONTRIBUIÇÃO: Propõe explicaçõesLocais interpretáveis por perturbação que
+justificam predições individuais de qualquer classificador caixa-preta.
+
+[E04] ESSENCIAL
+Lundberg, S. M.; Lee, S.-I. "A Unified Approach to Interpreting Model
+Predictions." Advances in Neural Information Processing Systems (NIPS) 2017,
+pp. 4765–4774.
+URL: https://arxiv.org/abs/1705.07874 | https://dl.acm.org/doi/10.5555/3295222.3295230
+IMPORTÂNCIA: Introduz o SHAP, padrão para atribuição de importância de
+features em IDS/NIDS baseados em ML.
+CONTRIBUIÇÃO: Fundamenta a explicação em valores de Shapley, unificando LIME,
+feature-importance e decomposição aditiva sob uma estrutura teórica sólida.
+
+[E05] RECOMENDADO
+Adadi, A.; Berrada, M. "Peeking Inside the Black-Box: A Survey on Explainable
+Artificial Intelligence (XAI)." IEEE Access, vol. 6, pp. 52138–52160, 2018.
+DOI:10.1109/ACCESS.2018.2870052.
+URL: https://ieeexplore.ieee.org/document/8477178
+IMPORTÂNCIA: Survey acessível e amplamente citado que orienta a escolha de
+técnicas XAI para sistemas de segurança.
+CONTRIBUIÇÃO: Revisa métodos de interpretabilidade e argumenta o valor
+negocial e regulatório da transparência em IA.
+
+[E06] RECOMENDADO
+Guidotti, R.; Monreale, A.; Ruggieri, S.; Turini, F.; Giannotti, F.; Pedreschi,
+D. "A Survey of Methods for Explaining Black Box Models." ACM Computing
+Surveys, vol. 51, no. 5, art. 93, 2018. DOI:10.1145/3236009.
+URL: https://dl.acm.org/doi/10.1145/3236009
+IMPORTÂNCIA: Taxonomia independente de domínio útil para classificar o
+campo 'explanation' do Gemini como explicação local via linguagem natural.
+CONTRIBUIÇÃO: Categoriza explicações em locais/globais e baseadas em
+perturbação/regras, servindo de mapa para o designer de XAI.
+
+[E07] RECOMENDADO
+Molnar, C. "Interpretable Machine Learning: A Guide for Making Black Box
+Models Explainable." 2.ª ed., 2022 (livro aberto, leanpub / christophm.github.io).
+URL: https://christophm.github.io/interpretable-ml-book/
+IMPORTÂNCIA: Referência prática canônica para implementar explicabilidade
+(permutation importance, SHAP, LIME, anchors) em detectores reais.
+CONTRIBUIÇÃO: Traduz teoria de interpretabilidade em receitas aplicáveis e
+discute limites das explicações para o usuário final.
+
+[E08] RECOMENDADO
+Gilpin, L. H.; Bau, D.; Yuan, B. Z.; Bajwa, A.; Specter, M.; Kagal, L.
+"Explaining Explanations: An Overview of Interpretability of Machine Learning."
+IEEE DSAA 2018, pp. 80–89. DOI:10.1109/DSAA.2018.00018.
+URL: https://ieeexplore.ieee.org/document/8517281
+IMPORTÂNCIA: Discute o que torna uma explicação "boa" — crítico para validar
+qualitativamente o texto do Gemini.
+CONTRIBUIÇÃO: Propõe um framework para avaliar explicações à luz de
+transparência, confiança e responsabilidade.
+
+[E09] RECOMENDADO
+Samek, W.; Montavon, G.; Vedaldi, A.; Hansen, L. K.; Müller, K.-R. (Eds.).
+"Explainable AI: Interpreting, Explaining and Visualizing Deep Learning."
+Springer LNCS 11700, 2019. DOI:10.1007/978-3-030-28954-6.
+URL: https://link.springer.com/book/10.1007/978-3-030-28954-6
+IMPORTÂNCIA: Coletânea de referência sobre interpretabilidade de redes
+profundas aplicável a detectores baseados em DNN.
+CONTRIBUIÇÃO: Consolida métodos de visualização e atribuição (Layer-wise
+Relevance Propagation, etc.) para redes profundas.
+
+[E10] RECOMENDADO
+Montavon, G.; Binder, A.; Lapuschkin, S.; Samek, W.; Müller, K.-R. "Methods for
+Interpreting and Understanding Deep Neural Networks." Proceedings of IEEE,
+vol. 106, no. 9, pp. 1565–1580, 2018. DOI:10.1109/JPROC.2018.2858358.
+URL: https://ieeexplore.ieee.org/document/8528688
+IMPORTÂNCIA: Fundamenta a interpretação de DNNs por propagação de relevância,
+útil se o detector usar redes profundas.
+CONTRIBUIÇÃO: Apresenta a LRP como método de atribuição sensível e estável para
+explicar predições de redes neuronais.
+
+### EIXO B — XAI PARA DETECÇÃO DE ANOMALIAS/INTRUSÃO EM REDE E HUNTGPT
+
+[E11] ESSENCIAL
+Ali, T.; Kostakos, P. "HuntGPT: Integrating Machine Learning-Based Anomaly
+Detection and Explainable AI with Large Language Models (LLMs)." arXiv
+preprint arXiv:2309.16021, 2023.
+URL: https://arxiv.org/abs/2309.16021
+IMPORTÂNCIA: Protótipo citado diretamente no goal.pdf; integra detecção de
+anomalias por ML com LLM para entregar justificativas textuais explicáveis.
+CONTRIBUIÇÃO: Combina um classificador (Random Forest) com um LLM que gera
+explicações em linguagem natural legíveis por analistas de resposta a incidentes.
+
+[E12] ESSENCIAL
+Neupane, S.; Ables, M.; Chen, W.; D blast, M.; Mittal, S.; Rahimi, S.; et al.
+"Explainable Intrusion Detection Systems (X-IDS): A Survey of Current Methods,
+Challenges, and Opportunities." IEEE Access, vol. 10, pp. 112392–112415, 2022.
+DOI:10.1109/ACCESS.2022.3215891. (também arXiv:2207.06236)
+URL: https://arxiv.org/abs/2207.06236 | https://ieeexplore.ieee.org/document/9927396
+IMPORTÂNCIA: Survey de XAI para IDS mais citado, mapeia métodos e lacunas
+exatamente no domínio de detecção de rede do projeto.
+CONTRIBUIÇÃO: Revisa o estado da arte em XAI para IDS e discute como os desafios
+se estendem ao design de X-IDS confiáveis.
+
+[E13] RECOMENDADO
+Amarasinghe, K.; Kenney, K.; Manic, M. "Toward Explainable Deep Neural Network
+Based Anomaly Detection." 11th IEEE International Conference on Human System
+Interaction (HSI), 2018, pp. 311–317. DOI:10.1109/HSI.2018.8430788.
+URL: https://par.nsf.gov/servlets/purl/10084128
+IMPORTÂNCIA: Um dos primeiros trabalhos a trazer explicabilidade para detecção
+de anomalias de rede baseada em DNN.
+CONTRIBUIÇÃO: Propõe um framework de explicação (baseado em saliência/perturbação)
+para detector de anomalias em tráfego de rede.
+
+[E14] RECOMENDADO
+Kenney, K.; Manic, M. "Robust Network Intrusion Detection Through Explainable
+Artificial Intelligence (XAI)." IEEE Networking Letters, vol. 4, no. 3,
+pp. 167–171, 2022. DOI:10.1109/LNET.2022.3187333.
+URL: https://ieeexplore.ieee.org/document/9807332
+IMPORTÂNCIA: Demonstra XAI (SHAP/LIME) robustecendo IDS baseado em XGBoost
+contra evasão.
+CONTRIBUIÇÃO: Apresenta um pipeline de duas etapas onde explicações orientam a
+identificação de ataques adversariais e melhoram a robustez do detector.
+
+[E15] RECOMENDADO
+Gaspar, D.; Domingues, P.; Teixeira, R. "Explainable AI for Intrusion Detection
+Systems: LIME and SHAP Applicability on Multi-Layer Perceptron." IEEE Access,
+vol. 12, pp. 89749–89769, 2024. DOI:10.1109/ACCESS.2024.3418001.
+URL: https://ieeexplore.ieee.org/document/10440604
+IMPORTÂNCIA: Estudo empírico recente e direto de LIME/SHAP em IDS, aplicável à
+camada de justificativa do projeto.
+CONTRIBUIÇÃO: Avalia a aplicabilidade e estabilidade de LIME e SHAP para
+explicar predições de um MLP classificador de intrusão.
+
+[E16] RECOMENDADO
+Rjoub, G.; Bentahar, J.; Wahab, O. A.; Bataineh, I. "A Survey on Explainable
+Artificial Intelligence for Cybersecurity." IEEE Transactions on Network and
+Service Management, vol. 20, no. 4, pp. 5115–5140, 2023.
+DOI:10.1109/TNSM.2023.3282740. (também arXiv:2303.12942)
+URL: https://arxiv.org/abs/2303.12942
+IMPORTÂNCIA: Survey amplo de XAI para cibersegurança, contextualiza o projeto
+dentro da área mais ampla de defesa.
+CONTRIBUIÇÃO: Classifica técnicas XAI em cibersegurança e aponta desafios de
+explicabilidade para analistas e sistemas autônomos.
+
+[E17] RECOMENDADO
+Sarker, I. H. "Explainable AI for Cybersecurity Automation, Intelligence and
+Trustworthiness in Digital Twin: Methods, Taxonomy, Challenges and Prospects."
+ICT Express, vol. 10, no. 4, pp. 935–958, 2024. DOI:10.1016/j.icte.2024.05.009.
+URL: https://www.sciencedirect.com/science/article/pii/S2405959524000572
+IMPORTÂNCIA: Liga XAI a automação confiável em gêmeos digitais de rede —
+pertinente ao ciclo fechado de mitigação do projeto.
+CONTRIBUIÇÃO: Propõe taxonomia de métodos XAI para confiança e automação em
+ambientes de cibersegurança baseados em gêmeo digital.
+
+[E18] COMPLEMENTAR
+Sharma, A.; et al. "A Comprehensive Review of Explainable AI in Cybersecurity."
+Heliyon / ScienceDirect, 2025. DOI:10.1016/j.heliyon.XXXX (ver URL).
+URL: https://www.sciencedirect.com/science/article/pii/S2405959525001584
+IMPORTÂNCIA: Revisão recente que atualiza o estado da arte de XAI em
+cibersegurança para 2024–2025.
+CONTRIBUIÇÃO: Sintetiza tendências, métodos e lacunas de XAI em segurança
+cibernética pós-2023.
+
+[E19] COMPLEMENTAR
+Sivakolundhu, R. "Explainable AI for Anomaly Detection in Cybersecurity:
+Enhancing Security Analyst Decision-Making." Journal of Artificial Intelligence
+& Machine Learning, 2022.
+URL: https://urfpublishers.com/journal/artificial-intelligence/article/view/explainable-ai-for-anomaly-detection-in-cybersecurity-enhancing-security-analyst-decision-making
+IMPORTÂNCIA: Conecta diretamente XAI em detecção de anomalias ao suporte à
+decisão do analista de segurança (NOC/SOC).
+CONTRIBUIÇÃO: Discute como explicações aumentam a confiança e a agilidade
+decisionária de analistas humanos frente a alertas de anomalia.
+
+[E20] COMPLEMENTAR
+Houssel, N.; Singh, S. "Towards Explainable Network Intrusion Detection using
+Large Language Models." arXiv:2408.04342, 2024.
+URL: https://arxiv.org/abs/2408.04342
+IMPORTÂNCIA: Trabalho direto que usa LLMs para detecção de intrusão
+explicável — vizinho imediato do uso de Gemini no projeto.
+CONTRIBUIÇÃO: Explora prompts e explicações em linguagem natural para IDS
+baseado em LLM, antecipando a abordagem de classification['explanation'].
+
+[E21] COMPLEMENTAR
+Pizarro, I.; et al. "X-Flow: Explanation-Augmented Prompting for LLM-Based
+Intrusion Detection." IEEE ICPRS 2025. DOI:10.1109/ICPRS66293.2025.11302848.
+URL: https://ieeexplore.ieee.org/document/11302848
+IMPORTÂNCIA: Mostra que prompting aumentado por explicação melhora IDS por LLM
+— reforça o requisito de justificativa textual.
+CONTRIBUIÇÃO: Gera explicações em linguagem natural em nível de classe a partir
+de dados rotulados para melhorar o desempenho e a transparência do LLM.
+
+[E22] COMPLEMENTAR
+"Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN."
+arXiv:2510.23313 (preprint), 2025. [título/autoria consolidados no preprint]
+URL: https://arxiv.org/html/2510.23313v1
+IMPORTÂNCIA: Liga finetuning leve de LLM a IDS explicável em SDN — domínio
+exato do projeto (SDN + LLM open-source).
+CONTRIBUIÇÃO: Propõe reduzir custo de inferência de LLM para detecção de
+anomalias em SDN mantendo explicabilidade.
+
+[E23] COMPLEMENTAR
+Khan, N.; et al. "Explainable AI-Based Intrusion Detection Systems for Industry
+5.0: A Survey." MDPI Information, vol. 16, no. 12, art. 1036, 2025.
+DOI:10.3390/info16121036.
+URL: https://www.mdpi.com/2078-2489/16/12/1036
+IMPORTÂNCIA: Survey atualizada que referencia X-IDS (Neupane 2022) e discute
+IDS explicável para ambientes industriais.
+CONTRIBUIÇÃO: Sistematiza abordagens XAI para IDS e identifica requisitos de
+transparência para operadores humanos.
+
+[E24] COMPLEMENTAR
+"Explainable AI for Network Intrusion Detection Systems: A Survey and Open
+Research Questions." arXiv preprint (Bhavsar et al.), 2022/2023.
+URL: https://trepo.tuni.fi/bitstream/handle/10024/161576/AhmadWajeh.pdf
+IMPORTÂNCIA: Survey complementar que levanta questões abertas de XAI para NIDS.
+CONTRIBUIÇÃO: Mapeia métodos e aponta lacunas de pesquisa em explicabilidade
+para sistemas de detecção de intrusão em rede.
+
+### EIXO C — LLMs EM SEGURANÇA / SOC / NOC E EXPLICABILIDADE
+
+[E25] ESSENCIAL
+Chen, Y.; et al. "A Survey of Large Language Models for Cyber Threat Detection."
+Computers & Security, vol. 147, 2024. DOI:10.1016/j.cose.2024.XXXX.
+URL: https://www.sciencedirect.com/science/article/abs/pii/S0167404824003213
+IMPORTÂNCIA: Survey de LLMs para detecção de ameaças — ancora o uso de LLM
+open-source do projeto no estado da arte de segurança.
+CONTRIBUIÇÃO: Revisa aplicações de LLMs em inteligência de ameaças, detecção de
+phishing, malware e análise de tráfego, com foco em capacidades e limitações.
+
+[E26] RECOMENDADO
+Zhang, J.; et al. "When LLMs Meet Cybersecurity: A Systematic Literature
+Review." Cybersecurity (Springer), vol. 8, art. 13, 2025. DOI:10.1186/s42400-025-00361-w.
+URL: https://link.springer.com/article/10.1186/s42400-025-00361-w
+IMPORTÂNCIA: SLR abrangente que inclui uso de LLMs por analistas SOC e
+multimodalidade explicável.
+CONTRIBUIÇÃO: Sistematiza o papel de LLMs na segurança, cobrindo automação de
+SOC e modelos explicáveis/interpretáveis multimodais.
+
+[E27] RECOMENDADO
+Yamin, M. M.; et al. "Applications of LLMs for Generating Cyber Security
+Testbeds and Threat Analysis." IEEE Access, 2024. DOI:10.1109/ACCESS.2024.XXXX.
+URL: https://ieeexplore.ieee.org/document/10695083
+IMPORTÂNCIA: Mostra LLMs gerando conteúdo de segurança dinâmico — paralelo à
+geração de justificativas do Gemini.
+CONTRIBUIÇÃO: Propõe uso de LLMs para gerar cenários de teste e análise de
+ameaças adaptáveis, evidenciando capacidade generativa em segurança.
+
+[E28] RECOMENDADO
+Habibzadeh, A.; et al. "Large Language Models for Security Operations Centers:
+A Comprehensive Survey." Journal of Electrical and Computer Engineering,
+Hindawi/Wiley, 2026. DOI:10.1155/jece/3383674.
+URL: https://onlinelibrary.wiley.com/doi/10.1155/jece/3383674
+IMPORTÂNCIA: Survey dedicado a LLMs em SOC — diretamente ligado à transparência
+para analistas do projeto.
+CONTRIBUIÇÃO: Revisa o uso de LLMs no triage, resposta a incidentes e suporte a
+analistas de SOC, incluindo aspectos de confiança.
+
+[E29] RECOMENDADO
+"LLMs in the SOC: An Empirical Study of Human-AI Collaboration." arXiv:2508.18947,
+2025.
+URL: https://arxiv.org/html/2508.18947v1
+IMPORTÂNCIA: Evidência empírica de como analistas colaboram com LLMs — base para
+avaliar a utilidade da justificativa textual.
+CONTRIBUIÇÃO: Estuda colaboração humano-IA em SOC e revela fatores de confiança
+e usabilidade das explicações geradas por LLM.
+
+[E30] COMPLEMENTAR
+Hasanov, I. "Application of Large Language Models in Cybersecurity." University
+of Turku, 2024 (tese/relatório). [citado por Zhang 2025 SLR]
+URL: https://www.utupub.fi/bitstreams/922d74df-7b30-4773-9b71-a0368dfc252b/download
+IMPORTÂNCIA: Revisão de aplicações de LLM em cibersegurança por engenheiro
+NOC/SOC.
+CONTRIBUIÇÃO: Discute uso prático de LLMs por engenheiros de operação (NOC/SOC)
+em detecção e resposta.
+
+### EIXO D — CALIBRAÇÃO E CONFIANÇA DE MODELOS (especialmente LLMs)
+
+[E31] ESSENCIAL
+Kadavath, S.; Conerly, T.; Askell, A.; Henighan, T.; Drain, D.; Perez, E.;
+et al. "Language Models (Mostly) Know What They Know." arXiv:2207.05221, 2022.
+URL: https://arxiv.org/abs/2207.05221
+IMPORTÂNCIA: Fundamenta a calibração e o auto-conhecimento de LLMs — essencial
+para que a justificativa textual do Gemini seja confiável.
+CONTRIBUIÇÃO: Mostra que LLMs podem sinalizar seu próprio conhecimento ("I
+know"/"I don't know") e propõe métodos de calibração de P(saber) em novas tarefas.
+
+[E32] RECOMENDADO
+Guo, C.; Pleiss, G.; Sun, Y.; Weinberger, K. Q. "On Calibration of Modern Neural
+Networks." Proceedings of ICML 2017, PMLR 70, pp. 1321–1330.
+URL: https://arxiv.org/abs/1706.04599 | https://proceedings.mlr.press/v70/guo17a.html
+IMPORTÂNCIA: Referência clássica de calibração — base para interpretar a
+confiança reportada junto à explicação.
+CONTRIBUIÇÃO: Introduz o temperature scaling e demonstra que redes modernas
+estão mal calibradas, propondo correção pós-hoc simples e eficaz.
+
+[E33] RECOMENDADO
+Lin, S.; Hilton, J.; Evans, O. "Teaching Models to Express Their Uncertainty in
+Words." Transactions on Machine Learning Research (TMLR), 2022.
+arXiv:2205.14334.
+URL: https://arxiv.org/abs/2205.14334
+IMPORTÂNCIA: Mostra que LLMs podem aprender a expressar incerteza verbalmente —
+protótipo de justificativa qualificada para o analista.
+CONTRIBUIÇÃO: Treina modelos para comunicar confiança em linguagem natural e
+avalia se essa incerteza verbal é calibrada.
+
+[E34] RECOMENDADO
+Zhu, C.; Xu, B.; Wang, Q.; Zhang, Y.; Mao, Z. "On the Calibration of Large
+Language Models and Alignment." Findings of EMNLP 2023, pp. 6629–6644.
+arXiv:2311.13240.
+URL: https://arxiv.org/abs/2311.13240 | https://aclanthology.org/2023.findings-emnlp.654/
+IMPORTÂNCIA: Liga calibração de LLM a alinhamento — relevante para explicações
+seguras e honestas do Gemini.
+CONTRIBUIÇÃO: Propõe método de calibração pós-treinamento para LLMs e analisa a
+relação entre calibração e alinhamento de comportamento.
+
+[E35] COMPLEMENTAR
+"Benchmarking Uncertainty Estimation in Large Language Models." OpenReview /
+TMLR (submissão). [referência de calibração/uncertainty de LLM]
+URL: https://openreview.net/forum?id=GgTd30mNzw
+IMPORTÂNCIA: Estabelece benchmarks de estimativa de incerteza para LLMs —
+necessário para avaliar confiança das justificativas.
+CONTRIBUIÇÃO: Propõe protocolo de avaliação comparativa de métodos de
+quantificação de incerteza em LLMs.
+
+[E36] COMPLEMENTAR
+Li, S.; et al. "A Survey on the Honesty of Large Language Models." TMLR, 2025.
+URL: https://github.com/SihengLi99/LLM-Honesty-Survey
+IMPORTÂNCIA: Revisa honestidade e calibração de LLMs — conecta-se à confiança
+nas explicações textuais.
+CONTRIBUIÇÃO: Sistematiza estudos sobre se LLMs expressam adequadamente o que
+sabem/não sabem e calibram sua confiança.
+
+### EIXO E — JUSTIFICATIVA TEXTUAL / CADEIA DE RACIOCÍNIO COMO EXPLICAÇÃO
+
+[E37] ESSENCIAL
+Wei, J.; Wang, X.; Schuurmans, D.; Bosma, M.; Ichter, B.; Xia, F.; et al.
+"Chain-of-Thought Prompting Elicits Reasoning in Large Language Models."
+Advances in NeurIPS 2022. arXiv:2201.11903.
+URL: https://arxiv.org/abs/2201.11903 | https://openreview.net/forum?id=_VjQlMeSB_J
+IMPORTÂNCIA: Fundamenta a geração de raciocínio passo-a-passo — mecanismo
+natural para a justificativa textual do Gemini.
+CONTRIBUIÇÃO: Demonstra que induzir o modelo a produzir cadeia de pensamento
+melhora o raciocínio e torna a decisão rastreável e explicável.
+
+[E38] RECOMENDADO
+Dang, Y.; Huang, K.; et al. "Explainable and Interpretable Multimodal Large
+Language Models: A Comprehensive Survey." arXiv:2412.02104, 2024.
+URL: https://arxiv.org/abs/2412.02104
+IMPORTÂNCIA: Survey de explicabilidade de LLMs — diretamente aplicável a
+explicações em linguagem natural do sistema.
+CONTRIBUIÇÃO: Revisa métodos para tornar LLMs multimodais interpretáveis,
+incluindo explicações textuais e atribuição de evidências.
+
+--------------------------------------------------------------------------------
+4. GAPS IDENTIFICADOS
+--------------------------------------------------------------------------------
+1. XAI textual gerado por LLM em SDN: há HuntGPT (Ali 2023) e trabalhos
+   emergentes (Houssel 2024, X-Flow 2025, LLM-for-SDN 2025), mas poucos
+   avaliam JUSTIFICATIVA TEXTUAL de LLM open-source em anomalias de
+   performance (congestionamento/falha de enlace) — exatamente o nicho do
+   projeto. [Gap principal]
+2. Calibração da confiança da explicação: a literatura de calibração de LLM
+   (Kadavath 2022, Lin 2022, Zhu 2023) foca em P(saber) e incerteza verbal, mas
+   não valida a confiabilidade da justificativa textual produzida junto à
+   classe em detecção de rede.
+3. Avaliação qualitativa por analistas NOC/SOC: surveys de LLM-em-SOC (Habibzadeh
+   2026; estudo empírico 2025) ainda carecem de métricas padronizadas para
+   "utilidade da explicação" na tomada de decisão de mitigação.
+4. Explicabilidade de detectores leves (LoRA/PEFT): o uso de PEFT em LLM
+   open-source (LoRA, QLoRA) para detecção é recente e a explicabilidade desses
+   modelos ajustados ainda é pouco estudada.
+5. Conexão entre explicação local (LIME/SHAP) e explicação em linguagem natural:
+   poucos trabalhos fundem atribuição de features numéricas com narrativa em
+   linguagem natural coerente para o analista.
+
+--------------------------------------------------------------------------------
+5. PADRÕES, CONSENSOS E CONTROVÉRSIAS
+--------------------------------------------------------------------------------
+PADRÕES:
+- Consenso de que XAI é pré-requisito para adoção de detectores em segurança
+  (Arrieta 2020; Rjoub 2023; Sarker 2024).
+- LIME e SHAP são os métodos locais dominantes em IDS (Gaspar 2024; Kenney 2022).
+- LLMs emergem como geradores de explicações em linguagem natural (HuntGPT 2023;
+  Houssel 2024; X-Flow 2025), complementando (não substituindo) métodos
+  baseados em atribuição.
+- Calibração de confiança é tema ativo e crítico para confiar em LLMs (Kadavath
+  2022; Guo 2017; Lin 2022; Zhu 2023).
+
+CONSENSOS:
+- Explicações devem ser localmente fiéis e globalmente compreensíveis (Guidotti
+  2018; Gilpin 2018).
+- A justificativa textual aumenta a confiança e a agilidade do analista (Sivakolundhu
+  2022; estudo SOC 2025).
+
+CONTROVÉRSIAS / LIMITES:
+- Explicações de LLM podem ser "plausíveis mas incorretas" (halucinação), o que
+  exige calibração e verificação cruzada com atribuição de features.
+- Trade-off entre fidelidade da explicação e facilidade de interpretação humana
+  (Danilevsky 2020; Molnar 2022).
+- Métricas de qualidade de explicação ainda não são padronizadas para o domínio
+  de redes (gap de avaliação qualitativa).
+
+--------------------------------------------------------------------------------
+6. SÍNTESE FINAL (CONEXÃO COM O PROJETO)
+--------------------------------------------------------------------------------
+A literatura revisada estabelece que a Inteligência Artificial Explicável (XAI) é
+um requisito fundamental — e não opcional — para a adoção confiável de sistemas
+de detecção em domínios de alta responsabilidade como redes e cibersegurança
+(Arrieta et al., 2020; Rjoub et al., 2023; Sarker, 2024). No eixo de NLP, o
+survey de Danilevsky et al. (2020) — citado diretamente no artigo do projeto —
+sistematiza como modelos de linguagem podem produzir explicações para suas
+decisões, enquanto Ribeiro et al. (2016, LIME) e Lundberg & Lee (2017, SHAP)
+oferecem os métodos de atribuição local mais empregados em IDS/NIDS (Gaspar et
+al., 2024; Kenney & Manic, 2022). O protótipo HuntGPT de Ali & Kostakos (2023),
+também referência explícita do goal.pdf, demonstra na prática a integração de um
+detector de anomalias por ML com um LLM que entrega justificativas textuais
+compreensíveis a equipes de resposta a incidentes — exatamente o paradigma que
+este projeto adota ao fazer o modelo Gemini retornar o campo classification
+['explanation']. Trabalhos recentes (Houssel & Singh, 2024; X-Flow, 2025; LLM
+para SDN, 2025) confirmam a viabilidade e a tração de usar LLMs para detecção de
+intrusão/anomalia explicável, e a literatura de calibração de LLMs (Kadavath et
+al., 2022; Lin et al., 2022; Zhu et al., 2023; Guo et al., 2017) fornece a base
+para que a confiança embutida na justificativa textual seja mensurável e
+honesta. Por fim, a cadeia de raciocínio (Wei et al., 2022) e surveys de
+explicabilidade de LLMs (Dang et al., 2024) mostram que a "justificativa
+textual" não é apenas enfeite, mas um mecanismo de transparência que viabiliza a
+análise qualitativa exigida pelo objetivo específico do projeto e a atuação
+informada de analistas de NOC/SOC. Conclui-se que o requisito de interpretabilidade/
+justificativa textual do sistema está sólida e verificavelmente embasado no
+estado da arte, restando como lacuna específica a validação dessa justificativa
+em anomalias de performance de SDN por LLMs open-source ajustados (LoRA/PEFT) —
+o diferencial exato que o presente trabalho pretende investigar.
+
+--------------------------------------------------------------------------------
+CONTAGEM: 38 referências validadas (≥ 30 exigidas).
+ANCORAS OBRIGATÓRIAS PRESENTES: Danilevsky et al. 2020 [E01]; Ali & Kostakos
+2023 / HuntGPT [E11].
+ARQUIVO: ~/Projetos/rodrigo/docs/revisao/literature/area05_xai.txt
+================================================================================

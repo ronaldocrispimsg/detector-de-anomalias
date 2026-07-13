@@ -1,0 +1,40 @@
+% Figura 4 — Gaps principais entre o Artigo e o NOC Lite
+% Fonte: arquitetura_sistema.md, Sec. 4 (GAP-1 a GAP-5). Setas da "intencao do artigo" p/ "realidade do sistema".
+\documentclass[tikz,border=4pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,decorations.pathreplacing}
+\begin{document}
+\begin{tikzpicture}[
+    font=\sffamily\small,
+    want/.style={rectangle, draw=black, rounded corners=2pt,
+                 minimum width=4.2cm, minimum height=0.9cm,
+                 text centered, fill=white, inner sep=3pt},
+    got/.style={rectangle, draw=black, dashed, rounded corners=2pt,
+                minimum width=4.2cm, minimum height=0.9cm,
+                text centered, fill=white, inner sep=3pt},
+    sev/.style={font=\sffamily\bfseries\footnotesize},
+    arrow/.style={-{Latex[length=3mm]}, thick, draw=black},
+  ]
+
+  \node[want] (w1) at (0,10.5) {SDN (controlador, Mininet, OVS)};
+  \node[got]  (g1) at (7.5,10.5){Hosts IP/DNS genéricos};
+
+  \node[want] (w2) at (0,8.0) {LLM open-source (Llama/Falcon)};
+  \node[got]  (g2) at (7.5,8.0){Gemini 1.5 Flash (fechado)};
+
+  \node[want] (w3) at (0,5.5) {Fine-tuning LoRA/QLoRA (PEFT)};
+  \node[got]  (g3) at (7.5,5.5){Inexistente (DecisionTree do zero)};
+
+  \node[want] (w4) at (0,3.0) {Mitigação / ciclo fechado};
+  \node[got]  (g4) at (7.5,3.0){Loop aberto (só alerta Telegram)};
+
+  \node[want] (w5) at (0,0.5) {Datasets públicos (UNSW/CIC)};
+  \node[got]  (g5) at (7.5,0.5){Dados 100\% sintéticos};
+
+  \draw[arrow] (w1) -- node[above,sev,font=\sffamily\bfseries\footnotesize] {GAP-1 (CRÍTICO)} (g1);
+  \draw[arrow] (w2) -- node[above,sev] {GAP-2 (CRÍTICO)} (g2);
+  \draw[arrow] (w3) -- node[above,sev] {GAP-3 (CRÍTICO)} (g3);
+  \draw[arrow] (w4) -- node[above,sev] {GAP-4 (CRÍTICO)} (g4);
+  \draw[arrow] (w5) -- node[above,sev] {GAP-5 (MAIOR)} (g5);
+\end{tikzpicture}
+\end{document}

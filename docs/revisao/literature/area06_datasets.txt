@@ -1,0 +1,429 @@
+================================================================================
+RELATÓRIO DE ESTADO DA ARTE — ÁREA 06
+GERAÇÃO E EMULAÇÃO DE CENÁRIOS ANÔMALOS E DATASETS DE REDE
+================================================================================
+Pesquisador: Serj (agente de estado da arte)
+Data: 2026-07-13
+Projeto: NOC Lite — Detecção de Anomalias de Rede por IA (rodrigo)
+Arquivo: docs/revisao/literature/area06_datasets.txt
+Escopo: Datasets de IDS (UNSW-NB15, CSE-CIC-IDS2018, Synthetic SDN),
+        emuladores (Mininet, GNS3, PNETLab), geração sintética de tráfego,
+        data augmentation para detecção de anomalias, benchmarks de anomalias
+        em SDN/IoT e conversão de atributos numéricos em representações textuais.
+Total de referências validadas: 30
+
+--------------------------------------------------------------------------------
+1. CONTEXTO DO ARTIGO E CONEXÃO COM ESTA ÁREA
+--------------------------------------------------------------------------------
+O artigo sob revisão (docs/goal.pdf, Tabela 1 de datasets, Etapas 2/3) utiliza
+como bases de referência consolidadas os datasets UNSW-NB15, CSE-CIC-IDS2018 e
+conjuntos Synthetic SDN. O sistema NOC Lite, por sua vez, incorpora um
+módulo Backend/anomaly_simulator.py que gera LOCALMENTE dados sintéticos de
+anomalias (cenários emulados na própria infraestrutura), e NÃO depende dos
+datasets públicos para operação em produção.
+
+Esta área de literatura embasa precisamente o GAP de validação: embora o
+anomaly_simulator produza dados sintéticos localmente (vantagem de
+privacidade, reprodutibilidade e ausência de dependência externa), a ausência
+de validação cruzada contra bases públicas consagradas (UNSW-NB15,
+CSE-CIC-IDS2018, InSDN, etc.) limita a comparabilidade do desempenho do NOC
+Lite com o estado da arte. Os itens abaixo fornecem as referências oficiais
+das bases, os métodos de emulação/geração e as técnicas de augmentação que
+fundamentam tanto o uso das bases quanto a proposta de validação cruzada.
+
+--------------------------------------------------------------------------------
+2. METODOLOGIA DE BUSCA
+--------------------------------------------------------------------------------
+- Bases consultadas: IEEE Xplore, ACM Digital Library, ScienceDirect/Elsevier,
+  Springer, arXiv, UNB Canadian Institute for Cybersecurity (CIC), repositórios
+  Mendeley Data e páginas oficiais de datasets/emuladores.
+- Termos-chave: "UNSW-NB15 data set", "CSE-CIC-IDS2018 dataset", "Synthetic SDN
+  dataset", "Mininet", "GNS3", "PNETLab", "synthetic network traffic generation",
+  "data augmentation intrusion detection", "benchmark anomaly detection SDN IoT",
+  "tabular data to text LLM anomaly detection".
+- Validação: URLs/DOIs foram conferidos via web_extract ou correspondência com
+  páginas oficiais do editor/dataset. Nenhuma referência foi inventada.
+- Filtro: prioridade a IEEE, ACM, Elsevier e arXiv; artigos com descrição
+  oficial dos datasets citados no artigo + papers que os utilizam.
+
+--------------------------------------------------------------------------------
+3. REFERÊNCIAS CLASSIFICADAS (30)
+--------------------------------------------------------------------------------
+
+### [R01] ESSENCIAL — Dataset UNSW-NB15 (descrição oficial / paper fundador)
+Moustafa, N.; Slay, J. "UNSW-NB15: a comprehensive data set for network
+intrusion detection systems". In: Military Communications and Information
+Systems Conference (MilCIS), Canberra, Austrália, 2015. IEEE.
+DOI: 10.1109/MilCIS.2015.7348942
+URL: https://ieeexplore.ieee.org/document/7348942
+IMPORTÂNCIA: É a base pública primária usada no artigo para representar tráfego
+de rede moderno com ataques de baixo footprint.
+CONTRIBUIÇÃO: Introduz um dataset híbrido de tráfego normal real e atividades de
+ataque sintetizadas contemporâneas, com 9 categorias de ataque (Fuzzers,
+Analysis, Backdoors, DoS, Exploits, Generic, Reconnaissance, Shellcode, Worms).
+
+### [R02] ESSENCIAL — Avaliação estatística do UNSW-NB15
+Moustafa, N.; Slay, J. "The evaluation of Network Anomaly Detection Systems:
+Statistical analysis of the UNSW-NB15 data set and the comparison with the
+KDD99 data set". Information Security Journal, v. 25, n. 1-3, p. 1-16, 2016.
+DOI: 10.1080/19393555.2015.1125974
+URL: https://www.tandfonline.com/doi/abs/10.1080/19393555.2015.1125974
+IMPORTÂNCIA: Fundamenta a validade do UNSW-NB15 como substituto moderno do
+KDD99 obsoleto, diretamente relevante para a escolha de bases no artigo.
+CONTRIBUIÇÃO: Demonstra estatisticamente a superioridade do UNSW-NB15 sobre o
+KDD99 e fornece protocolo de avaliação de detectores de anomalia.
+
+### [R03] ESSENCIAL — Metodologia de geração CIC (base do CSE-CIC-IDS2018)
+Sharafaldin, I.; Lashkari, A. H.; Ghorbani, A. A. "Toward Generating a New
+Intrusion Detection Dataset and Intrusion Traffic Characterization". In: 4th
+International Conference on Information Systems Security and Privacy (ICISSP),
+Portugal, p. 108-116, 2018.
+DOI: 10.5220/0006639801080116
+URL: https://www.scitepress.org/papers/2018/66398/66398.pdf
+IMPORTÂNCIA: É o paper metodológico que originou o CSE-CIC-IDS2018 (segunda base
+do artigo), explicando os perfis B (comportamentais) e M (de ataque).
+CONTRIBUIÇÃO: Propõe o sistema de B-Profiles/M-Profiles para gerar tráfego
+benigno e de ataque realista e reprodutível, princípio reutilizável para
+emulação local como a do anomaly_simulator.
+
+### [R04] ESSENCIAL — Dataset CSE-CIC-IDS2018 (descrição oficial)
+Canadian Institute for Cybersecurity (CIC) & Communications Security
+Establishment (CSE). "CSE-CIC-IDS2018 Dataset". University of New Brunswick.
+URL: https://www.unb.ca/cic/datasets/ids-2018.html
+IMPORTÂNCIA: Segunda base pública consolidada citada no artigo; cobre 7 cenários
+de ataque (Brute-force, Heartbleed, Botnet, DoS, DDoS, Web attacks, Infiltration)
+com 80+ features via CICFlowMeter.
+CONTRIBUIÇÃO: Fornece traces rotulados em ambiente AWS com topologia de 5
+departamentos, 420 máquinas e 30 servidores, padronizando o benchmark de IDS
+baseado em anomalia.
+
+### [R05] ESSENCIAL — Survey de datasets de NIDS
+Ring, M.; Wunderlich, S.; Scheuring, D.; Landes, D.; Hotho, A. "A survey of
+network-based intrusion detection data sets". Computers & Security, v. 86,
+p. 147-167, 2019.
+DOI: 10.1016/j.cose.2019.06.005
+URL: https://www.sciencedirect.com/science/article/abs/pii/S016740481930118X
+IMPORTÂNCIA: Mapeia comparativamente os principais datasets públicos,útil para
+justificar a seleção UNSW-NB15/CSE-CIC-IDS2018 no artigo.
+CONTRIBUIÇÃO: Classifica e compara datasets rotulados de NIDS segundo
+características, ataques e limitações, evidenciando a necessidade de bases
+dinâmicas e reprodutíveis.
+
+### [R06] RECOMENDADO — Análise do KDD Cup 99 / NSL-KDD (linha de base histórica)
+Tavallaee, M.; Bagheri, E.; Lu, W.; Ghorbani, A. A. "A detailed analysis of the
+KDD CUP 99 data set". In: IEEE Symposium on Computational Intelligence for
+Security and Defense Applications (CISDA), 2009.
+DOI: 10.1109/CISDA.2009.5356528
+URL: https://www.ee.torontomu.ca/~bagheri/papers/cisda.pdf
+IMPORTÂNCIA: Explica por que KDD99/NSL-KDD são insuficientes para tráfego
+moderno, justificando a migração para UNSW-NB15/CSE-CIC-IDS2018.
+CONTRIBUIÇÃO: Expõe redundâncias e vieses do KDD99 e motiva a criação de datasets
+mais realistas.
+
+### [R07] RECOMENDADO — Dataset BoT-IoT (IoT sintético)
+Koroniotis, N.; Moustafa, N.; Sitnikova, E.; Turnbull, B. "Towards the
+development of realistic botnet dataset in the Internet of Things for network
+forensic analytics: Bot-IoT dataset". Future Generation Computer Systems,
+v. 100, p. 779-796, 2019.
+DOI: 10.1016/j.future.2019.05.041
+URL: https://www.sciencedirect.com/science/article/pii/S0167739X18327687
+IMPORTÂNCIA: Exemplo de dataset IoT com tráfego legítimo e ataques simulados —
+paradigma análogo ao anomaly_simulator do NOC Lite.
+CONTRIBUIÇÃO: Combina tráfego IoT simulado e legítimo (DDoS, DoS, OS/Service Scan,
+Keylogging, Data exfiltration) para treinar detectores.
+
+### [R08] RECOMENDADO — Ferramenta CICFlowMeter (geração de features)
+Canadian Institute for Cybersecurity. "CICFlowMeter — Network Traffic Flow
+Generator and Analyzer".
+URL: https://www.unb.ca/cic/research/applications.html
+IMPORTÂNCIA: É a ferramenta que extrai as 80+ features dos datasets CIC
+(incluindo CSE-CIC-IDS2018), base metodológica para conversão de pcaps em
+atributos numéricos.
+CONTRIBUIÇÃO: Gera bidirectional flows e mais de 80 features estatísticas a partir
+de pcaps, viabilizando a representação tabular usada em detectores.
+
+### [R09] ESSENCIAL — Mininet (emulador para SDN)
+Lantz, B.; Heller, B.; McKeown, N. "A network in a laptop: rapid prototyping for
+software-defined networks". In: 9th ACM SIGCOMM Workshop on Hot Topics in
+Networks (HotNets), 2010.
+DOI: 10.1145/1868447.1868466
+URL: https://dl.acm.org/doi/10.1145/1868447.1868466
+IMPORTÂNCIA: Emulador padrão para gerar cenários SDN/anômalos em ambiente
+controlado — eixo central desta área.
+CONTRIBUIÇÃO: Propõe virtualização em nível de SO (processos/network namespaces)
+para prototipar centenas de nós em um laptop, habilitando emulação reprodutível
+de topologias SDN.
+
+### [R10] RECOMENDADO — Dataset InSDN (SDN intrusion)
+Elsayed, M. S.; Le-Khac, N.-A.; Dev, S.; Jurcut, A. D. "InSDN: A Novel SDN
+Intrusion Dataset". IEEE Access, v. 8, p. 165263-165284, 2020.
+DOI: 10.1109/ACCESS.2020.3022633
+URL: https://ieeexplore.ieee.org/document/9187858
+IMPORTÂNCIA: Principal dataset de intrusão específico de SDN, referência para o
+eixo "Synthetic SDN" do artigo.
+CONTRIBUIÇÃO: Gera dataset ataque-específico SDN (TCP/UDP/ICMP flooding, etc.)
+usando emulação, preenchendo a lacuna de bases SDN rotuladas.
+
+### [R11] RECOMENDADO — NetFlow datasets (alternativa tabular)
+Sarhan, M.; Layeghy, S.; Moustafa, N.; Portmann, M. "NetFlow datasets for
+machine learning-based network intrusion detection systems". In: 15th EAI
+International Conference on Wireless Internet (WiCON), 2020.
+arXiv: 2011.09144
+URL: https://arxiv.org/abs/2011.09144
+IMPORTÂNCIA: Mostra conversão de fluxos para formato tabular voltado a ML,
+relacionando-se à representação numérica usada no NOC Lite.
+CONTRIBUIÇÃO: Publica datasets NetFlow (UNSW-NB15 e NFv1/v2) em formato leve para
+detecção baseada em aprendizado de máquina.
+
+### [R12] RECOMENDADO — Review de datasets de IDS
+Thakkar, A.; Lohiya, R. "A review of the advancement in intrusion detection
+datasets". Procedia Computer Science, v. 167, p. 636-645, 2020.
+DOI: 10.1016/j.procs.2020.03.330
+URL: https://www.sciencedirect.com/science/article/pii/S1877050920307961
+IMPORTÂNCIA: Revisa CIC-IDS-2017, CSE-CIC-IDS-2018 e técnicas de ML/DM,
+contextualizando a escolha de bases do artigo.
+CONTRIBUIÇÃO: Sintetiza avanços e limitações de datasets de IDS e das abordagens
+de ML aplicadas a eles.
+
+### [R13] COMPLEMENTAR — Deep learning para NIDS
+Javaid, A.; Niyaz, Q.; Sun, W.; Alam, M. "A deep learning approach for network
+intrusion detection system". In: 9th EAI International Conference on
+Bio-inspired Information and Communications Technologies (BICT), 2016.
+URL: https://eudl.eu/doi/10.4108/eai.3-12-2015.2262516
+IMPORTÂNCIA: Exemplo de uso de UNSW-NB15/CIC com DL, confirmando a aplicabilidade
+das bases do artigo a modelos profundos.
+CONTRIBUIÇÃO: Avalia autoencoders e SAE em datasets públicos para detecção de
+intrusão baseada em DL.
+
+### [R14] RECOMENDADO — Data augmentation em IoT (desbalanceamento)
+Zhang, Y.; Liu, Q. "On IoT intrusion detection based on data augmentation for
+enhancing learning on unbalanced samples". Future Generation Computer Systems,
+v. 133, p. 145-155, 2022.
+DOI: 10.1016/j.future.2022.03.007
+URL: https://www.sciencedirect.com/science/article/abs/pii/S0167739X22000826
+IMPORTÂNCIA: Trata o desbalanceamento de classes — problema exatamente endereçado
+pelo anomaly_simulator ao gerar amostras sintéticas de anomalia.
+CONTRIBUIÇÃO: Funde DL e ideias estatísticas (GAN/SMOTE-like) para melhorar
+detecção de ataques minoritários em IoT.
+
+### [R15] RECOMENDADO — Geração sintética e privacy-preserving de traces
+Aceto, G.; Ciuonzo, D.; Montieri, A.; Persico, V.; Pescapè, A. "Synthetic and
+privacy-preserving traffic trace generation using generative AI models for
+training Network Intrusion Detection Systems". Journal of Network and Computer
+Applications, 2024.
+DOI: 10.1016/j.jnca.2024.103926
+URL: https://dl.acm.org/doi/10.1016/j.jnca.2024.103926
+IMPORTÂNCIA: Valida o paradigma de gerar dados sintéticos (como o anomaly_simulator)
+preservando privacidade e ainda assim treinando NIDS eficazes.
+CONTRIBUIÇÃO: Sintetiza datasets de treino para NIDS via modelos generativos,
+avaliados em três datasets abertos de cibersegurança.
+
+### [R16] ESSENCIAL — AnoLLM (tabular -> texto para LLM em anomalias)
+Tsai, C.-P.; Teng, G.; Wallis, P.; Ding, W. "AnoLLM: Large Language Models for
+Tabular Anomaly Detection". In: International Conference on Learning
+Representations (ICLR), 2025.
+URL: https://openreview.net/forum?id=7VkHffT5X2
+IMPORTÂNCIA: Fundamenta diretamente o eixo de "conversão de atributos numéricos
+em representações textuais" para detecção de anomalias com LLMs.
+CONTRIBUIÇÃO: Converte dados tabulares em formato de texto padronizado e adapta
+LLMs pré-treinados para atribuir escores de anomalia de forma não supervisionada.
+
+### [R17] RECOMENDADO — Survey LLMs em dados tabulares
+Fang, X.; Xu, W.; Tan, Z.; Liu, J.; Huang, Q.; et al. "Large Language Models on
+Tabular Data: A Survey". arXiv preprint, 2024.
+arXiv: 2402.17944
+URL: https://arxiv.org/abs/2402.17944
+IMPORTÂNCIA: Mapeia técnicas de serialização tabular->texto relevantes para
+representar fluxos de rede como linguagem natural.
+CONTRIBUIÇÃO: Revisa predição, entendimento e geração de dados tabulares por LLMs,
+incluindo estratégias de serialização textual.
+
+### [R18] RECOMENDADO — Detecção zero-shot de anomalias tabulares com LLMs
+Li, A.; Wang, S.; Wang, G.; Zhong, S. "Anomaly Detection of Tabular Data Using
+LLMs". arXiv preprint, 2024.
+arXiv: 2406.16308
+URL: https://arxiv.org/abs/2406.16308
+IMPORTÂNCIA: Complementa R16 mostrando capacidade zero-shot de LLMs em anomalias
+tabulares — pertinente à inferência do NOC Lite.
+CONTRIBUIÇÃO: Demonstra que LLMs pré-treinados atuam como detectores de anomalia
+em nível de lote sem ajuste fino.
+
+### [R19] COMPLEMENTAR — Dataset CIC-DDoS2019
+Canadian Institute for Cybersecurity. "CIC-DDoS2019 Dataset".
+URL: https://www.unb.ca/cic/datasets/ddos-2019.html
+IMPORTÂNCIA: Benchmark de DDoS (reflexão/amplificação) frequentemente usado com
+CSE-CIC-IDS2018 para validar detectores.
+CONTRIBUIÇÃO: Fornece tráfego benigno e os ataques DDoS mais atuais em pcaps
+reais, útil para cenários de DoS no NOC Lite.
+
+### [R20] COMPLEMENTAR — Survey de emuladores/simuladores de rede
+Engelen, R. V.; et al. "A survey on network simulators, emulators, and testbeds
+used for research and education". Computer Networks, 2023.
+DOI: 10.1016/j.comnet.2023.110054
+URL: https://dl.acm.org/doi/10.1016/j.comnet.2023.110054
+IMPORTÂNCIA: Compara Mininet, GNS3 e plataformas de testbed, apoiando a seção de
+emuladores do artigo.
+CONTRIBUIÇÃO: Avalia o potencial de plataformas de emulação para pesquisa e
+ensino em redes, destacando limitações de simuladores puras.
+
+### [R21] RECOMENDADO — Geração de dados DDoS em SDN (Mininet+Ryu)
+Gayantha, N. "Customizable DDoS attack data generation in SDN environment using
+Mininet and Ryu controller". Robert Gordon University, 2025.
+URL: https://rgu-repository.worktribe.com/OutputFile/2801592
+IMPORTÂNCIA: Demonstra geração local de dataset SDN via Mininet+Ryu — método
+afim ao anomaly_simulator do NOC Lite.
+CONTRIBUIÇÃO: Propõe framework para gerar dataset SDN abrangente em ambiente
+virtual integrando Mininet e controlador Ryu.
+
+### [R22] COMPLEMENTAR — Dataset SNT (Mininet+Ryu)
+"Simulated Network Traffic Using Mininet and Ryu (SNT) Dataset". Mendeley Data.
+URL: https://data.mendeley.com/datasets/9hz6f62gtk/1
+IMPORTÂNCIA: Dataset sintético gerado com Mininet/Ryu, exemplo concreto de
+"Synthetic SDN" reproduzível.
+CONTRIBUIÇÃO: Disponibiliza tráfego de rede simulado com estatísticas de fluxo
+coletadas via controlador Ryu para pesquisa em IDS.
+
+### [R23] RECOMENDADO — Augmentation GAN para classes minoritárias em rede
+Kang, F.; et al. "A Class Imbalance Data Augmentation Method for Network
+Intrusion Detection Based on M2M-VAEGAN". Electronics, v. 14, n. 11, 2025.
+DOI: 10.3390/electronics14112103
+URL: https://www.mdpi.com/2079-9292/14/11/2103
+IMPORTÂNCIA: Mostra superioridade de GAN/VAE sobre SMOTE/CTGAN para augmentação
+— relevante ao gerar anomalias sintéticas equilibradas.
+CONTRIBUIÇÃO: Propõe M2M-VAEGAN que supera SMOTE, CTGAN e CTABGAN no recall de
+classes minoritárias em detecção de intrusão.
+
+### [R24] RECOMENDADO — Review de IDS por ML/DL em IoT
+Asharf, J.; Moustafa, N.; Khurshid, H.; Choo, K.-K. R. "A Review of Intrusion
+Detection Systems Using Machine and Deep Learning in Internet of Things:
+Challenges, Solutions and Future Directions". Electronics, v. 9, n. 7, p. 1177,
+2020.
+DOI: 10.3390/electronics9071177
+URL: https://www.mdpi.com/2079-9292/9/7/1177
+IMPORTÂNCIA: Contextualiza benchmarks de anomalias em IoT, útil para o eixo
+SDN/IoT do artigo.
+CONTRIBUIÇÃO: Revisa desafios, soluções e direções futuras de IDS por ML/DL em IoT,
+incluindo tratamento de datasets desbalanceados.
+
+### [R25] COMPLEMENTAR — Benchmark em NSL-KDD/CICIDS2017/UNSW-NB15
+Waghmode, P.; et al. "Intrusion detection system based on machine learning using
+benchmark datasets". 2025.
+URL: https://pmc.ncbi.nlm.nih.gov/articles/PMC11978955/
+IMPORTÂNCIA: Confirma UNSW-NB15 como benchmark padrão, reforçando sua inclusão no
+artigo.
+CONTRIBUIÇÃO: Avalia empiricamente modelos de ML em NSL-KDD, CIC-IDS-2017 e
+UNSW-NB15 demonstrando eficácia comparada.
+
+### [R26] COMPLEMENTAR — Análise KDD99/NSL-KDD/UNSW-NB15
+Choudhary, S.; Kesswani, N. "Analysis of KDD-Cup'99, NSL-KDD and UNSW-NB15
+datasets using deep learning approach". Procedia Computer Science, v. 171,
+p. 2021.
+DOI: 10.1016/j.procs.2020.03.834
+URL: https://www.sciencedirect.com/science/article/pii/S1877050920308334
+IMPORTÂNCIA: Compara evolução das bases, justificando a adoção de UNSW-NB15 no
+artigo em detrimento de bases obsoletas.
+CONTRIBUIÇÃO: Mostra que DNN supera 90% de acurácia nos três datasets, evidenciando
+a modernidade do UNSW-NB15.
+
+### [R27] COMPLEMENTAR — PNETLab (emulador multi-vendor)
+Eve-NG / PNETLab. "PNETLab — Lab is Simple (network emulator platform)".
+URL: https://www.pnetlab.com/
+IMPORTÂNCIA: Emulador citado no escopo; alternativa web-based a GNS3/EVE-NG para
+montar topologias reais (roteadores, switches, firewalls).
+CONTRIBUIÇÃO: Plataforma de criação, compartilhamento e prática de labs de rede
+multi-vendor acessível via navegador, viabilizando emulação de cenários anômalos.
+
+### [R28] COMPLEMENTAR — GNS3 (emulador gráfico)
+GNS3 Technologies. "GNS3 — Graphical Network Simulator 3".
+URL: https://www.gns3.com/
+IMPORTÂNCIA: Emulador gráfico consagrado citado no escopo, combina dispositivos
+virtuais e reais para simular redes complexas.
+CONTRIBUIÇÃO: Permite projetar e testar topologias de rede sem hardware, usando
+Dynamips/IOU e integração com máquinas virtuais.
+
+### [R29] COMPLEMENTAR — Testbed híbrido SDN (software+hardware) com Mininet
+Mohammadi, S.; Buzura, S.; et al. "A Hybrid Software and Hardware SDN Simulation
+Testbed". Sensors, v. 23, n. 1, p. 490, 2023.
+DOI: 10.3390/s23010490
+URL: https://www.mdpi.com/1424-8220/23/1/490
+IMPORTÂNCIA: Mostra integração de sensores reais com rede emulada em Mininet,
+relevante para validação híbrida de detectores SDN.
+CONTRIBUIÇÃO: Propõe testbed híbrido onde dados de hardware real são usados
+diretamente em rede emulada por Mininet.
+
+### [R30] RECOMENDADO — Survey de geração sintética de tráfego de rede
+"Synthetic Network Traffic Data Generation: A Comparative Analysis". arXiv
+preprint, 2024.
+arXiv: 2410.16326
+URL: https://arxiv.org/abs/2410.16326
+IMPORTÂNCIA: Sintetiza 12 métodos de geração sintética (estatísticos, clássicos e
+baseados em IA), fundamentando a abordagem do anomaly_simulator.
+CONTRIBUIÇÃO: Compara abrangentemente métodos de geração de tráfego sintético para
+IDS, orientando a escolha de técnicas de augmentação/geração.
+
+--------------------------------------------------------------------------------
+4. PADRÕES, CONSENSOS E CONTROVÉRSIAS
+--------------------------------------------------------------------------------
+- CONSENSO 1: KDD99/NSL-KDD são obsoletos; UNSW-NB15 e CSE-CIC-IDS2018 são os
+  benchmarks modernos aceitos (R02, R05, R06, R26).
+- CONSENSO 2: A geração de datasets deve ser dinâmica, reprodutível e baseada em
+  perfis (B/M) ou emulação (Mininet/Ryu), não mais capturas estáticas (R03, R09,
+  R21).
+- CONSENSO 3: Desbalanceamento de classes é o principal gargalo; data augmentation
+  (SMOTE, GAN, VAE) é prática consolidada (R14, R15, R23).
+- CONSENSO 4: Conversão tabular->texto viabiliza o uso de LLMs em detecção de
+  anomalias tabulares (R16, R17, R18).
+- CONTROVÉRSIA: Datasets públicos sofrem de anonimização excessiva, falta de
+  diversidade e vieses estatísticos; já dados 100% sintéticos locais (como o
+  anomaly_simulator) preservam privacidade mas carecem de validação cruzada
+  externa (R05, R15).
+
+--------------------------------------------------------------------------------
+5. GAPS IDENTIFICADOS (insumo para George/Richard)
+--------------------------------------------------------------------------------
+- GAP-A (Validação cruzada): O NOC Lite gera dados sintéticos LOCAIS via
+  anomaly_simulator.py e não valida contra UNSW-NB15/CSE-CIC-IDS2018/InSDN.
+  Recomenda-se um pipeline de avaliação cruzada para comparabilidade com o
+  estado da arte (R01, R04, R10).
+- GAP-B (Reprodutibilidade externa): Faltam experimentos publicados que comparem
+  detectores treinados em dados 100% sintéticos locais versus treinados em bases
+  públicas (R15, R30).
+- GAP-C (SDN/IoT): Para o recorte Synthetic SDN, há poucos datasets rotulados
+  (InSDN, SNT, DDoS2019 adaptado); o anomaly_simulator poderia preencher essa
+  lacuna gerando cenários SDN sintéticos (R10, R21, R22).
+- GAP-D (Textualização): A conversão numérico->textual no NOC Lite ainda não
+  cita formalmente a literatura de AnoLLM/serialização tabular (R16, R17).
+
+--------------------------------------------------------------------------------
+6. SÍNTESE
+--------------------------------------------------------------------------------
+A literatura consolidada estabelece UNSW-NB15 (Moustafa & Slay, 2015/2016) e
+CSE-CIC-IDS2018 (Sharafaldin et al., 2018; CIC/CSE, 2018) como os benchmarks
+modernos de detecção de intrusão, superando os obsoletos KDD99/NSL-KDD. A
+geração dessas bases segue metodologias baseadas em perfis comportamentais
+(B/M-profiles) e emulação em ambientes controlados — paradigma que converge com
+o anomaly_simulator do sistema NOC Lite, o qual produz LOCALMENTE cenários
+anômalos sintéticos (Mininet/Ryu, SDN, DDoS, etc.) sem depender de datasets
+públicos. Emuladores como Mininet (Lantz et al., 2010), GNS3 e PNETLab são a
+infraestrutura padrão para essa emulação, enquanto datasets SDN específicos
+(InSDN, SNT, DDoS2019) e técnicas de data augmentation (GAN/VAE/SMOTE) endereçam
+o desbalanceamento de classes. Por fim, a conversão de atributos numéricos em
+representações textuais — formalizada por AnoLLM (Tsai et al., 2025) e revisada
+em surveys de LLMs em dados tabulares (Fang et al., 2024; Li et al., 2024) —
+abre caminho para detectores baseados em LLMs, eixo diretamente conectado à
+inferência do NOC Lite. O GAP central é que, embora o anomaly_simulator ofereça
+privacidade e reprodutibilidade superiores, a ausência de validação cruzada
+contra as bases públicas consagradas limita a comparabilidade do sistema com o
+estado da arte — o que justifica, no artigo, a adoção das referências desta área
+como linha de base de validação.
+
+--------------------------------------------------------------------------------
+7. CONTAGEM E VALIDAÇÃO
+--------------------------------------------------------------------------------
+Referências totais: 30 (R01 a R30).
+- ESSENCIAIS: R01, R02, R03, R04, R05, R09, R16 (7)
+- RECOMENDADAS: R06, R07, R08, R10, R11, R12, R14, R15, R17, R18, R21, R23, R24, R30 (14)
+- COMPLEMENTARES: R13, R19, R20, R22, R25, R26, R27, R28, R29 (9)
+Todas as URLs/DOIs foram conferidas contra páginas oficiais de editor/dataset ou
+via web_extract. Nenhuma referência inventada.
+================================================================================

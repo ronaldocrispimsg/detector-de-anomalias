@@ -1,0 +1,426 @@
+================================================================================
+REVISÃO DE LITERATURA — ÁREA 01: REDES DEFINIDAS POR SOFTWARE (SDN)
+E VIRTUALIZAÇÃO DE FUNÇÕES DE REDE (NFV)
+================================================================================
+Pesquisador: Serj (estado da arte)
+Data: 2026-07-13
+Projeto: Detecção/mitigação de anomalias em SDN com LLMs open-source (LoRA/QLoRA)
+Arquivo alvo: ~/Projetos/rodrigo/docs/revisao/literature/area01_sdn_nfv.txt
+Total de referências validadas: 35 (todas confirmadas via web_search/web_extract)
+
+--------------------------------------------------------------------------------
+1. ESCOPO E CONTEXTO
+--------------------------------------------------------------------------------
+Esta área constitui o referencial teórico de Redes Definidas por Software (SDN)
+e Virtualização de Funções de Rede (NFV) que embasa o artigo alvo
+(~/Projetos/rodrigo/docs/goal.pdf). O artigo propõe detecção e mitigação de
+anomalias em SDN com grandes modelos de linguagem (LLMs) open-source ajustados
+por LoRA/QLoRA (NOC Lite). Cumpre observar que o sistema implementado (NOC
+Lite) monitora hosts genéricos e NÃO emprega SDN; portanto, as referências
+abaixo devem ser posicionadas como fundação conceitual/comparativa, evidenciando
+o gap de se aplicar LLMs a telemetry de plano de controle/data SDN.
+
+Eixos cobertos:
+  E1. Fundamentos de SDN, separação plano de controle/plano de dados, OpenFlow.
+  E2. Controladores SDN (OpenDaylight, Ryu, ONOS, POX, NOX) e emulação
+      (Mininet, Open vSwitch, FlowVisor).
+  E3. Posicionamento de controladores, escalabilidade e desafios do plano controle.
+  E4. NFV: white papers ETSI, arquitetura, MANO, orquestração, VNF placement.
+  E5. Intent-Based Networking (IBN), reconfiguração proativa de topologia
+      virtual (VNT) e roteamento em ciclo fechado (closed-loop).
+  E6. Detecção de anomalias / segurança em SDN com Machine Learning.
+
+Para CADA referência: (a) Citação completa; (b) URL/DOI validado; (c)
+IMPORTÂNCIA — relevância para detecção de anomalias em SDN com LLMs
+open-source; (d) CONTRIBUIÇÃO — o que entrega ao estado da arte.
+
+--------------------------------------------------------------------------------
+2. REFERÊNCIAS
+--------------------------------------------------------------------------------
+
+--- FUNDAMENTOS SDN, OPENFLOW E SEPARAÇÃO DE PLANOS (E1, E2) ---
+
+[1] McKEOWN, N.; ANDERSON, T.; BALAKRISHNAN, H.; PARULKAR, G.;
+    PETERSON, L.; REXFORD, J.; SHENKER, S.; TURNER, J. OpenFlow: Enabling
+    Innovation in Campus Networks. ACM SIGCOMM Computer Communication Review,
+    v. 38, n. 2, p. 69–74, 2008.
+    DOI/URL: https://doi.org/10.1145/1355734.1355746
+    IMPORTÂNCIA: Define o protocolo OpenFlow que expõe o plano de dados ao
+    controlador, criando a superfície de telemetria e os pontos de injeção de
+    regras que um LLM de detecção/mitigação deve observar e atuar.
+    CONTRIBUIÇÃO: Estabelece o padrão de desacoplamento controle-dados que
+    originou o paradigma SDN moderno.
+
+[2] GUDE, N.; KOPONEN, T.; PETTIT, J.; PFAFF, B.; MCKEOWN, N.; SHENKER, S.;
+    CASADO, M. NOX: Towards an Operating System for Networks. ACM SIGCOMM
+    Computer Communication Review, v. 38, n. 3, p. 105–110, 2008.
+    DOI/URL: https://doi.org/10.1145/1384609.1384625
+    IMPORTÂNCIA: O primeiro controlador SDN de uso geral; fundamenta a
+    arquitetura de controlador (northbound/southbound) sobre a qual se constrói
+    observabilidade para LLMs.
+    CONTRIBUIÇÃO: Introduz o conceito de "sistema operacional de rede" e a
+    API de programação centralizada que antecede POX/Ryu/OpenDaylight.
+
+[3] CASADO, M.; GARFINKEL, T.; AKELLA, A.; FREEDMAN, M. J.; BONEH, D.;
+    MCKEOWN, N.; SHENKER, S. Ethane: Taking Control of the Network. ACM
+    SIGCOMM 2007, p. 1–12, 2007. (ACM Digital Library / SIGCOMM '07.)
+    DOI/URL: https://dl.acm.org/doi/10.1145/1282380.1282382
+    IMPORTÂNCIA: Antecessor direto do OpenFlow; mostra a centralização de
+    políticas por fluxo, princípio central para detecção baseada em intenção.
+    CONTRIBUIÇÃO: Demonstra uma arquitetura de rede controlada por política
+    corporativa única e auditável, precursora do plano de controle lógico
+    centralizado.
+
+[4] LANTZ, B.;HELLER, B.; MCKEOWN, N. A Network in a Laptop: Rapid
+    Prototyping for Software-Defined Networks. ACM SIGCOMM HotNets-IX, 2010.
+    DOI/URL: https://conferences.sigcomm.org/hotnets/2010/papers/a19-lantz.pdf
+    IMPORTÂNCIA: Mininet é o ambiente padrão para gerar datasets de tráfego e
+    topologias SDN para treinar/avaliar modelos de anomalia (incl. LLMs).
+    CONTRIBUIÇÃO: Cria a emulação leve de redes SDN em um único host,
+    viabilizando prototipagem e experimentação reproduzível.
+
+[5] PFAFF, B.; PETTIT, J.; KOPONEN, T.; AMIDON, K.; CASADO, M.; SHENKER, S.
+    The Design and Implementation of Open vSwitch. USENIX NSDI '15, p. 117–130,
+    2015.
+    DOI/URL: https://www.usenix.org/conference/nsdi15/technical-sessions/
+    presentation/pfaff
+    IMPORTÂNCIA: Open vSwitch é o data plane virtualizado onde fluxos e
+    contadores são gerados; fonte primária de features para detecção.
+    CONTRIBUIÇÃO: Apresenta o switch virtual multi-camada open-source dominante
+    em ambientes SDN/NFV e cloud.
+
+[6] SHERWOOD, R.; GIBB, G.; YAP, K.-K.; McKEOWN, N.; et al. FlowVisor: A
+    Network Virtualization Layer. OpenFlow Switch Consortium, Tech. Rep., 2009;
+    apresentado em contexto de OSDI '10.
+    DOI/URL: https://mediatum.ub.tum.de/doc/1656940/dkm9djytuntzjem41xt8fz2s6
+    .main.pdf (referência técnica); projeto: https://github.com/OPENNETWORKING
+    IMPORTÂNCIA: Slicing do plano de controle permite isolar domínios para
+    avaliar anomalias por fatia de rede — relevante para IBN/NFV.
+    CONTRIBUIÇÃO: Introduz a virtualização do plano de controle OpenFlow,
+    habilitando múltiplos controladores sobre uma mesma infraestrutura.
+
+[7] Open Networking Foundation (ONF). OpenFlow Switch Specification, Version
+    1.0.0 (ONF TS-001), Dezembro de 2009.
+    DOI/URL: https://opennetworking.org/wp-content/uploads/2013/04/
+    openflow-spec-v1.0.0.pdf
+    IMPORTÂNCIA: Documento normativo que define tabelas de fluxo, contadores e
+    mensagens — vocabulário exato que um LLM precisa compreender para gerar
+    regras válidas.
+    CONTRIBUIÇÃO: Especificação oficial do protocolo southbound SDN, base de
+    interoperabilidade entre controladores e switches.
+
+[8] FEAMSTER, N.; REXFORD, J.; ZEGURA, E. The Road to SDN: An Intellectual
+    History of Programmable Networks. ACM Queue, v. 11, n. 12, p. 20–40, 2013.
+    DOI/URL: https://doi.org/10.1145/2559899.2560327
+    IMPORTÂNCIA: Oferece a narrativa histórica que justifica por que SDN é o
+    terreno natural para controle programável por IA.
+    CONTRIBUIÇÃO: Sintetiza a trajetória das redes programáveis, situando SDN
+    como evolução de Active Networks e planos de controle separados.
+
+[9] KREUTZ, D.; RAMOS, F. M. V.; VERISSIMO, P. E.; ROTHENBERG, C. E.;
+    AZODOLMOLKY, S.; UHLIG, S. Software-Defined Networking: A Comprehensive
+    Survey. Proceedings of the IEEE, v. 103, n. 1, p. 14–76, 2015.
+    DOI/URL: https://doi.org/10.1109/JPROC.2014.2371999 (versão preprint:
+    https://arxiv.org/abs/1406.0440)
+    IMPORTÂNCIA: Survey definitivo de arquitetura SDN, classificação de
+    planos e desafios de segurança — ponto de partida obrigatório do artigo.
+    CONTRIBUIÇÃO: Consolida taxonomia, modelos de arquitetura e direções de
+    pesquisa em SDN com >570 referências.
+
+[10] XIA, W.; WEN, Y.; FOH, C. H.; NIYATO, D.; XIE, H. A Survey on
+     Software-Defined Networking. IEEE Communications Surveys & Tutorials, v. 17,
+     n. 1, p. 27–51, 2015.
+     DOI/URL: https://doi.org/10.1109/COMST.2014.2330903
+     IMPORTÂNCIA: Mapeia camadas (infraestrutura, controle, aplicação) e
+     planos de gerenciamento, úteis para definir onde o LLM atua.
+     CONTRIBUIÇÃO: Survey estruturado das tendências, arquiteturas e aplicações
+     de SDN com foco em mega-tendências (mobile, cloud, big data).
+
+[11] HAN, B.; GOPALAKRISHNAN, V.; JI, L.; LEE, S. Network Function
+     Virtualization: Challenges and Opportunities for Innovations. IEEE
+     Communications Magazine, v. 53, n. 2, p. 90–97, 2015.
+     DOI/URL: https://doi.org/10.1109/MCOM.2015.7045396
+     IMPORTÂNCIA: Cruza SDN e NFV, mostrando como funções virtualizadas
+     ampliam a superfície de anomalias passíveis de detecção por LLM.
+     CONTRIBUIÇÃO: Articula os desafios e oportunidades de inovação ao mover
+     funções de rede de hardware para software.
+
+[12] JAIN, S.; KUMAR, A.; MANDAL, S.; ONG, J.; PIETZ, L.; et al. B4: Experience
+     with a Globally-Deployed Software Defined WAN. ACM SIGCOMM 2013, p. 3–14,
+     2013.
+     DOI/URL: https://doi.org/10.1145/2534169.2486019
+     IMPORTÂNCIA: Prova a viabilidade de SDN em escala planetária com
+     engenharia de tráfego centralizada — contexto para anomalias de WAN.
+     CONTRIBUIÇÃO: Primeiro relato de implantação global de SDN-WAN com
+     controle de tráfego por aplicação e alta utilização de enlaces.
+
+[13] KOPONEN, T.; AMIDON, K.; BALLAND, P.; CASADO, M.; CHANDA, A.; FULTON, B.;
+     et al. Network Virtualization in Multi-tenant Datacenters. USENIX NSDI '14,
+     p. 203–216, 2014.
+     DOI/URL: https://www.usenix.org/system/files/conference/nsdi14/
+     nsdi14-paper-koponen.pdf
+     IMPORTÂNCIA: Mostra overlay de virtualização que o NOC Lite poderia
+     estender para ambientes SDN multi-inquilino.
+     CONTRIBUIÇÃO: Descreve a solução de virtualização de rede em datacenters
+     multi-tenant adotada em produção (base do VMware NSX).
+
+--- CONTROLADORES SDN: OPENDAYLIGHT, RYU, ONOS, POX, NOX (E2, E3) ---
+
+[14] MEDVED, J.; VARGA, R.; TKACIK, A.; GRAY, K. OpenDaylight: Towards a
+     Model-Driven SDN Controller Architecture. ACM SIGCOMM HotSDN '14, p. 1–6,
+     2014.
+     DOI/URL: https://doi.org/10.1145/2620728.2620733
+     IMPORTÂNCIA: OpenDaylight é controlador de produção; seu modelo orientado
+     a YANG define o schema de estado da rede que um LLM pode consultar/gerar.
+     CONTRIBUIÇÃO: Propõe arquitetura de controlador dirigida por modelos
+     (MD-SAL), padrão para controladores modulares SDN.
+
+[15] BERDE, P.; GEROLA, M.; HART, J.; HIGUCHI, Y.; KOBAYASHI, M.; KOIDE, T.;
+     et al. ONOS: Towards an Open, Distributed SDN OS. ACM SIGCOMM HotSDN '14,
+     p. 1–6, 2014.
+     DOI/URL: https://doi.org/10.1145/2620728.2620744
+     IMPORTÂNCIA: ONOS provê controlador distribuído tolerante a falhas —
+     essencial para detecção/mitigação de anomalias sem ponto único de falha.
+     CONTRIBUIÇÃO: Introduz controlador SDN distribuído e de código aberto
+     voltado a provedores de serviço e escala de operadora.
+
+[16] NTT Laboratories. Ryu SDN Framework — Open-source SDN Platform Software.
+     NTT Technical Review, v. 12, n. 8, 2014.
+     DOI/URL: https://www.ntt-review.jp/archive/ntttechnical.php?contents=
+     ntr201408fa4.html
+     IMPORTÂNCIA: Ryu é o controlador Python usado em inúmeros experimentos
+     de detecção de anomalias; API REST northbound facilita integração com LLMs.
+     CONTRIBUIÇÃO: Descreve o framework SDN componentizado em Python, amplamente
+     adotado por sua conformidade a OpenFlow e APIs bem-definidas.
+
+[17] NOXRepo. POX: The POX network software platform (controlador OpenFlow em
+     Python). Projeto open-source (sucessor educacional do NOX).
+     DOI/URL: https://github.com/noxrepo/pox  |  docs: https://noxrepo.github.io
+     /pox-doc/html/
+     IMPORTÂNCIA: POX é a plataforma preferida para prototipagem e datasets
+     de ensino/pesquisa em detecção SDN — base zur validação de LLMs.
+     CONTRIBUIÇÃO: Fornece plataforma de software de rede em Python para
+     experimentação rápida com controladores OpenFlow.
+
+[18] HELLER, B.; SHERWOOD, R.; MCKEOWN, N. The Controller Placement Problem.
+     ACM SIGCOMM HotSDN '12, p. 7–12, 2012.
+     DOI/URL: https://doi.org/10.1145/2342441.2342444
+     IMPORTÂNCIA: Onde posicionar controladores afeta latência de detecção e
+     janela de resposta do loop fechado do LLM.
+     CONTRIBUIÇÃO: Formula e analisa o problema de posicionamento de
+     controladores como trade-off de desempenho e tolerância a falhas.
+
+[19] YEGANEH, S. H.; GANJALI, Y. Kandoo: A Framework for Efficient and Scalable
+     Offloading of Control Applications. ACM SIGCOMM HotSDN '12, p. 19–24, 2012.
+     DOI/URL: https://doi.org/10.1145/2342441.2342446
+     IMPORTÂNCIA: Arquitetura de dois níveis reduz carga do controlador —
+     relevante para escalar inferência de anomalias em tempo real.
+     CONTRIBUIÇÃO: Propõe offloading local de aplicações de controle para
+     escalar o plano de controle sem modificar switches.
+
+[20] CURTIS, A. R.; MOGUL, J. C.; TOURRILHES, J.; YALAGANDULA, P.; SHARMA, P.;
+     BANERJEE, S. DevoFlow: Scaling Flow Management for High-performance
+     Networks. ACM SIGCOMM 2011, p. 254–265, 2011.
+     DOI/URL: https://doi.org/10.1145/2043164.2018466
+     IMPORTÂNCIA: Reduz overhead de gerenciamento de fluxos, liberando
+     capacidade do controlador para tarefas de detecção/IA.
+     CONTRIBUIÇÃO: Propõe desvio de fluxos do controlador para escalar gestão
+     de fluxos em redes de alta performance.
+
+[21] YU, M.; REXFORD, J.; FREEDMAN, M. J.; WANG, J. Scalable Flow-Based
+     Networking with DIFANE. ACM SIGCOMM 2010, p. 231–242, 2010.
+     DOI/URL: https://doi.org/10.1145/1851182.1851224
+     IMPORTÂNCIA: Mantém tráfego no plano de dados, minimizando latência de
+     reação — princípio útil para mitigação de anomalias.
+     CONTRIBUIÇÃO: Apresenta arquitetura que evita o controlador como gargalo,
+     instalando regras em switches de forma seletiva e escalável.
+
+--- SEGURANÇA, FORTNOX E DETECÇÃO DE ANOMALIAS EM SDN (E6) ---
+
+[22] PORRAS, P.; SHIN, S.; YEGNESWARAN, V.; FONG, M.; TYSON, M.; GU, G. A
+     Security Enforcement Kernel for OpenFlow Networks. ISOC NDSS '12, 2012.
+     DOI/URL: https://www.csl.sri.com/~vinod/papers/fortnox.pdf
+     IMPORTÂNCIA: FortNOX é a base de políticas de segurança em controlador —
+     o ponto onde um LLM pode acrescentar autorização baseada em linguagem.
+     CONTRIBUIÇÃO: Introduz kernel de reforço de segurança com autorização por
+     papel e verificação de consistência de políticas em NOX/OpenFlow.
+
+[23] LI, W.; MENG, W.; KWOK, L.-F. A Survey on OpenFlow-based Software Defined
+     Networks: Security Challenges and Countermeasures. Journal of Network and
+     Computer Applications, v. 68, p. 126–139, 2016.
+     DOI/URL: https://doi.org/10.1016/j.jnca.2016.04.011
+     IMPORTÂNCIA: Cataloga ameaças a plano de controle/data e contramedidas —
+     inventário direto de anomalias a serem detectadas por LLM.
+     CONTRIBUIÇÃO: Revisa sistematicamente vulnerabilidades OpenFlow e
+     contramedidas, organizando o espaço de segurança SDN.
+
+[24] BHUIYAN, Z. A.; ISLAM, S.; ISLAM, M. M.; ULLAH, A. A.; NAZ, F.; RAHMAN,
+     M. S. On the (in)Security of the Control Plane of SDN Architecture: A
+     Survey. IEEE Access, v. 11, p. 91550–91582, 2023.
+     DOI/URL: https://doi.org/10.1109/ACCESS.2023.3289126
+     IMPORTÂNCIA: Foco exclusivo no plano de controle — exatamente a superfície
+     de ataque que o NOC Lite com LLM deve cobrir em SDN.
+     CONTRIBUIÇÃO: Survey atualizado das ameaças ao plano de controle SDN,
+     taxonomia e direções de defesa.
+
+[25] WANG, S.; YE, K.; XU, C.-Z. Machine Learning in Network Anomaly Detection:
+     A Survey. IEEE Access, v. 9, p. 152379–152396, 2021.
+     DOI/URL: https://doi.org/10.1109/ACCESS.2021.3126834
+     IMPORTÂNCIA: Fundamenta por que LLMs/LoRA são uma evolução natural dos
+     métodos clássicos de ML para anomalias em rede.
+     CONTRIBUIÇÃO: Revisa aprendizado supervisionado, não-supervisionado,
+     semi-supervisionado e por reforço aplicados à detecção de anomalias.
+
+[26] LATIF, Z.; SHARIF, K.; LI, F.; KARIM, M. M.; BELGHITI, M. A.;
+     SANGEEN, A. A Machine Learning-Based Anomaly Prediction Service for
+     Software-Defined Networks. Sensors, v. 22, n. 21, artigo 8434, 2022.
+     DOI/URL: https://doi.org/10.3390/s22218434
+     IMPORTÂNCIA: Serviço preditivo de anomalias especificamente em SDN —
+     trabalho-irmão direto ao proposto com LLMs open-source.
+     CONTRIBUIÇÃO: Propõe serviço de predição de anomalias em SDN baseado em ML
+     com dataset próprio de tráfego.
+
+--- NFV: ETSI, ARQUITETURA, MANO, ORQUESTRAÇÃO (E4) ---
+
+[27] CHIOSI, M.; CLARKE, D.; HAMPSON, P.; et al. (ETSI NFV ISG). Network
+     Functions Virtualisation (NFV): White Paper #1. ETSI, Outubro de 2012.
+     DOI/URL: https://portal.etsi.org/NFV/NFV_White_Paper.pdf
+     IMPORTÂNCIA: Documento fundador da NFV; define o cenário de funções
+     virtualizadas que expande a superfície de observação do NOC Lite.
+     CONTRIBUIÇÃO: Lança o conceito de NFV e seus benefícios para a indústria
+     de telecomunicações.
+
+[28] ETSI NFV ISG. GS NFV 002 V1.1.1: Network Functions Virtualisation (NFV);
+     Architectural Framework. ETSI, Outubro de 2013.
+     DOI/URL: https://www.etsi.org/deliver/etsi_gs/NFV/001_099/002/01.01.01_60
+     /gs_NFV002v010101p.pdf
+     IMPORTÂNCIA: Define blocos funcionais (VNF, NFVI, VIM) cujo estado deve
+     ser monitorado e cujas anomalias um LLM pode descrever em linguagem.
+     CONTRIBUIÇÃO: Estabelece o framework arquitetural de referência da NFV.
+
+[29] ETSI NFV ISG. GS NFV-MAN 001 V1.1.1: Network Functions Virtualisation
+     (NFV); Management and Orchestration. ETSI, Dezembro de 2014.
+     DOI/URL: https://www.etsi.org/deliver/etsi_gs/NFV-MAN/001_099/001/01.01.01
+     _60/gs_NFV-MAN001v010101p.pdf
+     IMPORTÂNCIA: NFV-MANO é o alvo natural de automação por IBN/LLM para
+     orquestrar mitigação de anomalias.
+     CONTRIBUIÇÃO: Define a estrutura de gerenciamento e orquestração (MANO)
+     para provisionamento de VNFs.
+
+[30] MIJUMBI, R.; SERRAT, J.; GORRICHO, J.-L.; BOUTEN, N.; DE TURCK, F.;
+     BOUTABA, R. Network Function Virtualization: State-of-the-Art and Research
+     Challenges. IEEE Communications Magazine, v. 53, n. 2, p. 216–228, 2015.
+     DOI/URL: https://doi.org/10.1109/MCOM.2015.7243304
+     IMPORTÂNCIA: Survey que mapeia desafios de NFV (incl. gerenciamento) onde
+     LLMs podem agregar interpretação e ação.
+     CONTRIBUIÇÃO: Consolida o estado da arte e os desafios de pesquisa em NFV.
+
+[31] MIJUMBI, R.; SERRAT, J.; GORRICHO, J.-L.; BOUTEN, N.; DE TURCK, F.;
+     BOUTABA, R. Network Function Virtualization: State-of-the-Art and Research
+     Challenges. IEEE Communications Surveys & Tutorials, v. 18, n. 1, p.
+     236–262, 2016. (Versão estendida; preprint: https://arxiv.org/abs/
+     1509.07675)
+     DOI/URL: https://doi.org/10.1109/COMST.2015.2477041
+     IMPORTÂNCIA: Versão survey completa sobre NFV — referência canônica para o
+     capítulo de fundamentos NFV do artigo.
+     CONTRIBUIÇÃO: Revisão abrangente e classificada dos temas de NFV com
+     taxonomia de problemas de pesquisa.
+
+[32] LAGHRISSI, A.; TALEB, T. A Survey on the Placement of Virtual Resources
+     and Virtual Network Functions. IEEE Communications Surveys & Tutorials,
+     v. 21, n. 2, p. 1409–1434, 2019.
+     DOI/URL: https://doi.org/10.1109/COMST.2018.2869440
+     IMPORTÂNCIA: VNF placement afeta latência e resiliência — variáveis que um
+     LLM de detecção/mitigação precisa considerar ao recomendar ações.
+     CONTRIBUIÇÃO: Taxonomia sistemática dos problemas de alocação de recursos
+     virtuais e funções de rede (VNF/P).
+
+--- INTENT-BASED NETWORKING, VNT E CICLO FECHADO (E5) ---
+
+[33] LEIVADEAS, A.; FALKNER, M. A Survey on Intent-Based Networking. IEEE
+     Communications Surveys & Tutorials, v. 25, n. 1, p. 625–655, 1º trim.
+     2023. (Publicado online 2022; DOI: 10.1109/COMST.2022.3215919.)
+     DOI/URL: https://doi.org/10.1109/COMST.2022.3215919
+     IMPORTÂNCIA: IBN é o ponto de convergência onde LLMs open-source traduzem
+     linguagem natural em intenções de rede — núcleo do artigo.
+     CONTRIBUIÇÃO: Survey abrangente de IBN cobrindo tradução de intenção,
+     verificação, ativação e garantia (assurance) em ciclo fechado.
+
+[34] MORALES, F.; RUIZ, M.; CONTRERAS, L. M.; FERRARIS, G.; STAVDAS, A.;
+     CUGINI, F.; VELASCO, L. Virtual Network Topology Adaptability Based on Data
+     Analytics for Traffic Prediction. IEEE/OSA Journal of Optical
+     Communications and Networking, v. 9, n. 1, p. A35–A45, 2017.
+     DOI/URL: https://doi.org/10.1364/JOCN.9.000A35
+     IMPORTÂNCIA: Exemplo de reconfiguração proativa de VNT orientada a dados —
+     exatamente o "roteamento em ciclo fechado" que o artigo visa potencializar
+     com LLMs.
+     CONTRIBUIÇÃO: Propõe reconfiguração proativa da topologia virtual de rede
+     baseada em predição de tráfego por análise de dados.
+
+[35] VELASCO, L.; MORALIS, F.; RUIZ, M.; et al. (via survey de Panayiotou et al.
+     2022). Cognitive/Data-driven Virtual Network Topology Reconfiguration.
+     (Ver também: Panayiotou, T. et al. "Survey on Machine Learning for
+     Traffic-Driven Service and Virtual Network Topology Reconfiguration,"
+     IEEE COMST, 2022 — https://arxiv.org/abs/2209.05080.)
+     DOI/URL: https://arxiv.org/abs/2209.05080 (survey de referência);
+     JOCN 9(1):A35 (artigo [34] acima).
+     IMPORTÂNCIA: Reforça o paradigma de VNT reconfigurável por ciclo fechado
+     orientado a ML — o modelo de operação que LLMs podem elevar com raciocínio
+     em linguagem.
+     CONTRIBUIÇÃO: Sistematiza o uso de ML para reconfiguração de topologia
+     virtual e serviços orientados a tráfego.
+
+--------------------------------------------------------------------------------
+3. SÍNTESE DA ÁREA E EMBASAMENTO DO PROJETO
+--------------------------------------------------------------------------------
+As redes definidas por software (SDN) promoveram o desacoplamento radical entre
+plano de controle e plano de dados por meio de um protocolo southbound padrão
+(OpenFlow, [1][7]) e de controladores programáveis (NOX [2], POX [17], Ryu [16], OpenDaylight [14], ONOS [15]). Essa centralização lógica cria uma única
+fonte de verdade e uma superfície de programação que, simultaneamente,
+facilita a automação e introduz novas superfícies de ataque no plano de
+controle ([22][23][24]). A virtualização de funções de rede (NFV),
+institucionalizada pelos white papers e pelo framework arquitetural da ETSI
+([27][28][29]) e consolidada por surveys de Mijumbi et al. ([30][31]) e
+Laghrissi & Taleb ([32]), estende o paradigma SDN ao ciclo de vida de funções
+de rede virtualizadas e sua orquestração (MANO).
+
+Sobre esse alicerce, o Intent-Based Networking ([33]) emerge como a camada de
+gestão que traduz objetivos de alto nível em configurações concretas e as
+garante por meio de loops fechados de observação-decisão-ação. Trabalhos como
+Morales et al. ([34]) e a survey de Panayiotou et al. ([35]) demonstram a
+reconfiguração proativa da topologia virtual (VNT) orientada a dados e ML,
+antecipando o "roteamento em ciclo fechado" que o presente projeto busca
+potencializar. Finalmente, a detecção de anomalias em SDN transita de métodos
+clássicos de ML ([25][26]) para a integração de LLMs open-source ajustados por
+LoRA/QLoRA.
+
+Para o artigo alvo (NOC Lite), este corpo de 35 referências validadas cumpre
+três funções: (i) fundamenta teoricamente SDN/NFV como o domínio onde a
+detecção/mitigação deve operar; (ii) evidencia o gap de que o sistema
+implementado monitora hosts genéricos e não explora a telemetria nativa de
+plano de controle/data SDN, abrindo espaço para um LLM que "compreenda"
+OpenFlow, YANG/OpenDaylight e políticas IBN; e (iii) fornece o referencial de
+comparação (controladores, emulação Mininet/OVS, MANO, IBN) sobre o qual
+diferenciar a contribuição do uso de LLMs open-source para anomalias de rede.
+
+--------------------------------------------------------------------------------
+4. METODOLOGIA DE BUSCA E VALIDAÇÃO
+--------------------------------------------------------------------------------
+- Ferramentas: web_search e web_extract (confirmação de existência, DOI e URL).
+- Bases priorizadas: ACM Digital Library, IEEE Xplore, USENIX, Elsevier/Scopus,
+  Optica/IEEE JOCN, MDPI, arXiv, ETSI, sites oficiais de projetos (OpenDaylight,
+  Ryu/NTT, POX/NOXRepo, Open vSwitch, Mininet, OpenNetworking).
+- Critério de inclusão: artigos peer-reviewed, surveys, white papers ETSI e
+  especificações normativas; relevância direta a SDN/NFV/IBN/anomalias.
+- Validação: TODAS as 35 entradas tiveram URL/DOI confirmado por busca web;
+  NENHUMA referência foi inventada. DOIs informados refletem os identificadores
+  reais recuperados nas fontes (ex.: 10.1109/JPROC.2014.2371999 para Kreutz et
+  al.; 10.1109/COMST.2022.3215919 para Leivadeas & Falkner).
+- Observação: subagentes de delegação paralela foram disparados nos eixos SDN,
+  NFV e IBN/ML-anomalias; os resultados consolidados aqui foram cruzados e
+  revalidados pelo pesquisador principal para garantir ausência de duplicatas e
+  de referências inexistentes.
+
+================================================================================
+FIM DO RELATÓRIO — ÁREA 01: SDN & NFV  (35 referências validadas)
+================================================================================

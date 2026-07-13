@@ -1,0 +1,13 @@
+FIGURA 5 — Ciclo fechado proposto (alinhado ao Artigo; NÃO implementado)
+
+Legenda (caption):
+Arquitetura conceitual de ciclo fechado alinhada ao artigo norteador. A coleta
+(vetores de features + tokenise_metrics) alimenta um classificador LLM open-source
+com adaptador LoRA, cuja saída direciona um módulo de mitigação/reconfiguração SDN
+via controlador (Ryu/Mininet/OVS), fechando o ciclo com feedback de topologia.
+Contínuo = componente presente hoje; tracejado = proposto e ausente no NOC Lite.
+Atualmente o sistema opera em loop aberto (coleta → severidade → alerta): a
+classificação por IA está fora do loop e não há módulo de mitigação.
+
+Label sugerida (LaTeX):
+fig:ciclo-fechado-proposto

@@ -1,0 +1,15 @@
+FIGURA 1 — Arquitetura do NOC Lite (C4 nível contêiner)
+
+Legenda (caption):
+Arquitetura de contêineres do sistema NOC Lite. O Operador NOC interage com o
+Front-end (HTML/JS servido por http.server), que se comunica via REST/JWT com a
+API Backend (FastAPI + Uvicorn). A API orquestra o Motor de Monitoramento
+(asyncio), o Simulador (sintético) e o Notificador (Telegram); o Classificador de
+Anomalias é acionado sob demanda (on-demand) e consulta o modelo Gemini 1.5 Flash
+(fechado) via prompt. O Motor de Monitoramento, o Classificador e o Simulador
+persistem em SQLite; os Hosts monitorados (IP/DNS) são sondados por
+ICMP/TCP/HTTP/DNS/SNMP. Observação: o classificador não participa do loop de
+monitoramento e é disparado apenas por GET /api/anomalies/classify.
+
+Label sugerida (LaTeX):
+fig:arquitetura-sistema
