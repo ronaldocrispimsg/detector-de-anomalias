@@ -13,9 +13,10 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{indentfirst}
-\sloppy
-\emergencystretch=1.5em
+\usepackage{array}
 
+% --- Reduz espaço antes do título sem pacotes extras ---
+\setlength{\voffset}{-0.8cm}
 % --- Citacao ABNT autor-data (NBR 10520) via abntex2cite ---
 \usepackage[alf]{abntex2cite}
 
@@ -38,7 +39,7 @@
 Definidas por Software com Grandes Modelos de Linguagem Open Source:\\
 correlação entre o Projeto de Pesquisa e o Sistema Implementado (NOC Lite)}correlação entre o Projeto de Pesquisa e o Sistema Implementado (NOC Lite)}}
 
-\author{Correlação entre o Projeto de Pesquisa de Rodrigues (2026, Edital n\textsuperscript{o} 26/2026) e o sistema \textit{NOC Lite}\\[2mm]\textit{Artigo técnico-científico — revisão integrativa e análise arquitetural}}
+\author{Correlação entre o Projeto de Pesquisa e o NOC Lite\\[2mm]\textit{Artigo técnico-científico — revisão integrativa}}
 
 \date{Julho de 2026}
 
@@ -527,7 +528,7 @@ alcance implementado.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.85\textwidth]{fig_mapeamento_artigo_sistema}
+  \includegraphics[width=0.82\textwidth]{fig_mapeamento_artigo_sistema}
   \caption{Mapeamento visual entre os objetivos do artigo norteador e o
   sistema NOC Lite. Fonte: elaborada por Chris.}
   \label{fig:mapa}
@@ -542,7 +543,7 @@ por evidência de código, conforme a Tabela~\ref{tab:gaps}.
 
 \footnotesize
 \setlength{\tabcolsep}{0.5pt}
-\begin{longtable}{cp{3.2cm}>{\raggedright\arraybackslash}p{2.8cm}c}
+\begin{longtable}{cp{3.2cm}>{\raggedright\arraybackslash}p{2.6cm}c}
 \caption{Taxonomia de gaps (NOC Lite $\times$ Projeto).}
 \label{tab:gaps}\\
 \toprule
@@ -684,7 +685,7 @@ LoRA/QLoRA; Mininet + controlador + telemetria de fluxo;
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.85\textwidth]{fig_ciclo_fechado_proposto}
+  \includegraphics[width=0.82\textwidth]{fig_ciclo_fechado_proposto}
   \caption{Arquitetura proposta de ciclo fechado: coleta (SDN + hosts)
   $\rightarrow$ tokenização $\rightarrow$ classificação (LLM \textit{open
   source} + LoRA) $\rightarrow$ mitigação (módulo de ação) $\rightarrow$
