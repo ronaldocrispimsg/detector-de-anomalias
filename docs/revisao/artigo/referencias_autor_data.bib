@@ -1,710 +1,949 @@
-# Gerado para ABNT autor-data (usar com plainnat/natbib ou biblatex-abnt)
+% =====================================================================
+% referencias_autor_data.bib  (VERSAO CURADA / LIMPA)
+% Fonte unica: relatorios de literatura area01..area06 + goal.txt do
+% projeto. As entradas ORIGINAIS estavam corrompidas (tags editoriais
+% ESSENCIAL/RECOMENDADO/COMPLEMENTAR embutidas e texto lixo
+% "Estratégia de paralelizacao..." em title/author de ~38 chaves, alem
+% de autoria/ano incorretos). Esta versao reconstrói cada chave a partir
+% dos relatorios validados, preservando as mesmas chaves de citacao.
+% Formato ABNT autor-data via abntex2cite (abntex2-alf.bst).
+% Nenhuma referencia foi inventada: todo dado abaixo consta dos
+% relatorios area01_sdn_nfv.txt ... area06_calibracao.txt ou de goal.txt.
+% =====================================================================
 
-@misc{rA11,
-  author={McKEOWN et al},
+% ---------- EIXO 1: SDN / NFV (area01) ----------
+@article{rA11,
+  author={McKeown, N. and Anderson, T. and Balakrishnan, H. and Parulkar, G. and Peterson, L. and Rexford, J. and Shenker, S. and Turner, J.},
   year={2008},
-  title={A network in a laptop: rapid prototyping for software-defined networks},
+  title={OpenFlow: Enabling Innovation in Campus Networks},
+  journal={ACM SIGCOMM Computer Communication Review},
+  volume={38},
+  number={2},
+  pages={69--74}
+}
+
+@book{rA12,
+  author={Gude, N. and Koponen, T. and Pettit, J. and Pfaff, B. and McKeown, N. and Shenker, S. and Casado, M.},
+  year={2008},
+  title={NOX: Towards an Operating System for Networks},
+  journal={ACM SIGCOMM Computer Communication Review},
+  volume={38},
+  number={3},
+  pages={105--110}
+}
+
+@inproceedings{rA14,
+  author={Lantz, B. and Heller, B. and McKeown, N.},
+  year={2010},
+  title={A Network in a Laptop: Rapid Prototyping for Software-Defined Networks},
+  booktitle={9th ACM SIGCOMM Workshop on Hot Topics in Networks (HotNets-IX)}
+}
+
+@inproceedings{rA15,
+  author={Pfaff, B. and Pettit, J. and Koponen, T. and Amidon, K. and Casado, M. and Shenker, S.},
+  year={2015},
+  title={The Design and Implementation of Open vSwitch},
+  booktitle={USENIX Symposium on Networked Systems Design and Implementation (NSDI '15)},
+  pages={117--130}
 }
 
 @misc{rA110,
-  author={XIA et al},
+  author={Xia, W. and Wen, Y. and Foh, C. H. and Niyato, D. and Xie, H.},
   year={2015},
-  title={Chain-of-Thought Prompting Elicits Reasoning in Large Language Models},
+  title={A Survey on Software-Defined Networking},
+  journal={IEEE Communications Surveys \& Tutorials},
+  volume={17},
+  number={1},
+  pages={27--51}
 }
 
-@misc{rA114,
-  author={MEDVED et al},
+@inproceedings{rA114,
+  author={Medved, J. and Varga, R. and Tkacik, A. and Gray, K.},
   year={2014},
-  title={MEDVED, J.; VARGA, R.; TKACIK, A.; GRAY, K. OpenDaylight: Towards a Model-Driven SDN Controller Architecture. ACM SIGCOMM HotSDN '14, p. 1–6, 2014. DOI/URL: https://doi.org/10.1145/2620728.2620733},
+  title={OpenDaylight: Towards a Model-Driven SDN Controller Architecture},
+  booktitle={ACM SIGCOMM HotSDN '14},
+  pages={1--6}
 }
 
-@misc{rA115,
-  author={BERDE et al},
+@inproceedings{rA115,
+  author={Berde, P. and Gerola, M. and Hart, J. and Higuchi, Y. and Kobayashi, M. and Koide, T. and others},
   year={2014},
-  title={BERDE, P.; GEROLA, M.; HART, J.; HIGUCHI, Y.; KOBAYASHI, M.; KOIDE, T.; et al. ONOS: Towards an Open, Distributed SDN OS. ACM SIGCOMM HotSDN '14, p. 1–6, 2014. DOI/URL: https://doi.org/10.1145/2620728.2620744},
+  title={ONOS: Towards an Open, Distributed SDN OS},
+  booktitle={ACM SIGCOMM HotSDN '14},
+  pages={1--6}
 }
 
 @misc{rA116,
-  author={NTT Laboratories. Ryu SDN Framework - Open-source SDN Platform Software. NTT Technical Review},
+  author={NTT Laboratories},
   year={2014},
-  title={NTT Laboratories. Ryu SDN Framework — Open-source SDN Platform Software. NTT Technical Review, v. 12, n. 8, 2014. DOI/URL: https://www.ntt-review.jp/archive/ntttechnical.php?contents= ntr201408fa4.html},
+  title={Ryu SDN Framework -- Open-source SDN Platform Software},
+  journal={NTT Technical Review},
+  volume={12},
+  number={8}
 }
 
-@misc{rA12,
-  author={GUDE et al},
-  year={2008},
-  title={GUDE, N.; KOPONEN, T.; PETTIT, J.; PFAFF, B.; MCKEOWN, N.; SHENKER, S.; CASADO, M. NOX: Towards an Operating System for Networks. ACM SIGCOMM Computer Communication Review, v. 38, n. 3, p. 105–110, 2008. DOI/URL: https://doi.org/10.1145/1384609.1384625},
-}
-
-@misc{rA122,
-  author={PORRAS et al},
+@inproceedings{rA122,
+  author={Porras, P. and Shin, S. and Yegneswaran, V. and Fong, M. and Tyson, M. and Gu, G.},
   year={2012},
-  title={PORRAS, P.; SHIN, S.; YEGNESWARAN, V.; FONG, M.; TYSON, M.; GU, G. A Security Enforcement Kernel for OpenFlow Networks. ISOC NDSS '12, 2012. DOI/URL: https://www.csl.sri.com/~vinod/papers/fortnox.pdf},
+  title={A Security Enforcement Kernel for OpenFlow Networks},
+  booktitle={Internet Society Network and Distributed System Security Symposium (NDSS '12)}
 }
 
 @misc{rA123,
-  author={LI et al},
+  author={Li, W. and Meng, W. and Kwok, L.-F.},
   year={2016},
-  title={Referencia: LI et al. (2016)},
+  title={A Survey on OpenFlow-based Software Defined Networks: Security Challenges and Countermeasures},
+  journal={Journal of Network and Computer Applications},
+  volume={68},
+  pages={126--139}
 }
 
-@misc{rA124,
-  author={BHUIYAN et al},
+@article{rA124,
+  author={Bhuiyan, Z. A. and Islam, S. and Islam, M. M. and Ullah, A. A. and Naz, F. and Rahman, M. S.},
   year={2023},
-  title={BHUIYAN, Z. A.; ISLAM, S.; ISLAM, M. M.; ULLAH, A. A.; NAZ, F.; RAHMAN, M. S. On the (in)Security of the Control Plane of SDN Architecture: A Survey. IEEE Access, v. 11, p. 91550–91582, 2023. DOI/URL: https://doi.org/10.1109/ACCESS.2023.3289126},
+  title={On the (In)Security of the Control Plane of SDN Architecture: A Survey},
+  journal={IEEE Access},
+  volume={11},
+  pages={91550--91582}
 }
 
-@misc{rA126,
-  author={LATIF et al},
+@article{rA126,
+  author={Latif, Z. and Sharif, K. and Li, F. and Karim, M. M. and Belghiti, M. A. and Sangeen, A.},
   year={2022},
-  title={LATIF, Z.; SHARIF, K.; LI, F.; KARIM, M. M.; BELGHITI, M. A.; SANGEEN, A. A Machine Learning-Based Anomaly Prediction Service for Software-Defined Networks. Sensors, v. 22, n. 21, artigo 8434, 2022. DOI/URL: https://doi.org/10.3390/s22218434},
+  title={A Machine Learning-Based Anomaly Prediction Service for Software-Defined Networks},
+  journal={Sensors},
+  volume={22},
+  number={21},
+  pages={8434}
 }
 
 @misc{rA127,
-  author={CHIOSI et al},
+  author={Chiosi, M. and Clarke, D. and Hampson, P. and others},
   year={2012},
-  title={CHIOSI, M.; CLARKE, D.; HAMPSON, P.; et al},
+  title={Network Functions Virtualisation (NFV): White Paper \#1},
+  institution={ETSI NFV Industry Specification Group}
 }
 
 @misc{rA128,
-  author={ETSI NFV ISG. GS NFV 002 V1.1.1: Network Functions Virtualisation (NFV); Architectural Framework. ETSI et al},
+  author={ETSI NFV ISG},
   year={2013},
-  title={ETSI, arquitetura, MANO, orquestração, VNF placement. E5. Intent-Based Networking (IBN), reconfiguração proativa de topologia virtual (VNT) e roteamento em ciclo fechado (closed-loop},
+  title={GS NFV 002 V1.1.1: Network Functions Virtualisation (NFV); Architectural Framework},
+  institution={ETSI}
 }
 
 @misc{rA129,
-  author={ETSI NFV ISG. GS NFV-MAN 001 V1.1.1: Network Functions Virtualisation (NFV); Management and Orchestration. ETSI et al},
+  author={ETSI NFV ISG},
   year={2014},
-  title={ETSI, arquitetura, MANO, orquestração, VNF placement. E5. Intent-Based Networking (IBN), reconfiguração proativa de topologia virtual (VNT) e roteamento em ciclo fechado (closed-loop},
+  title={GS NFV-MAN 001 V1.1.1: Network Functions Virtualisation (NFV); Management and Orchestration},
+  institution={ETSI}
 }
 
-@misc{rA130,
-  author={MIJUMBI et al},
+@article{rA130,
+  author={Mijumbi, R. and Serrat, J. and Gorricho, J.-L. and Bouten, N. and De Turck, F. and Boutaba, R.},
   year={2015},
-  title={MIJUMBI, R.; SERRAT, J.; GORRICHO, J.-L.; BOUTEN, N.; DE TURCK, F.; BOUTABA, R. Network Function Virtualization: State-of-the-Art and Research Challenges. IEEE Communications Magazine, v. 53, n. 2, p. 216–228, 2015. DOI/URL: https://doi.org/10.1109/MCOM.2015.7243304},
+  title={Network Function Virtualization: State-of-the-Art and Research Challenges},
+  journal={IEEE Communications Magazine},
+  volume={53},
+  number={2},
+  pages={216--228}
 }
 
-@misc{rA131,
-  author={MIJUMBI et al},
+@article{rA131,
+  author={Mijumbi, R. and Serrat, J. and Gorricho, J.-L. and Bouten, N. and De Turck, F. and Boutaba, R.},
   year={2016},
-  title={MIJUMBI, R.; SERRAT, J.; GORRICHO, J.-L.; BOUTEN, N.; DE TURCK, F.; BOUTABA, R. Network Function Virtualization: State-of-the-Art and Research Challenges. IEEE Communications Magazine, v. 53, n. 2, p. 216–228, 2015. DOI/URL: https://doi.org/10.1109/MCOM.2015.7243304},
+  title={Network Function Virtualization: State-of-the-Art and Research Challenges},
+  journal={IEEE Communications Surveys \& Tutorials},
+  volume={18},
+  number={1},
+  pages={236--262}
 }
 
-@misc{rA132,
-  author={LAGHRISSI et al},
+@article{rA132,
+  author={Laghrissi, A. and Taleb, T.},
   year={2019},
-  title={LAGHRISSI, A.; TALEB, T. A Survey on the Placement of Virtual Resources and Virtual Network Functions. IEEE Communications Surveys & Tutorials, v. 21, n. 2, p. 1409–1434, 2019. DOI/URL: https://doi.org/10.1109/COMST.2018.2869440},
+  title={A Survey on the Placement of Virtual Resources and Virtual Network Functions},
+  journal={IEEE Communications Surveys \& Tutorials},
+  volume={21},
+  number={2},
+  pages={1409--1434}
 }
 
-@misc{rA133,
-  author={LEIVADEAS et al},
+@article{rA133,
+  author={Leivadeas, A. and Falkner, M.},
   year={2022},
-  title={LEIVADEAS, A.; FALKNER, M. A Survey on Intent-Based Networking. IEEE Communications Surveys & Tutorials, v. 25, n. 1, p. 625–655, 1º trim. 2023},
+  title={A Survey on Intent-Based Networking},
+  journal={IEEE Communications Surveys \& Tutorials},
+  volume={25},
+  number={1},
+  pages={625--655}
 }
 
-@misc{rA134,
-  author={MORALES et al},
+@article{rA134,
+  author={Morales, F. and Ruiz, M. and Contreras, L. M. and Ferraris, G. and Stavdas, A. and Cugini, F. and Velasco, L.},
   year={2017},
-  title={MORALES, F.; RUIZ, M.; CONTRERAS, L. M.; FERRARIS, G.; STAVDAS, A.; CUGINI, F.; VELASCO, L. Virtual Network Topology Adaptability Based on Data Analytics for Traffic Prediction. IEEE/OSA Journal of Optical Communications and Networking, v. 9, n. 1, p. A35–A45, 2017. DOI/URL: https://doi.org/10.1364/JOCN.9.000A35},
+  title={Virtual Network Topology Adaptability Based on Data Analytics for Traffic Prediction},
+  journal={IEEE/OSA Journal of Optical Communications and Networking},
+  volume={9},
+  number={1},
+  pages={A35--A45}
 }
 
 @misc{rA135,
-  author={VELASCO et al},
+  author={Panayiotou, T. and others},
   year={2022},
-  title={roteamento em ciclo fechado},
+  title={Survey on Machine Learning for Traffic-Driven Service and Virtual Network Topology Reconfiguration},
+  journal={IEEE Communications Surveys \& Tutorials},
+  note={arXiv:2209.05080}
 }
 
-@misc{rA14,
-  author={LANTZ et al},
-  year={2010},
-  title={A network in a laptop: rapid prototyping for software-defined networks},
-}
-
-@misc{rA15,
-  author={PFAFF et al},
-  year={2015},
-  title={PFAFF, B.; MCKEOWN, N.; SHENKER, S.; CASADO, M. NOX: Towards an Operating System for Networks. ACM SIGCOMM Computer Communication Review, v. 38, n. 3, p. 105–110, 2008. DOI/URL: https://doi.org/10.1145/1384609.1384625},
-}
-
-@misc{rA19,
-  author={KREUTZ et al},
-  year={2015},
-  title={KREUTZ, D.; RAMOS, F. M. V.; VERISSIMO, P. E.; ROTHENBERG, C. E.; AZODOLMOLKY, S.; UHLIG, S. Software-Defined Networking: A Comprehensive Survey. Proceedings of the IEEE, v. 103, n. 1, p. 14–76, 2015. DOI/URL: https://doi.org/10.1109/JPROC.2014.2371999 (versão preprint: https://arxiv.org/abs/1406.0440)},
-}
-
-@misc{rA21,
-  author={BRUTLAG},
+% ---------- EIXO 2: Anomalias por ML tradicional (area02) ----------
+@inproceedings{rA21,
+  author={Brutlag, J. D.},
   year={2000},
-  title={[Acesso via assinatura]},
+  title={Aberrant Behavior Detection in Time Series for Network Monitoring},
+  booktitle={14th Systems Administration Conference (LISA 2000), USENIX}
 }
 
-@misc{rA210,
-  author={BHUYAN et al},
-  year={2014},
-  title={BHUYAN, M. H.; BHATTACHARYYA, D. K.; KALITA, J. K. Network Anomaly Detection: Methods, Systems and Tools. IEEE Communications Surveys & Tutorials, v. 16, n. 1, p. 303–336, 2014. DOI: https://doi.org/10.1109/SURV.2013.052213.00046 URL: https://ieeexplore.ieee.org/iel7/9739/6734841/06524462.pdf},
-}
-
-@misc{rA212,
-  author={BUCZAK et al},
-  year={2016},
-  title={BUCZAK, A. L.; GÜVEN, E. A Survey of Data Mining and Machine Learning Methods for Cyber Security Intrusion Detection. IEEE Communications Surveys & Tutorials, v. 18, n. 2, p. 1153–1176, 2016. DOI: https://doi.org/10.1109/COMST.2015.2494502 (>5300 citações) URL: https://ieeexplore.ieee.org/document/7307098/},
-}
-
-@misc{rA213,
-  author={CORTES et al},
-  year={1995},
-  title={CORTES, C.; VAPNIK, V. Support-Vector Networks. Machine Learning, v. 20, n. 3, p. 273–297, 1995. DOI: https://doi.org/10.1007/BF00994018 URL: https://link.springer.com/article/10.1007/BF00994018},
-}
-
-@misc{rA217,
-  author={CARUANA et al},
-  year={2006},
-  title={CARUANA, R.; NICULESCU-MIZIL, A. An Empirical Comparison of Supervised Learning Algorithms. In: Proc. of the 23rd International Conference on Machine Learning (ICML 2006), p. 161–168, 2006. DOI: https://doi.org/10.1145/1143844.1143865 URL: https://www.cs.cornell.edu/~caruana/ctp/ct.papers/caruana.icml06.pdf},
-}
-
-@misc{rA22,
-  author={ROBERTS},
+@article{rA22,
+  author={Roberts, S. W.},
   year={1959},
-  title={ROBERTS, S. W. Control Chart Tests Based on Geometric Moving Averages. Technometrics, v. 1, n. 3, p. 239–250, 1959. DOI/URL: https://www.stat.cmu.edu/technometrics/90-00/vol-42-01/v4201097.pdf},
+  title={Control Chart Tests Based on Geometric Moving Averages},
+  journal={Technometrics},
+  volume={1},
+  number={3},
+  pages={239--250}
 }
 
-@misc{rA222,
-  author={HODO et al},
-  year={2017},
-  title={HODO, E.; BELLEKENS, X.; HAMILTON, A.; DUBOULIL, C.; PHAM, Q. N. Threat Analysis of IoT Networks Using Artificial Neural Network Intrusion Detection System. In: Int. Symp. on Networks, Computers and Communications (ISNCC), IEEE, 2017. DOI: https://doi.org/10.1109/ISNCC.2017.8005728 URL: https://ieeexplore.ieee.org/document/8005728/},
-}
-
-@misc{rA224,
-  author={ALDUAILIJ et al},
-  year={2022},
-  title={[Acesso via assinatura]},
-}
-
-@misc{rA225,
-  author={NEGANDHI et al},
-  year={2016},
-  title={NEGANDHI, P.; TRIVEDI, Y. Intrusion Detection System Using Random Forest on the NSL-KDD Dataset. In: Proc. of Int. Conf. on Computing, Analytics and Security Trends (CAST), 2016. URL: https://www.researchgate.net/publication/335718695_Intrusion_Detection_System_Using_Random_Forest_on_the_NSL-KDD_Dataset},
-}
-
-@misc{rA226,
-  author={WILLEMS et al},
-  year={2023},
-  title={[Acesso via assinatura]},
-}
-
-@misc{rA227,
-  author={SHEHAB et al},
-  year={2024},
-  title={SHEHAB, R. et al. Improving Port Scan Cybersecurity Risks Detection using Feature Selection and Machine Learning. JATIT, v. 102, n. 16, 2024. URL: https://www.jatit.org/volumes/Vol102No16/9Vol102No16.pdf},
-}
-
-@misc{rA229,
-  author={STANIFORD-CHEN et al},
-  year={1996},
-  title={STANIFORD-CHEN, S.; CHEUNG, S.; CRAWFORD, R.; DILGER, M.; FRANK, J.; HOAGLAND, J.; LEVITT, K.; WEINTRAUB, C.; YIP, D.; ZERKLE, D. GrIDS — A Graph-Based Intrusion Detection System for Large Networks. In: Proc. of the 19th National Information Systems Security Conference (NISSC), 1996. URL: https://seclab.cs.ucdavis.edu/papers/nissc96.pdf},
-}
-
-@misc{rA231,
-  author={CANNADY},
-  year={1998},
-  title={CANNADY, J. D. Artificial Neural Networks for Misuse Detection. In: Proc. of the 1998 National Information Systems Security Conference (NISSC), 1998. URL: https://csrc.nist.gov/nissc/1998/proceedings/paperF13.pdf},
-}
-
-@misc{rA232,
-  author={LAKHINA et al},
-  year={2004},
-  title={LAKHINA, A.; CROVELLA, M.; DIOT, C. Diagnosing Network-Wide Traffic Anomalies. In: Proc. of ACM SIGCOMM 2004, p. 219–230, 2004. DOI: https://doi.org/10.1145/1030194.1015492 URL: https://dl.acm.org/doi/10.1145/1030194.1015492},
-}
-
-@misc{rA25,
-  author={MOAYEDI et al},
+@inproceedings{rA25,
+  author={Moayedi, H. Z. and Amini, M.},
   year={2008},
-  title={MOAYEDI, H. Z.; AMINI, M. ARIMA Model for Network Traffic Prediction and Anomaly Detection. In: Proc. of the 4th International Conference on Information Technology (ICIT 2008), IEEE, 2008. DOI: https://doi.org/10.1109/ICIT.2008.22 (via IEEE Xplore) URL: https://ieeexplore.ieee.org/document/4631947/},
+  title={ARIMA Model for Network Traffic Prediction and Anomaly Detection},
+  booktitle={4th International Conference on Information Technology (ICIT 2008), IEEE}
 }
 
-@misc{rA27,
-  author={FONDO-FERREIRO et al},
+@article{rA27,
+  author={Fondo-Ferreiro, P. and others},
   year={2026},
-  title={FONDO-FERREIRO, P. et al. Real-time SARIMA-based anomaly detection in operator networks. Computer Networks (Elsevier), 2026. DOI: [NÃO VERIFICADO — usar URL abaixo; artigo de 2026 ainda em indexação] URL: https://www.sciencedirect.com/science/article/pii/S1389128626000824},
+  title={Real-time SARIMA-based anomaly detection in operator networks},
+  journal={Computer Networks}
 }
 
-@misc{rA28,
-  author={CHANDOLA et al},
+@article{rA28,
+  author={Chandola, V. and Banerjee, A. and Kumar, V.},
   year={2009},
-  title={CHANDOLA, V.; BANERJEE, A.; KUMAR, V. Anomaly Detection: A Survey. ACM Computing Surveys, v. 41, n. 3, p. 1–58, 2009. DOI: https://doi.org/10.1145/1541880.1541882 URL: https://dl.acm.org/doi/10.1145/1541880.1541882},
+  title={Anomaly Detection: A Survey},
+  journal={ACM Computing Surveys},
+  volume={41},
+  number={3},
+  pages={1--58}
 }
 
-@misc{rA29,
-  author={AHMED et al},
+@article{rA29,
+  author={Ahmed, M. and Mahmood, A. N. and Hu, J.},
   year={2016},
-  title={A Survey on Large Language Models for Communication, Network, and Service Management: Application Insights, Challenges, and Future Directions},
+  title={A Survey of Network Anomaly Detection Techniques},
+  journal={Journal of Network and Computer Applications},
+  volume={60},
+  pages={19--31}
 }
 
-@misc{rA31,
-  author={LIU et al},
-  year={2025},
-  title={On IoT intrusion detection based on data augmentation for enhancing learning on unbalanced samples},
+@article{rA210,
+  author={Bhuyan, M. H. and Bhattacharyya, D. K. and Kalita, J. K.},
+  year={2014},
+  title={Network Anomaly Detection: Methods, Systems and Tools},
+  journal={IEEE Communications Surveys \& Tutorials},
+  volume={16},
+  number={1},
+  pages={303--336}
 }
 
-@misc{rA310,
-  author={TOUVRON et al},
-  year={2023},
-  title={TOUVRON, H.; LAVRIL, T.; IZACARD, G.; MARTINET, X.; LACHAUX, M.-A.; LACROIX, T. et al. LLaMA: Open and Efficient Foundation Language Models. 2023. arXiv:2302.13971. DOI: https://doi.org/10.48550/arXiv.2302.13971 URL: https://arxiv.org/abs/2302.13971},
+@article{rA212,
+  author={Buczak, A. L. and Guven, E.},
+  year={2016},
+  title={A Survey of Data Mining and Machine Learning Methods for Cyber Security Intrusion Detection},
+  journal={IEEE Communications Surveys \& Tutorials},
+  volume={18},
+  number={2},
+  pages={1153--1176}
 }
 
-@misc{rA311,
-  author={TOUVRON et al},
-  year={2023},
-  title={TOUVRON, H.; LAVRIL, T.; IZACARD, G.; MARTINET, X.; LACHAUX, M.-A.; LACROIX, T. et al. LLaMA: Open and Efficient Foundation Language Models. 2023. arXiv:2302.13971. DOI: https://doi.org/10.48550/arXiv.2302.13971 URL: https://arxiv.org/abs/2302.13971},
+@article{rA213,
+  author={Cortes, C. and Vapnik, V.},
+  year={1995},
+  title={Support-Vector Networks},
+  journal={Machine Learning},
+  volume={20},
+  number={3},
+  pages={273--297}
 }
 
-@misc{rA312,
-  author={JIANG et al},
-  year={2023},
-  title={JIANG, A. Q.; SABLAYROLLES, A.; MENSCH, A.; BAMFORD, C.; CHAPLOT, D. S. et al. Mistral 7B. 2023. arXiv:2310.06825. DOI: https://doi.org/10.48550/arXiv.2310.06825 URL: https://arxiv.org/abs/2310.06825},
+@inproceedings{rA217,
+  author={Caruana, R. and Niculescu-Mizil, A.},
+  year={2006},
+  title={An Empirical Comparison of Supervised Learning Algorithms},
+  booktitle={23rd International Conference on Machine Learning (ICML 2006)},
+  pages={161--168}
 }
 
-@misc{rA313,
-  author={ALMAZROUEI et al},
-  year={2023},
-  title={The Falcon Series of Open Language Models},
-}
-
-@misc{rA314,
-  author={BAI et al},
-  year={2023},
-  title={Qwen Technical Report},
-}
-
-@misc{rA315,
-  author={YANG et al},
-  year={2024},
-  title={YANG, Z.; TANG, J. P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks. ACL, 2022. arXiv:2110.07602. DOI: https://doi.org/10.48550/arXiv.2110.07602 URL: https://arxiv.org/abs/2110.07602},
-}
-
-@misc{rA316,
-  author={BIGSCIENCE WORKSHOP et al},
-  year={2022},
-  title={BLOOM: A 176B-Parameter Open-Access Multilingual Language Model},
-}
-
-@misc{rA317,
-  author={GEMMA TEAM (Google DeepMind). Gemma: Open Models Based on Gemini Research and Technology. arXiv preprint arXiv:2403.08295},
-  year={2024},
-  title={Gemma: Open Models Based on Gemini Research and Technology},
-}
-
-@misc{rA319,
-  author={VASWANI et al},
+@inproceedings{rA222,
+  author={Hodo, E. and Bellekens, X. and Hamilton, A. and Dubouil, C. and Pham, Q. N.},
   year={2017},
-  title={Attention Is All You Need},
+  title={Threat Analysis of IoT Networks Using Artificial Neural Network Intrusion Detection System},
+  booktitle={International Symposium on Networks, Computers and Communications (ISNCC), IEEE}
 }
 
-@misc{rA32,
-  author={LIU et al},
+@article{rA224,
+  author={Alduailij, M. and Khan, Q. W. and Tahir, M. and Sardarez, M. and Malik, F.},
+  year={2022},
+  title={Machine-Learning-Based DDoS Attack Detection Using Mutual Information and Random Forest Feature Importance Method},
+  journal={Symmetry},
+  volume={14},
+  number={6},
+  pages={1095}
+}
+
+@inproceedings{rA225,
+  author={Negandhi, P. and Trivedi, Y.},
+  year={2016},
+  title={Intrusion Detection System Using Random Forest on the NSL-KDD Dataset},
+  booktitle={International Conference on Computing, Analytics and Security Trends (CAST)}
+}
+
+@article{rA226,
+  author={Willems, D. and Kohls, K. and van der Kamp, B. and Vranken, H.},
+  year={2023},
+  title={Data Exfiltration Detection on Network Metadata with Autoencoders},
+  journal={Electronics},
+  volume={12},
+  number={12},
+  pages={2584}
+}
+
+@article{rA227,
+  author={Shehab, R. and others},
   year={2024},
-  title={On IoT intrusion detection based on data augmentation for enhancing learning on unbalanced samples},
+  title={Improving Port Scan Cybersecurity Risks Detection using Feature Selection and Machine Learning},
+  journal={Journal of Theoretical and Applied Information Technology},
+  volume={102},
+  number={16}
 }
 
-@misc{rA320,
-  author={OUYANG et al},
-  year={2022},
-  title={Training Language Models to Follow Instructions with Human Feedback (InstructGPT)},
+@inproceedings{rA229,
+  author={Staniford-Chen, S. and Cheung, S. and Crawford, R. and Dilger, M. and Frank, J. and Hoagland, J. and Levitt, K. and Weintraub, C. and Yip, D. and Zerkle, D.},
+  year={1996},
+  title={GrIDS -- A Graph-Based Intrusion Detection System for Large Networks},
+  booktitle={19th National Information Systems Security Conference (NISSC)}
 }
 
-@misc{rA321,
-  author={WEI et al},
-  year={2022},
-  title={Chain-of-Thought Prompting Elicits Reasoning in Large Language Models},
+@inproceedings{rA231,
+  author={Cannady, J. D.},
+  year={1998},
+  title={Artificial Neural Networks for Misuse Detection},
+  booktitle={1998 National Information Systems Security Conference (NISSC)}
 }
 
-@misc{rA324,
-  author={HOSSAIN et al},
+@inproceedings{rA232,
+  author={Lakhina, A. and Crovella, M. and Diot, C.},
+  year={2004},
+  title={Diagnosing Network-Wide Traffic Anomalies},
+  booktitle={ACM SIGCOMM 2004},
+  pages={219--230}
+}
+
+% ---------- EIXO 3: LLMs open-source e NetOps (area03) ----------
+@article{rA31,
+  author={Liu, F. and Behrooz, F. and others},
   year={2025},
-  title={NetIntent: Leveraging Large Language Models for End-to-End Intent-Based SDN Automation},
+  title={Large Language Models for Computer Networking Operations and Management: A Survey on Applications, Key Techniques, and Opportunities},
+  journal={Computer Networks},
+  volume={264},
+  pages={111614}
 }
 
-@misc{rA325,
-  author={SDN-Xplain: LLM-Driven Anomaly Detection and Human-Interpretable Explanation in SDN. SKKU IoT Lab / KICS Winter 2026 (preprint)},
-  year={2026},
-  title={Referencia: SDN-Xplain: LLM-Driven Anomaly Detection and Human-Interpretable Explanation in SDN. SKKU IoT Lab / KICS Winter 2026 (preprint). (2026)},
-}
-
-@misc{rA327,
-  author={Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN. arXiv/ResearchGate preprint},
-  year={2025},
-  title={Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN." arXiv:2510.23313 (preprint), 2025. [título/autoria consolidados no preprint] URL: https://arxiv.org/html/2510.23313v1},
+@article{rA32,
+  author={Liu, C. and Xie, X. and Zhang, X. and Cui, Y.},
+  year={2024},
+  title={Large Language Models for Networking: Workflow, Advances and Challenges},
+  journal={IEEE Network},
+  volume={39},
+  number={5},
+  pages={235--242},
+  note={arXiv:2404.12901}
 }
 
 @misc{rA33,
-  author={BOATENG et al},
+  author={Boateng, G. O. and Sami, H. and Alagha, A. and others},
   year={2024},
   title={A Survey on Large Language Models for Communication, Network, and Service Management: Application Insights, Challenges, and Future Directions},
+  note={arXiv:2412.19823}
 }
 
-@misc{rA332,
-  author={ADANZA et al},
+@article{rA34,
+  author={Tang, J. and others},
+  year={2024},
+  title={Utilizing Large Language Models for Advanced Optimization and Intelligent Management in Space-Air-Ground Integrated Networks},
+  journal={IEEE Network},
+  note={doi:10.1109/MNET.2024.10806847}
+}
+
+@article{rA35,
+  author={Huang, Y. and others},
   year={2025},
-  title={Leveraging Generative AI for Intent-Based Networking},
+  title={Large Language Models for Networking: Applications, Enabling Techniques, and Challenges},
+  journal={IEEE Network},
+  volume={39},
+  number={1},
+  pages={235--242}
 }
 
-@misc{rA333,
-  author={Towards Intent-Based Network Management: Large Language Models for Intent Extraction in 5G Core Networks. IEEE / GenAI Net research library},
-  year={2024},
-  title={Towards Explainable Network Intrusion Detection using Large Language Models." arXiv:2408.04342, 2024. URL: https://arxiv.org/abs/2408.04342},
-}
-
-@misc{rA334,
-  author={Exploring LLM-Based Agents for Root Cause Analysis. ACM SIGMETRICS / arXiv:2403.04123},
-  year={2024},
-  title={Exploring LLM-Based Agents for Root Cause Analysis". ACM SIGMETRICS / arXiv:2403.04123, 2024. DOI/URL: https://doi.org/10.1145/3663529.3663841 https://arxiv.org/abs/2403.04123},
-}
-
-@misc{rA335,
-  author={Empowering AIOps: Leveraging Large Language Models for IT Operations Management. arXiv:2501.12461},
-  year={2025},
-  title={Empowering AIOps: Leveraging Large Language Models for IT Operations Management". arXiv:2501.12461, 2025. DOI/URL: https://arxiv.org/abs/2501.12461},
-}
-
-@misc{rA336,
-  author={WANG et al},
-  year={2025},
-  title={On the Calibration of Large Language Models and Alignment},
-}
-
-@misc{rA337,
-  author={LLM-Driven Multi-Agent Framework for Autonomous Network Slice Management. IEEE},
-  year={2026},
-  title={Large Language Models Meet Next-Generation Networking Technologies: A Review},
-}
-
-@misc{rA338,
-  author={CHEN et al},
-  year={2024},
-  title={Explainable Intrusion Detection Systems (X-IDS): A Survey of Current Methods, Challenges, and Opportunities},
-}
-
-@misc{rA34,
-  author={HANG et al},
-  year={2024},
-  title={Large Language Models Meet Next-Generation Networking Technologies: A Review},
-}
-
-@misc{rA35,
-  author={HUANG et al},
-  year={2024},
-  title={Explainable and Interpretable Multimodal Large Language Models: A Comprehensive Survey},
-}
-
-@misc{rA36,
-  author={HONG et al},
+@article{rA36,
+  author={Hong, J. and others},
   year={2025},
   title={A Comprehensive Survey on LLM-Based Network Management and Orchestration},
+  journal={International Journal of Network Management},
+  note={doi:10.1002/nem.70029}
 }
 
-@misc{rA37,
-  author={ZHANG et al},
+@article{rA37,
+  author={Zhang, L. and Jia, T. and Jia, M. and Wu, Y. and others},
   year={2025},
-  title={When LLMs Meet Cybersecurity: A Systematic Literature Review},
+  title={A Survey of AIOps in the Era of Large Language Models},
+  journal={ACM Computing Surveys},
+  volume={58},
+  number={2}
 }
 
 @misc{rA39,
-  author={TANG et al},
-  year={2024},
-  title={TANG, J. P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks. ACL, 2022. arXiv:2110.07602. DOI: https://doi.org/10.48550/arXiv.2110.07602 URL: https://arxiv.org/abs/2110.07602},
-}
-
-@misc{rA41,
-  author={HU et al},
-  year={2021},
-  title={Referencia: HU et al. (2021)},
-}
-
-@misc{rA411,
-  author={HU et al},
-  year={2023},
-  title={Referencia: HU et al. (2023)},
-}
-
-@misc{rA412,
-  author={ZHANG et al},
-  year={2024},
-  title={When LLMs Meet Cybersecurity: A Systematic Literature Review},
-}
-
-@misc{rA414,
-  author={DING et al},
+  author={Liu, X. and Ji, K. and Fu, Y. and Tam, W. L. and Du, Z. and Yang, Z. and Tang, J.},
   year={2022},
-  title={AnoLLM: Large Language Models for Tabular Anomaly Detection},
+  title={P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks},
+  journal={ACL},
+  note={arXiv:2110.07602}
 }
 
-@misc{rA415,
-  author={HAN et al},
+@misc{rA310,
+  author={Touvron, H. and Lavril, T. and Izacard, G. and others},
+  year={2023},
+  title={LLaMA: Open and Efficient Foundation Language Models},
+  note={arXiv:2302.13971}
+}
+
+@misc{rA311,
+  author={Touvron, H. and Martin, L. and Stone, K. and others},
+  year={2023},
+  title={Llama 2: Open Foundation and Fine-Tuned Chat Models},
+  note={arXiv:2307.09288}
+}
+
+@misc{rA312,
+  author={Jiang, A. Q. and Sablayrolles, A. and Mensch, A. and others},
+  year={2023},
+  title={Mistral 7B},
+  note={arXiv:2310.06825}
+}
+
+@misc{rA313,
+  author={Almazrouei, E. and Alobeidli, H. and Alshamsi, A. and others},
+  year={2023},
+  title={The Falcon Series of Open Language Models},
+  note={arXiv:2311.16867}
+}
+
+@misc{rA314,
+  author={Bai, J. and Bai, S. and others},
+  year={2023},
+  title={Qwen Technical Report},
+  note={arXiv:2309.16609}
+}
+
+@misc{rA315,
+  author={Yang, A. and Yang, B. and others},
   year={2024},
-  title={HAN, J.; LIU, C.; GAO, P.; ZHOU, A.; HU, X.; YAN, S.; LU, P.; LI, H.; QIAO, Y. LLaMA-Adapter: Efficient Fine-tuning of Language Models with Zero-init Attention. ICLR, 2024. arXiv:2303.16199. DOI: https://doi.org/10.48550/arXiv.2303.16199 URL: https://arxiv.org/abs/2303.16199},
+  title={Qwen2.5 Technical Report},
+  note={arXiv:2412.15115}
+}
+
+@misc{rA316,
+  author={BigScience Workshop},
+  year={2022},
+  title={BLOOM: A 176B-Parameter Open-Access Multilingual Language Model},
+  note={arXiv:2211.05100}
+}
+
+@misc{rA317,
+  author={Gemma Team},
+  year={2024},
+  title={Gemma: Open Models Based on Gemini Research and Technology},
+  note={arXiv:2403.08295}
+}
+
+@article{rA319,
+  author={Vaswani, A. and Shazeer, N. and Parmar, N. and others},
+  year={2017},
+  title={Attention Is All You Need},
+  journal={Advances in Neural Information Processing Systems (NeurIPS)}
+}
+
+@misc{rA320,
+  author={Ouyang, L. and Wu, J. and Jiang, X. and others},
+  year={2022},
+  title={Training Language Models to Follow Instructions with Human Feedback (InstructGPT)},
+  note={arXiv:2203.02155}
+}
+
+@misc{rA321,
+  author={Wei, J. and Wang, X. and Schuurmans, D. and others},
+  year={2022},
+  title={Chain-of-Thought Prompting Elicits Reasoning in Large Language Models},
+  note={arXiv:2201.11903}
+}
+
+@article{rA324,
+  author={Hossain, M. K. and others},
+  year={2025},
+  title={NetIntent: Leveraging Large Language Models for End-to-End Intent-Based SDN Automation},
+  journal={IEEE Transactions on Network and Service Management},
+  note={arXiv:2507.14398}
+}
+
+@misc{rA325,
+  author={SDN-Xplain},
+  year={2026},
+  title={SDN-Xplain: LLM-Driven Anomaly Detection and Human-Interpretable Explanation in SDN},
+  note={SKKU IoT Lab / KICS Winter 2026 (preprint)}
+}
+
+@misc{rA327,
+  author={Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN},
+  year={2025},
+  title={Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN},
+  note={arXiv:2510.23313 (preprint)}
+}
+
+@article{rA338,
+  author={Chen, Y. and others},
+  year={2024},
+  title={NetGPT: An AI-Native Network Architecture for Provisioning Beyond Personalized Generative Services},
+  journal={IEEE Network},
+  note={arXiv:2307.06148}
+}
+
+@article{rA332,
+  author={Adanza, D. and others},
+  year={2025},
+  title={Leveraging Generative AI for Intent-Based Networking},
+  journal={Computer Communications (Elsevier)}
+}
+
+@misc{rA333,
+  author={Towards Intent-Based Network Management: Large Language Models for Intent Extraction in 5G Core Networks},
+  year={2024},
+  title={Towards Intent-Based Network Management: Large Language Models for Intent Extraction in 5G Core Networks},
+  institution={IEEE / GenAI Net research library}
+}
+
+@misc{rA334,
+  author={Exploring LLM-Based Agents for Root Cause Analysis},
+  year={2024},
+  title={Exploring LLM-Based Agents for Root Cause Analysis},
+  journal={ACM SIGMETRICS / arXiv:2403.04123}
+}
+
+@misc{rA335,
+  author={Empowering AIOps: Leveraging Large Language Models for IT Operations Management},
+  year={2025},
+  title={Empowering AIOps: Leveraging Large Language Models for IT Operations Management},
+  note={arXiv:2501.12461}
+}
+
+@misc{rA336,
+  author={Wang, Z. and others},
+  year={2025},
+  title={Intent-Driven Network Management with Multi-Agent LLMs},
+  booktitle={ACM SIGCOMM 2025}
+}
+
+@misc{rA337,
+  author={LLM-Driven Multi-Agent Framework for Autonomous Network Slice Management},
+  year={2026},
+  title={LLM-Driven Multi-Agent Framework for Autonomous Network Slice Management},
+  institution={IEEE}
+}
+
+% ---------- EIXO 4: PEFT / LoRA / QLoRA (area04) ----------
+@misc{rA41,
+  author={Hu, E. J. and Shen, Y. and Wallis, P. and others},
+  year={2021},
+  title={LoRA: Low-Rank Adaptation of Large Language Models},
+  note={arXiv:2106.09685}
 }
 
 @misc{rA42,
-  author={DETTMERS et al},
+  author={Dettmers, T. and Pagnoni, A. and Holtzman, A. and Zettlemoyer, L.},
   year={2023},
-  title={Dettmers et al., 2023), além de variantes (AdaLoRA, DoRA, adapters, prefix-tuning, prompt-tuning, (IA)3, BitFit); (b) LLMs open-source candidatos a ajuste fino (LLaMA, Llama 2, Llama 3, Mistral); (c) fundamentos de few-shot / zero-shot / chain-of-thought que justificam o uso de LLMs sem ajuste de pesos; (d) adaptação de LLMs ao domínio de tráfego / telemetria de rede (NetGPT},
-}
-
-@misc{rA422,
-  author={BROWN et al},
-  year={2005},
-  title={BROWN, T. B.; MANN, B.; RYDER, N.; SUBBIAH, M.; KAPLAN, J.; DHARIWAL, P. et al. Language Models are Few-Shot Learners. NeurIPS, 2020. arXiv:2005.14165. DOI: https://doi.org/10.48550/arXiv.2005.14165 URL: https://arxiv.org/abs/2005.14165},
-}
-
-@misc{rA424,
-  author={ACHIAM et al},
-  year={2023},
-  title={ACHIAM, J.; ADLER, S.; AGARWAL, S.; AHMAD, L.; AKKAYA, I. et al. GPT-4 Technical Report. 2023. arXiv:2303.08774. DOI: https://doi.org/10.48550/arXiv.2303.08774 URL: https://arxiv.org/abs/2303.08774},
-}
-
-@misc{rA425,
-  author={MENG et al},
-  year={2025},
-  title={MENG, X.; LIN, C.; WANG, Y.; ZHANG, Y. NetGPT: Generative Pretrained Transformer for Network Traffic. 2023 (rev. 2025},
-}
-
-@misc{rA426,
-  author={GINIGE et al},
-  year={2024},
-  title={GINIGE, Y.; DAHANAYAKA, T.; HUANG, Y.; JOURJON, G.; SENEVIRATNE, S. TrafficGPT: An LLM Approach for Open-Set Encrypted Traffic Classification. Proceedings of the 19th Asian Internet Engineering Conference (AINTEC), 2024. DOI: https://doi.org/10.1145/3674213.3674217 URL: https://dl.acm.org/doi/10.1145/3674213.3674217},
-}
-
-@misc{rA427,
-  author={CUI et al},
-  year={2025},
-  title={CUI, T.; LIN, X.; LI, S.; CHEN, M.; YIN, Q.; LI, Q.; XU, K. TrafficLLM: Enhancing Large Language Models for Network Traffic Analysis with Generic Traffic Representation. 2025. arXiv:2504.04222. DOI: https://doi.org/10.48550/arXiv.2504.04222 URL: https://arxiv.org/abs/2504.04222},
+  title={QLoRA: Efficient Finetuning of Quantized LLMs},
+  journal={Advances in Neural Information Processing Systems (NeurIPS)},
+  note={arXiv:2305.14314}
 }
 
 @misc{rA43,
-  author={ZHANG et al},
+  author={Zhang, Q. and Chen, M. and Bukharin, A. and others},
   year={2023},
-  title={When LLMs Meet Cybersecurity: A Systematic Literature Review},
-}
-
-@misc{rA431,
-  author={SUI et al},
-  year={2024},
-  title={SUI, Y.; ZHOU, M.; ZHOU, M.; HAN, S.; ZHANG, D. Table Meets LLM: Can Large Language Models Understand Structured Table Data? A Benchmark and Empirical Study. WSDM, 2024. arXiv:2305.13062. DOI: https://doi.org/10.48550/arXiv.2305.13062 URL: https://arxiv.org/abs/2305.13062},
-}
-
-@misc{rA432,
-  author={HEGSELMANN et al},
-  year={2023},
-  title={HEGSELMANN, S.; BUENDIA, A.; LANG, H.; AGRAWAL, M.; JIANG, X.; SONTAG, D. TabLLM: Few-shot Classification of Tabular Data with Large Language Models. AISTATS, 2023. arXiv:2210.10723. DOI: https://doi.org/10.48550/arXiv.2210.10723 URL: https://arxiv.org/abs/2210.10723},
+  title={AdaLoRA: Adaptive Budget Allocation for Parameter-Efficient Fine-Tuning},
+  journal={ICLR},
+  note={arXiv:2303.10512}
 }
 
 @misc{rA44,
-  author={LIU et al},
+  author={Liu, S.-Y. and Wang, C.-Y. and Yin, H. and others},
   year={2024},
-  title={On IoT intrusion detection based on data augmentation for enhancing learning on unbalanced samples},
+  title={DoRA: Weight-Decomposed Low-Rank Adaptation},
+  journal={ICML (Oral)},
+  note={arXiv:2402.09353}
 }
 
 @misc{rA45,
-  author={HOULSBY et al},
-  year={1902},
-  title={HOULSBY, N.; GIURGIU, A.; JASTRZEBSKI, S.; MORRONE, B.; DE LAROUSSILHE, Q.; GESMUNDO, A.; ATTARIYAN, M.; GELLY, S. Parameter-Efficient Transfer Learning for NLP. ICML, 2019. arXiv:1902.00751. DOI: https://doi.org/10.48550/arXiv.1902.00751 URL: https://arxiv.org/abs/1902.00751},
-}
-
-@misc{rA49,
-  author={LIU et al},
-  year={2022},
-  title={On IoT intrusion detection based on data augmentation for enhancing learning on unbalanced samples},
-}
-
-@misc{rA51,
-  author={ESSENCIAL Danilevsky et al},
-  year={2010},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
-}
-
-@misc{rA511,
-  author={ESSENCIAL Ali et al},
-  year={2023},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
-}
-
-@misc{rA512,
-  author={ESSENCIAL Neupane et al},
-  year={2022},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
-}
-
-@misc{rA517,
-  author={RECOMENDADO Sarker},
-  year={2024},
-  title={Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 —},
-}
-
-@misc{rA52,
-  author={ESSENCIAL Arrieta et al},
+  author={Houlsby, N. and Giurgiu, A. and Jastrzebski, S. and others},
   year={2019},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
+  title={Parameter-Efficient Transfer Learning for NLP},
+  journal={ICML},
+  note={arXiv:1902.00751}
 }
 
-@misc{rA520,
-  author={COMPLEMENTAR Houssel et al},
-  year={2024},
-  title={Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 — 38 VALIDADAS)},
-}
-
-@misc{rA521,
-  author={COMPLEMENTAR Pizarro et al},
-  year={2025},
-  title={Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 — 38 VALIDADAS)},
-}
-
-@misc{rA522,
-  author={COMPLEMENTAR Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN. arXiv:2510.23313 (preprint)},
-  year={2025},
-  title={Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 — 38 VALIDADAS)},
-}
-
-@misc{rA53,
-  author={ESSENCIAL Ribeiro et al},
-  year={2016},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
-}
-
-@misc{rA531,
-  author={ESSENCIAL Kadavath et al},
-  year={2022},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
-}
-
-@misc{rA532,
-  author={RECOMENDADO Guo et al},
-  year={2017},
-  title={Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 —},
-}
-
-@misc{rA533,
-  author={RECOMENDADO Lin et al},
-  year={2022},
-  title={Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 —},
-}
-
-@misc{rA534,
-  author={RECOMENDADO Zhu et al},
+@misc{rA411,
+  author={Hu, Z. and Wang, L. and Lan, Y. and others},
   year={2023},
-  title={Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 —},
+  title={LLM-Adapters: An Adapter Family for Parameter-Efficient Fine-Tuning of Large Language Models},
+  journal={EMNLP},
+  note={arXiv:2304.01933}
 }
 
-@misc{rA537,
-  author={ESSENCIAL Wei et al},
+@misc{rA412,
+  author={Zhang, R. and Han, J. and Liu, C. and Gao, P. and others},
+  year={2024},
+  title={LLaMA-Adapter: Efficient Fine-tuning of Language Models with Zero-init Attention},
+  journal={ICLR},
+  note={arXiv:2303.16199}
+}
+
+@misc{rA414,
+  author={Ding, N. and Qin, Y. and Yang, G. and Wei, F. and others},
   year={2022},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
+  title={Delta Tuning: A Comprehensive Study of Parameter Efficient Methods for Pre-trained Language Models},
+  note={arXiv:2203.06904}
+}
+
+@misc{rA415,
+  author={Han, Z. and Gao, C. and Liu, J. and Zhang, J. and Zhang, S. Q.},
+  year={2024},
+  title={Parameter-Efficient Fine-Tuning for Large Models: A Comprehensive Survey},
+  note={arXiv:2403.14608}
+}
+
+@misc{rA422,
+  author={Brown, T. B. and Mann, B. and Ryder, N. and others},
+  year={2020},
+  title={Language Models are Few-Shot Learners},
+  journal={Advances in Neural Information Processing Systems (NeurIPS)},
+  note={arXiv:2005.14165}
+}
+
+@misc{rA424,
+  author={Achiam, J. and Adler, S. and Agarwal, S. and others},
+  year={2023},
+  title={GPT-4 Technical Report},
+  note={arXiv:2303.08774}
+}
+
+@misc{rA425,
+  author={Meng, X. and Lin, C. and Wang, Y. and Zhang, Y.},
+  year={2025},
+  title={NetGPT: Generative Pretrained Transformer for Network Traffic},
+  note={arXiv:2304.09513}
+}
+
+@inproceedings{rA426,
+  author={Ginige, Y. and Dahanyayaka, T. and Huang, Y. and Jourjon, G. and Seneviratne, S.},
+  year={2024},
+  title={TrafficGPT: An LLM Approach for Open-Set Encrypted Traffic Classification},
+  booktitle={19th Asian Internet Engineering Conference (AINTEC)}
+}
+
+@misc{rA427,
+  author={Cui, T. and Lin, X. and Li, S. and Chen, M. and others},
+  year={2025},
+  title={TrafficLLM: Enhancing Large Language Models for Network Traffic Analysis with Generic Traffic Representation},
+  note={arXiv:2504.04222}
+}
+
+@misc{rA431,
+  author={Sui, Y. and Zhou, M. and Zhou, M. and Han, S. and Zhang, D.},
+  year={2024},
+  title={Table Meets LLM: Can Large Language Models Understand Structured Table Data? A Benchmark and Empirical Study},
+  journal={WSDM},
+  note={arXiv:2305.13062}
+}
+
+@misc{rA432,
+  author={Hegselmann, S. and Buendia, A. and Lang, H. and Agrawal, M. and Jiang, X. and Sontag, D.},
+  year={2023},
+  title={TabLLM: Few-shot Classification of Tabular Data with Large Language Models},
+  journal={AISTATS},
+  note={arXiv:2210.10723}
+}
+
+% ---------- EIXO 5: XAI (area05) ----------
+@article{rA51,
+  author={Danilevsky, M. and Qian, K. and Aharonov, R. and Katsis, Y. and Kawas, B. and Sen, P.},
+  year={2020},
+  title={A Survey of the State of Explainable AI for Natural Language Processing},
+  journal={Proceedings of AACL-IJCNLP},
+  pages={447--459},
+  note={arXiv:2010.00711}
+}
+
+@article{rA52,
+  author={Arrieta, A. B. and Diaz-Rodriguez, N. and Del Ser, J. and Bennetot, A. and Tabik, S. and others},
+  year={2020},
+  title={Explainable Artificial Intelligence (XAI): Concepts, Taxonomies, Opportunities and Challenges toward Responsible AI},
+  journal={Information Fusion},
+  volume={58},
+  pages={82--115}
+}
+
+@inproceedings{rA53,
+  author={Ribeiro, M. T. and Singh, S. and Guestrin, C.},
+  year={2016},
+  title={``Why Should I Trust You?'': Explaining the Predictions of Any Classifier},
+  booktitle={ACM SIGKDD (KDD)}
 }
 
 @misc{rA54,
-  author={ESSENCIAL Lundberg et al},
+  author={Lundberg, S. M. and Lee, S.-I.},
   year={2017},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
+  title={A Unified Approach to Interpreting Model Predictions},
+  journal={Advances in Neural Information Processing Systems (NIPS)}
 }
 
-@misc{rA61,
-  author={ESSENCIAL - Dataset UNSW-NB15 (descrição oficial / paper fundador) Moustafa et al},
-  year={2015},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
-}
-
-@misc{rA610,
-  author={RECOMENDADO - Dataset InSDN et al},
-  year={2020},
-  title={Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 —},
-}
-
-@misc{rA614,
-  author={RECOMENDADO - Data augmentation em IoT (desbalanceamento) Zhang et al},
-  year={2022},
-  title={Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 —},
-}
-
-@misc{rA615,
-  author={RECOMENDADO - Geração sintética e privacy-preserving de traces Aceto et al},
-  year={2024},
-  title={Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 —},
-}
-
-@misc{rA616,
-  author={ESSENCIAL - AnoLLM et al},
-  year={2025},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
-}
-
-@misc{rA617,
-  author={RECOMENDADO - Survey LLMs em dados tabulares Fang et al},
-  year={2024},
-  title={Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 —},
-}
-
-@misc{rA618,
-  author={RECOMENDADO - Detecção zero-shot de anomalias tabulares com LLMs Li et al},
-  year={2024},
-  title={Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 —},
-}
-
-@misc{rA62,
-  author={ESSENCIAL - Avaliação estatística do UNSW-NB15 Moustafa et al},
-  year={2016},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
-}
-
-@misc{rA623,
-  author={RECOMENDADO - Augmentation GAN para classes minoritárias em rede Kang et al},
-  year={2025},
-  title={Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 —},
-}
-
-@misc{rA629,
-  author={COMPLEMENTAR - Testbed híbrido SDN et al},
+@misc{rA511,
+  author={Ali, T. and Kostakos, P.},
   year={2023},
-  title={Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 — 38 VALIDADAS)},
+  title={HuntGPT: Integrating Machine Learning-Based Anomaly Detection and Explainable AI with Large Language Models (LLMs)},
+  note={arXiv:2309.16021}
 }
 
-@misc{rA63,
-  author={ESSENCIAL - Metodologia de geração CIC (base do CSE-CIC-IDS2018) Sharafaldin et al},
-  year={2018},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
+@article{rA512,
+  author={Neupane, S. and Ables, M. and Chen, W. and others},
+  year={2022},
+  title={Explainable Intrusion Detection Systems (X-IDS): A Survey of Current Methods, Challenges, and Opportunities},
+  journal={IEEE Access},
+  volume={10},
+  pages={112392--112415}
 }
 
-@misc{rA630,
-  author={RECOMENDADO - Survey de geração sintética de tráfego de rede Synthetic Network Traffic Data Generation: A Comparative Analysis. arXiv preprint},
+@article{rA517,
+  author={Sarker, I. H.},
   year={2024},
-  title={Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 —},
+  title={Explainable AI for Cybersecurity Automation, Intelligence and Trustworthiness in Digital Twin: Methods, Taxonomy, Challenges and Prospects},
+  journal={ICT Express},
+  volume={10},
+  number={4},
+  pages={935--958}
+}
+
+@misc{rA520,
+  author={Houssel, N. and Singh, S.},
+  year={2024},
+  title={Towards Explainable Network Intrusion Detection using Large Language Models},
+  note={arXiv:2408.04342}
+}
+
+@misc{rA521,
+  author={Pizarro, I. and others},
+  year={2025},
+  title={X-Flow: Explanation-Augmented Prompting for LLM-Based Intrusion Detection},
+  booktitle={IEEE ICPRS}
+}
+
+@misc{rA522,
+  author={Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN},
+  year={2025},
+  title={Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN},
+  note={arXiv:2510.23313 (preprint)}
+}
+
+@misc{rA531,
+  author={Kadavath, S. and Conerly, T. and Askell, A. and others},
+  year={2022},
+  title={Language Models (Mostly) Know What They Know},
+  note={arXiv:2207.05221}
+}
+
+@misc{rA532,
+  author={Guo, C. and Pleiss, G. and Sun, Y. and Weinberger, K. Q.},
+  year={2017},
+  title={On Calibration of Modern Neural Networks},
+  booktitle={International Conference on Machine Learning (ICML)},
+  note={arXiv:1706.04599}
+}
+
+@misc{rA533,
+  author={Lin, S. and Hilton, J. and Evans, O.},
+  year={2022},
+  title={Teaching Models to Express Their Uncertainty in Words},
+  journal={Transactions on Machine Learning Research (TMLR)},
+  note={arXiv:2205.14334}
+}
+
+@misc{rA534,
+  author={Zhu, C. and Xu, B. and Wang, Q. and Zhang, Y. and Mao, Z.},
+  year={2023},
+  title={On the Calibration of Large Language Models and Alignment},
+  journal={Findings of EMNLP},
+  note={arXiv:2311.13240}
+}
+
+@misc{rA537,
+  author={Wei, J. and Wang, X. and Schuurmans, D. and others},
+  year={2022},
+  title={Chain-of-Thought Prompting Elicits Reasoning in Large Language Models},
+  note={arXiv:2201.11903}
+}
+
+% ---------- EIXO 6: Datasets / emulacao / geracao sintetica (area06) ----------
+@inproceedings{rA61,
+  author={Moustafa, N. and Slay, J.},
+  year={2015},
+  title={UNSW-NB15: A Comprehensive Data Set for Network Intrusion Detection Systems},
+  booktitle={Military Communications and Information Systems Conference (MilCIS), IEEE}
+}
+
+@article{rA62,
+  author={Moustafa, N. and Slay, J.},
+  year={2016},
+  title={The Evaluation of Network Anomaly Detection Systems: Statistical Analysis of the UNSW-NB15 Data Set and the Comparison with the KDD99 Data Set},
+  journal={Information Security Journal},
+  volume={25},
+  number={1-3},
+  pages={1--16}
+}
+
+@inproceedings{rA63,
+  author={Sharafaldin, I. and Lashkari, A. H. and Ghorbani, A. A.},
+  year={2018},
+  title={Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization},
+  booktitle={4th International Conference on Information Systems Security and Privacy (ICISSP)},
+  pages={108--116}
 }
 
 @misc{rA64,
-  author={ESSENCIAL - Dataset CSE-CIC-IDS2018 (descrição oficial) Canadian Institute for Cybersecurity (CIC) \& Communications Security Establishment (CSE). CSE-CIC-IDS},
+  author={Canadian Institute for Cybersecurity (CIC) and Communications Security Establishment (CSE)},
   year={2018},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
+  title={CSE-CIC-IDS2018 Dataset},
+  institution={University of New Brunswick}
 }
 
-@misc{rA65,
-  author={ESSENCIAL - Survey de datasets de NIDS Ring et al},
+@article{rA65,
+  author={Ring, M. and Wunderlich, S. and Scheuring, D. and Landes, D. and Hotho, A.},
   year={2019},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
+  title={A Survey of Network-Based Intrusion Detection Data Sets},
+  journal={Computers \& Security},
+  volume={86},
+  pages={147--167}
 }
 
-@misc{rA66,
-  author={RECOMENDADO - Análise do KDD Cup 99 / NSL-KDD et al},
+@inproceedings{rA66,
+  author={Tavallaee, M. and Bagheri, E. and Lu, W. and Ghorbani, A. A.},
   year={2009},
-  title={Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (MÍNIMO 30 —},
+  title={A Detailed Analysis of the KDD CUP 99 Data Set},
+  booktitle={IEEE Symposium on Computational Intelligence for Security and Defense Applications (CISDA)}
 }
 
-@misc{rA69,
-  author={ESSENCIAL - Mininet (emulador para SDN) Lantz et al},
+@inproceedings{rA69,
+  author={Lantz, B. and Heller, B. and McKeown, N.},
   year={2010},
-  title={Essencial / Recomendado / Complementar. - Estratégia de paralelização: busca distribuída em 3 eixos temáticos via subagentes (fundamentos de XAI; XAI para NIDS/HuntGPT; LLMs/calibração/ justificativa textual), consolidada e suplementada por buscas diretas do pesquisador principal. -------------------------------------------------------------------------------- 3. REFERÊNCIAS CLASSIFICADAS (},
+  title={A Network in a Laptop: Rapid Prototyping for Software-Defined Networks},
+  booktitle={9th ACM SIGCOMM Workshop on Hot Topics in Networks (HotNets-IX)}
 }
 
+@article{rA610,
+  author={Elsayed, M. S. and Le-Khac, N.-A. and Dev, S. and Jurcut, A. D.},
+  year={2020},
+  title={InSDN: A Novel SDN Intrusion Dataset},
+  journal={IEEE Access},
+  volume={8},
+  pages={165263--165284}
+}
+
+@article{rA614,
+  author={Zhang, Y. and Liu, Q.},
+  year={2022},
+  title={On IoT Intrusion Detection Based on Data Augmentation for Enhancing Learning on Unbalanced Samples},
+  journal={Future Generation Computer Systems},
+  volume={133},
+  pages={145--155}
+}
+
+@article{rA615,
+  author={Aceto, G. and Ciuonzo, D. and Montieri, A. and Persico, V. and Pescapa, A.},
+  year={2024},
+  title={Synthetic and Privacy-Preserving Traffic Trace Generation Using Generative AI Models for Training Network Intrusion Detection Systems},
+  journal={Journal of Network and Computer Applications}
+}
+
+@misc{rA616,
+  author={Tsai, C.-P. and Teng, G. and Wallis, P. and Ding, W.},
+  year={2025},
+  title={AnoLLM: Large Language Models for Tabular Anomaly Detection},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  note={https://openreview.net/forum?id=7VkHffT5X2}
+}
+
+@misc{rA617,
+  author={Fang, X. and Xu, W. and Tan, Z. and Liu, J. and Huang, Q. and others},
+  year={2024},
+  title={Large Language Models on Tabular Data: A Survey},
+  note={arXiv:2402.17944}
+}
+
+@misc{rA618,
+  author={Li, A. and Wang, S. and Wang, G. and Zhong, S.},
+  year={2024},
+  title={Anomaly Detection of Tabular Data Using LLMs},
+  note={arXiv:2406.16308}
+}
+
+@article{rA623,
+  author={Kang, F. and others},
+  year={2025},
+  title={A Class Imbalance Data Augmentation Method for Network Intrusion Detection Based on M2M-VAEGAN},
+  journal={Electronics},
+  volume={14},
+  number={11},
+  pages={2103}
+}
+
+@article{rA629,
+  author={Mohammadi, S. and Buzura, S. and others},
+  year={2023},
+  title={A Hybrid Software and Hardware SDN Simulation Testbed},
+  journal={Sensors},
+  volume={23},
+  number={1},
+  pages={490}
+}
+
+@misc{rA630,
+  author={Synthetic Network Traffic Data Generation: A Comparative Analysis},
+  year={2024},
+  title={Synthetic Network Traffic Data Generation: A Comparative Analysis},
+  note={arXiv:2410.16326 (preprint)}
+}
+
+% ---------- Projeto norteador ----------
 @misc{rRODRIGUES,
   author={Rodrigues, Joao Pedro Santos},
   year={2026},
-  title={Projeto de pesquisa: deteccao e mitigacao inteligente de anomalias em redes definidas por software com LLMs open-source},
+  title={Deteccao e Mitigacao Inteligente de Anomalias em Redes Definidas por Software com Grandes Modelos de Linguagem Open Source},
+  note={Projeto de pesquisa (Edital n\textsuperscript{o} 26/2026)}
 }
-

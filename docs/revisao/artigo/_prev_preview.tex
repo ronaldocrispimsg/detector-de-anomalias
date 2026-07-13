@@ -1,0 +1,566 @@
+% =====================================================================
+% ARTIGO FINAL — Detecção e Mitigação Inteligente de Anomalias em SDN
+% com LLMs Open Source: correlação Projeto de Pesquisa (goal.pdf) x Sistema
+% Implementado (NOC Lite).
+% Autor: George (escrita acadêmica ABNT). Codificação: UTF-8 / pdflatex.
+% Compilação: pdflatex artigo.tex 2x (TinyTeX; abntex2cite para citação
+% autor-data ABNT NBR 10520). Necessita do pacote setspace (instalado via tlmgr).
+% =====================================================================
+\documentclass[12pt,a4paper]{article}
+
+% --- Codificação e idioma (PT-BR). TinyTeX minimal: acentos explícitos via
+% \~a, \c{c}, \'a; nao se usa opcao de linguagem do babel para garantir
+% compilacao em qualquer instalacao. ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{indentfirst}      % indentar primeiro parágrafo (norma ABNT)
+
+% --- Citacao ABNT autor-data (NBR 10520) via abntex2cite ---
+
+% --- Utilitários ---
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{caption}
+
+% --- Hiperlinks em preto (evita caixas coloridas na impressão) ---
+\hypersetup{colorlinks=true, linkcolor=black, citecolor=black,
+            urlcolor=black, pdfborder={0 0 0}}
+
+\graphicspath{{../figures/}{figuras/}}
+
+% ---------------------------------------------------------------------
+% Comandos de citação (autor, ano) — gerados a partir das 6 áreas.
+% Cada \rXX aponta para um \bibitem em referencias.tex. Não há
+% referências inventadas: todas provêm dos arquivos areaNN_*.txt.
+% (o \input foi movido para APÓS \begin{document} para evitar
+%  "Missing begin document" no preâmbulo)
+
+% ---------------------------------------------------------------------
+\title{\textbf{Detecção e Mitigação Inteligente de Anomalias em Redes
+Definidas por Software com Grandes Modelos de Linguagem Open Source:
+correlação entre o Projeto de Pesquisa e o Sistema Implementado (NOC Lite)}}
+
+\author{Estudo de correlação elaborado a partir do Projeto de Pesquisa
+de \mbox{Rodrigues} (2026, Edital n\textsuperscript{o} 26/2026) e do
+sistema \textit{NOC Lite} implementado \\[2mm]
+\textit{Artigo técnico-científico — revisão integrativa e análise arquitetural}}
+
+\date{Julho de 2026}
+
+\begin{document}
+\maketitle
+
+% =====================================================================
+\begin{abstract}
+Este artigo correlaciona o projeto de pesquisa que propõe a detecção e a
+mitigação inteligente de anomalias em redes definidas por software (SDN) por
+meio de grandes modelos de linguagem (LLMs) \textit{open source} ajustados por
+PEFT/LoRA, com o sistema efetivamente implementado -- o \textit{NOC Lite}.
+Partindo de uma revisão da literatura estruturada em seis eixos (SDN/NFV,
+anomalias por ML, LLMs para NetOps, PEFT/LoRA, XAI e datasets), descreve-se a
+arquitetura e o pipeline de classificação do sistema construído, composto por
+três classificadores (heurístico, árvore de decisão e IA generativa via Google
+Gemini). Em seguida, apresenta-se o mapeamento artigo$\times$sistema e a
+taxonomia de gaps estruturais -- destacando-se a ausência de SDN, o uso de
+modelo fechado em vez de LLM \textit{open source}, a inexistência de
+ajuste fino LoRA/QLoRA, a falta de mitigação em ciclo fechado e a dependência
+exclusiva de dados sintéticos. Discutem-se as convergências preservadas
+(baselines, tokenização, justificativa textual, métricas de latência) e
+propõem-se diretrizes de arquitetura para o alinhamento futuro, incluindo um
+ciclo fechado com LLM local, LoRA e módulo de mitigação. Conclui-se que o NOC
+Lite realiza parcela da intenção do projeto, mas exige evolução arquitetural
+substantiva nos eixos centrais para aproximar-se da proposta norteadora.
+\end{abstract}
+
+\noindent\textbf{Palavras-chave:} Redes Definidas por Software; Anomalias de Rede;
+Grandes Modelos de Linguagem; PEFT/LoRA; Inteligência Artificial Explicável.
+
+\vspace{6pt}
+\hrule
+\vspace{10pt}
+
+% =====================================================================
+\section{Introdução}
+\label{sec:intro}
+
+Redes de computadores modernas apresentam alta complexidade, heterogeneidade de
+aplicações e demandas rigorosas de desempenho, confiabilidade e segurança
+\cite{rRODRIGUES}. Nesse contexto, a identificação e a classificação de fenômenos
+anômalos -- congestionamento transiente, falhas de enlace, degradação de
+desempenho -- tornam-se atividades fundamentais para a operação eficiente de
+sistemas distribuídos \cite{rA39}. Tradicionalmente, a análise de anomalias depende
+de intervenção manual e conhecimento especializado, o que a torna propensa a
+erros e com baixa agilidade de adaptação em tempo real \cite{rA39}. Modelos baseados
+em assinaturas ou regras pré-definidas são frequentemente reativos e possuem
+capacidade limitada para detectar ameaças desconhecidas \cite{rA512}.
+
+Nos últimos anos, grandes modelos de linguagem demonstraram capacidades de
+interpretação, raciocínio contextual e generalização a partir de descrições
+textuais e dados estruturados \cite{rA31}. Diferentemente de classificadores
+tradicionais, tais modelos conseguem combinar múltiplas informações, lidar com
+incertezas e produzir não apenas uma decisão, mas também uma justificativa
+textual \cite{rA321}. O paradigma SDN, ao separar o plano de controle do plano de
+dados, fornece a agilidade necessária para que agentes de IA percebam o estado
+da rede e executem ações de otimização ou segurança de forma autônoma \cite{rA19}.
+
+O projeto de pesquisa norteador \cite{rRODRIGUES} propõe desenvolver um sistema
+autônomo baseado em LLMs \textit{open source} (ex.: Llama, Falcon) e em
+ajuste fino eficiente de parâmetros (PEFT), notadamente LoRA/QLoRA, para
+detectar anomalias de performance em SDN e mitigá-las via reconfiguração
+proativa de topologia virtual (VNT) e roteamento, em ciclo fechado. Contudo, o
+sistema implementado -- o \textit{NOC Lite} -- monitora \textit{hosts}
+genéricos (endereços IP/DNS) por sondas ICMP/TCP/HTTP/DNS/SNMP, emprega o
+modelo fechado Google Gemini como classificador generativo e não realiza
+mitigação nem reconfiguração de rede.
+
+\textbf{Problema e gap.} Há uma distância estrutural entre a proposta do
+projeto e o sistema construído. Essa distância motiva a presente análise, que
+tem por objetivos: (i) expor o referencial teórico das seis áreas de
+conhecimento envolvidas; (ii) descrever o sistema implementado e seu pipeline
+de classificação; (iii) apresentar o mapeamento projeto$\times$sistema e a
+taxonomia de gaps; (iv) discutir convergências, limitações e ameaças à
+validade; e (v) propor diretrizes de arquitetura para o alinhamento futuro.
+A contribuição deste artigo é, portanto, a primeira caracterização
+sistemática e fundamentada em evidência de código da lacuna entre uma proposta
+de pesquisa de LLMs \textit{open source} para SDN e sua implementação
+concreta.
+
+% =====================================================================
+\section{Referencial Teórico e Revisão da Literatura}
+\label{sec:referencial}
+
+A fundamentação deste trabalho articula seis eixos de conhecimento, sintetizados
+a partir de revisão de literatura estruturada, com 122 referências efetivamente
+citadas e validadas neste artigo.
+
+\subsection{Método e Corpus de Análise}
+\label{sec:metodo}
+
+A seleção do corpus seguiu um procedimento de revisão integrativa
+\cite{rA28}\cite{rA212}. Partiu-se de seis áreas de conhecimento
+(Eixos~1--6), mapeadas a partir do Projeto de Pesquisa norteador
+\cite{rRODRIGUES} e de relatórios de análise de código do sistema NOC
+Lite: (1)~SDN/NFV; (2)~detecção e classificação de anomalias por ML
+tradicional; (3)~LLMs \textit{open source} e modelos de linguagem para
+NetOps; (4)~fine-tuning eficiente de LLMs (PEFT/LoRA/QLoRA); (5)~IA
+explicável (XAI); e (6)~geração de cenários anômalos e \textit{datasets}
+públicos. Como critérios de inclusão, admitiram-se obras primárias
+(artigos, \textit{preprints} e relatórios técnicos) diretamente
+relacionadas a um dos seis eixos e com relevância para a análise
+arquitetural realizada; excluíram-se trabalhos fora do escopo de
+detectação/mitigação de anomalias em redes e fontes sem validação
+verificável. O corpus final compreende 122 fontes efetivamente citadas,
+distribuídas pelos seis eixos, consolidadas em uma única lista de
+referências ordenada alfabeticamente conforme a ABNT NBR 6023.
+
+\subsection{Redes Definidas por Software e Virtualização de Funções de Rede}
+\label{sec:sdn}
+
+O paradigma SDN desacopla o plano de controle do plano de dados por meio de um
+protocolo \textit{southbound} padronizado (OpenFlow) \cite{rA11} e de controladores
+programáveis (NOX \cite{rA12}, POX, Ryu \cite{rA116}, OpenDaylight \cite{rA114}, ONOS \cite{rA115}).
+Essa centralização lógica cria uma única fonte de verdade e uma superfície de
+programação que, simultaneamente, facilita a automação e introduz novas
+superfícies de ataque no plano de controle \cite{rA122}\cite{rA123}\cite{rA124}. A emulação
+(Mininet \cite{rA14}, Open vSwitch \cite{rA15}) viabiliza a geração controlada de cenários
+anômalos \cite{rA19}. Surveys definitivos consolidam a taxonomia e os desafios de
+segurança da SDN \cite{rA19}\cite{rA110}.
+
+Complementarmente, a Virtualização de Funções de Rede (NFV), institucionalizada
+pelos \textit{white papers} e pelo \textit{framework} arquitetural da ETSI
+\cite{rA127}\cite{rA128}\cite{rA129}, e revisada por Mijumbi et al. \cite{rA130}\cite{rA131} e Laghrissi \&
+Taleb \cite{rA132}, estende o paradigma ao ciclo de vida de funções virtualizadas e
+sua orquestração (MANO). Sobre esse alicerce, o \textit{Intent-Based
+Networking} (IBN) emerge como a camada de gestão que traduz objetivos de alto
+nível em configurações concretas e as garante por meio de laços fechados
+\cite{rA133}. Trabalhos como Morales et al. \cite{rA134} e a survey de Panayiotou et al.
+\cite{rA135} antecipam a reconfiguração proativa da topologia virtual orientada a
+dados e ML. A detecção de anomalias em SDN transita, assim, de métodos
+clássicos de ML \cite{rA126} para a integração de LLMs \textit{open source}
+ajustados por LoRA/QLoRA.
+
+\subsection{Detecção e Classificação de Anomalias por Métodos Tradicionais}
+\label{sec:ml}
+
+A literatura consolida que métodos estatísticos (cartas EWMA \cite{rA22}, Holt-Winters
+\cite{rA21}, ARIMA/SARIMA \cite{rA25}\cite{rA27}) e classificadores de ML clássico (SVM
+\cite{rA213}, \textit{Random Forest} \cite{rA210}, árvores de decisão \cite{rA217}, redes
+rasas \cite{rA231}) formam o arcabouço de \textit{baselines} sobre o qual a detecção
+moderna é avaliada. Surveys consagrados \cite{rA28}\cite{rA29}\cite{rA210}\cite{rA212} reforçam que
+heurísticas de limiar e modelos estatísticos são insubstituíveis como
+referência de comparação por serem interpretáveis e leves. Para os tipos de
+anomalia do sistema, há corpus dedicado: DDoS é coberto por baselines de
+árvore/RF \cite{rA222}\cite{rA224}\cite{rA225}; varredura de portas possui precedentes
+heurísticos e de ML \cite{rA227}\cite{rA229}; exfiltração é abordada sobre metadados
+de fluxo \cite{rA226}; e congestionamento/falha de enlace encontra raiz em detecção
+estatística de séries temporais \cite{rA21}\cite{rA232}\cite{rA21}.
+
+\subsection{LLMs Open Source e Modelos de Linguagem para NetOps}
+\label{sec:llm}
+
+Surveys dedicados mapeiam a aplicação de LLMs à operação e gestão de redes
+(NO\&M/NetOps) \cite{rA31}\cite{rA32}\cite{rA33}\cite{rA34}\cite{rA35}\cite{rA36}\cite{rA37}. O ecossistema de modelos
+\textit{open source} -- LLaMA/Llama 2 \cite{rA310}\cite{rA311}, Mistral 7B \cite{rA312}, Falcon
+\cite{rA313}, Qwen/Qwen2.5 \cite{rA314}\cite{rA315}, BLOOM \cite{rA316} e, sobretudo, Gemma
+\cite{rA317} (derivado da tecnologia Gemini) -- oferece pesos e licenças que tornam
+viável a substituição de modelos fechados por alternativas locais e ajustáveis
+\cite{rA41}. A arquitetura Transformer \cite{rA319}, o alinhamento por RLHF \cite{rA320} e o
+\textit{Chain-of-Thought} (CoT) \cite{rA321} fundamentam, respectivamente, a
+capacidade de raciocínio, de seguir instruções e de produzir justificativa
+textual. Aplicações concretas incluem detecção de anomalias em SDN
+\cite{rA325}\cite{rA327}, IBN orientado a LLM \cite{rA324}\cite{rA332}\cite{rA333} e agentes de rede
+autônomos \cite{rA338}\cite{rA334}\cite{rA335}\cite{rA336}\cite{rA337}.
+
+\subsection{Fine-Tuning Eficiente de LLMs (PEFT): LoRA, QLoRA}
+\label{sec:peft}
+
+O ajuste fino eficiente (PEFT) -- liderado por LoRA \cite{rA41} e estendido por QLoRA
+\cite{rA42}, AdaLoRA \cite{rA43} e DoRA \cite{rA44} -- é a via consagrada para adaptar LLMs
+\textit{open source} a domínios específicos com orçamento de hardware modesto,
+reduzindo ordens de magnitude de parâmetros treináveis sem overhead de
+inferência \cite{rA45}\cite{rA49}\cite{rA415}. Frameworks como LLM-Adapters \cite{rA411} e
+LLaMA-Adapter \cite{rA412} demonstram que LLMs 7B ajustados por PEFT igualam ou
+superam modelos 175B em \textit{zero-shot}. No domínio de tráfego de rede,
+NetGPT \cite{rA425}, TrafficGPT \cite{rA426} e TrafficLLM \cite{rA427} mostram que LLMs podem ser
+ajustados (com tokenização de domínio) para entender e classificar tráfego. A
+base \textit{few-shot/zero-shot} (Brown \cite{rA422}, Wei \cite{rA321}, Achiam \cite{rA424})
+legitima o uso de LLMs sem ajuste de pesos, mas a literatura documenta que
+PEFT tipicamente supera o \textit{in-context learning} em custo e acurácia
+\cite{rA49}.
+
+\subsection{Inteligência Artificial Explicável (XAI)}
+\label{sec:xai}
+
+A XAI é requisito fundamental para a adoção confiável de detectores em domínios
+de alta responsabilidade \cite{rA52}\cite{rA531}\cite{rA517}. Em NLP, o survey de Danilevsky et
+al. \cite{rA51} sistematiza como modelos de linguagem produzem explicações; Ribeiro
+et al. \cite{rA53} (LIME) e Lundberg \& Lee \cite{rA54} (SHAP) oferecem atribuição local.
+O protótipo HuntGPT \cite{rA511} integra um detector de anomalias por ML a um LLM
+que entrega justificativas textuais -- referência explícita do projeto. Estudos
+recentes exploram LLMs para detecção de intrusão explicável \cite{rA520}\cite{rA521} e
+explicabilidade em SDN \cite{rA522}. A calibração e a confiança das justificativas
+são temas ativos \cite{rA531}\cite{rA532}\cite{rA533}\cite{rA534}.
+
+\subsection{Geração de Cenários Anômalos e Datasets Públicos}
+\label{sec:datasets}
+
+A literatura estabelece UNSW-NB15 \cite{rA61}\cite{rA62} e CSE-CIC-IDS2018 \cite{rA63}\cite{rA64} como
+benchmarks modernos, superando os obsoletos KDD99/NSL-KDD \cite{rA65}\cite{rA66}. A
+geração dessas bases segue perfis comportamentais e emulação (Mininet,
+GNS3, PNETLab) \cite{rA69}\cite{rA629}. Datasets SDN específicos (InSDN
+\cite{rA610}, SNT, DDoS2019) e técnicas de \textit{data augmentation} (GAN/VAE/SMOTE)
+endereçam o desbalanceamento de classes \cite{rA614}\cite{rA615}\cite{rA623}. A conversão de
+atributos numéricos em representações textuais -- formalizada por AnoLLM
+\cite{rA616} e revisada em surveys de LLMs em dados tabulares \cite{rA617}\cite{rA618} -- abre
+caminho para detectores baseados em LLMs, eixo conectado diretamente à
+inferência do sistema analisado \cite{rA630}.
+
+% =====================================================================
+\section{O Sistema Implementado: NOC Lite}
+\label{sec:sistema}
+
+O \textit{NOC Lite} é um sistema de monitoramento de disponibilidade e
+performance de \textit{hosts} genéricos, estruturado como um monolito modular em
+FastAPI com persistência em SQLite e um \textit{front-end} estático. A
+arquitetura de contêineres (Figura~\ref{fig:arq}) cobre: \textit{front-end}
+(HTML/JS); API backend (FastAPI/Uvicorn); motor de monitoramento
+(\texttt{asyncio}); classificador de anomalias; simulador; notificador
+(Telegram); e banco de dados SQLite. Atenção especial: o classificador de
+anomalias \textbf{não participa do laço de monitoramento} -- é acionado sob
+demanda via \texttt{GET /api/anomalies/classify}, jamais pelo
+\textit{MonitorEngine}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig_arquitetura_sistema}
+  \caption{Arquitetura de contêineres do NOC Lite (C4, nível contêiner).
+  Fonte: elaborada a partir de \texttt{arquitetura\_sistema.md} (Dan).}
+  \label{fig:arq}
+\end{figure}
+
+\subsection{Pipeline de Classificação}
+\label{sec:pipeline}
+
+O subsistema de classificação expõe três estratégias sobre um conjunto fechado
+de seis classes -- \texttt{NORMAL}, \texttt{DDOS\_ATTACK}, \texttt{PORT\_SCAN},
+\texttt{HOST\_DOWN}, \texttt{DATA\_EXFILTRATION} e \texttt{NETWORK\_CONGESTION}
+-- conforme o fluxo da Figura~\ref{fig:pipe}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.78\textwidth]{fig_pipeline_classificacao}
+  \caption{Pipeline de classificação de anomalias do NOC Lite: extração de
+  features (janela de 5~min), três classificadores paralelos e tokenização
+  para o LLM. Fonte: \texttt{notas\_coder.md} (John).}
+  \label{fig:pipe}
+\end{figure}
+
+\begin{enumerate}
+  \item \textbf{Heurístico (baseline 1)} -- \texttt{classify\_heuristic}:
+  regras de limiar estático. Ex.: \texttt{network\_in\_bps > 50\,Mb/s} e
+  \texttt{cpu\_usage > 75} $\rightarrow$ \texttt{DDOS\_ATTACK};
+  \texttt{ping\_latency > 120\,ms} $\rightarrow$ \texttt{NETWORK\_CONGESTION}.
+  Produz confiança fixa e explicação textual.
+  \item \textbf{Machine Learning (baseline 2)} -- \texttt{classify\_ml}:
+  \texttt{DecisionTreeClassifier(max\_depth=5)} do scikit-learn, treinado
+  \textbf{exclusivamente com dados sintéticos} (1.200 amostras, 200 por
+  classe). Sem PEFT, sem LLM.
+  \item \textbf{IA Generativa (Gemini)} -- \texttt{classify\_generative\_ai}:
+  monta \textit{prompt} estruturado com \textit{snapshot} tokenizado e envia ao
+  modelo fechado \texttt{gemini-1.5-flash}, retornando JSON com
+  \texttt{classification}, \texttt{confidence} e \texttt{explanation}. Possui
+  \textit{fallback} para a heurística.
+\end{enumerate}
+
+A função \texttt{tokenise\_metrics} converte o vetor numérico de 10 \textit{
+features} em texto estruturado (ex.: \texttt{PingSuccessRate: 0.95 |
+AvgPingLatency: 12.3 ms | CPUUsage: 34.1\%}), espelhando a recomendação do
+projeto de converter atributos numéricos em representações textuais
+\cite{rA616}\cite{rA431}\cite{rA432}. Esse texto é a ponte que permite ao LLM ``ler'' os limiares
+de rede em linguagem natural.
+
+\subsection{Simulador}
+\label{sec:sim}
+
+O \texttt{anomaly\_simulator.py} gera cenários anômalos sintéticos
+(\texttt{generate\_simulated\_metrics}) para as seis classes via
+\texttt{random.uniform}, e injeta esses vetores diretamente no banco
+(\texttt{run\_simulated\_check\_cycle}), podendo popular histórico retroativo.
+O agendamento em tempo real usa estado em memória. Trata-se de dados 100\%
+sintéticos, sem dependência de datasets públicos.
+
+% =====================================================================
+\section{Mapeamento Projeto $\times$ Sistema e Gaps}
+\label{sec:mapeamento}
+
+A Tabela~\ref{tab:mapa} sintetiza a correspondência entre os objetivos/componentes
+do projeto norteador \cite{rRODRIGUES} e o que o NOC Lite efetivamente entrega, com
+o respectivo status de alinhamento. A Figura~\ref{fig:mapa} ilustra essa
+relação.
+
+\begin{longtable}{cp{5.4cm}p{5.0cm}c}
+\caption{Mapeamento Projeto de Pesquisa $\times$ NOC Lite.}
+\label{tab:mapa}\\
+\toprule
+\textbf{\#} & \textbf{Objetivo/Componente do Projeto} & \textbf{Entrega do NOC Lite} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{\#} & \textbf{Objetivo/Componente do Projeto} & \textbf{Entrega do NOC Lite} & \textbf{Status} \\
+\midrule
+\endhead
+1 & LLM \textit{open source} (Llama/Falcon) com fine-tuning & Gemini 1.5 Flash (fechado); Árvore de Decisão & Divergente \\
+2 & Fine-tuning PEFT (LoRA/QLoRA) & Inexistente; ML é árvore treinada do zero & Ausente \\
+3 & Ambiente SDN virtualizado (Mininet/OVS) & Hosts IP genéricos; sondas ICMP/TCP/HTTP/DNS/SNMP & Ausente \\
+4 & Mitigação via reconfiguração VNT/roteamento (ciclo fechado) & Apenas detecção + alerta Telegram; sem ação corretiva & Ausente \\
+5 & Anomalias de performance (congestionamento, falha de enlace) & Mistura anomalias de segurança/operacionais com congest. genérico & Parcial \\
+6 & Datasets públicos (UNSW-NB15, CIC-IDS2018, Synthetic SDN) & Dados 100\% sintéticos (random.uniform) & Divergente \\
+7 & Baselines de comparação (heurística / ML) & Heurística + DecisionTree & Convergente \\
+8 & Tokenização de métricas em texto estruturado & \texttt{tokenise\_metrics} & Convergente \\
+9 & Justificativa textual (XAI) & \texttt{explanation} (com modelo fechado) & Convergente \\
+10 & Avaliação de tempo de resposta por classificador & \texttt{latency\_ms} medido por classificador & Convergente \\
+11 & Métricas resumidas (throughput, latência, jitter, perda) & SLA/jitter/tendência/health-score + SNMP & Convergente \\
+12 & Ciclo fechado coleta$\rightarrow$classificação$\rightarrow$mitigação & Loop aberto: coleta$\rightarrow$severidade$\rightarrow$alerta & Aberto \\
+\bottomrule
+\end{longtable}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig_mapeamento_artigo_sistema}
+  \caption{Mapeamento visual entre os objetivos do artigo norteador e o
+  sistema NOC Lite. Fonte: elaborada por Chris.}
+  \label{fig:mapa}
+\end{figure}
+
+\subsection{Taxonomia de Gaps}
+\label{sec:gaps}
+
+A análise arquitetural identifica sete gaps, seis de severidade crítica/maior
+(Figura~\ref{fig:gaps}). Cada gap é sustentado por evidência de código.
+
+\begin{longtable}{cp{4.0cm}p{8.0cm}c}
+\caption{Taxonomia de gaps (NOC Lite $\times$ Projeto).}
+\label{tab:gaps}\\
+\toprule
+\textbf{ID} & \textbf{Gap} & \textbf{Evidência no código / Descrição} & \textbf{Severidade} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Gap} & \textbf{Evidência no código / Descrição} & \textbf{Severidade} \\
+\midrule
+\endhead
+GAP-1 & SDN vs. hosts genéricos & Busca por \texttt{sdn|mininet|vnt|controller} $\rightarrow$ 0 ocorrências; \texttt{Host.address}arbítrio & Crítico \\
+GAP-2 & Gemini fechado vs. LLM \textit{open source} & \texttt{genai.GenerativeModel("gemini-1.5-flash")}; depende de \texttt{GEMINI\_API\_KEY} & Crítico \\
+GAP-3 & Ausência de LoRA/QLoRA & Busca por \texttt{lora|qlora|peft|fine.?tun} $\rightarrow$ 0; único modelo treinável é DecisionTree & Crítico \\
+GAP-4 & Ausência de mitigação / loop aberto & \texttt{scheduler.py} não referencia nenhum \texttt{classify\_*}; inferência só em \texttt{/api/anomalies/classify} & Crítico \\
+GAP-5 & Dados sintéticos vs. datasets públicos & \texttt{random.uniform} em \texttt{anomaly\_simulator.py}; busca \texttt{unsw|cic-ids} $\rightarrow$ 0 & Maior \\
+GAP-6 & Performance vs. segurança/operacionais & Classes majoritariamente de segurança; congest. por limiar genérico de latência de ping & Maior \\
+GAP-7 & Interpretabilidade com modelo fechado & \texttt{explanation} provém do Gemini; sem rastreabilidade de pesos nem reprodutibilidade local & Menor \\
+\bottomrule
+\end{longtable}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\textwidth]{fig_gaps}
+  \caption{Taxonomia de gaps estruturais entre o projeto norteador e o NOC
+  Lite. Fonte: elaborada por Chris.}
+  \label{fig:gaps}
+\end{figure}
+
+\textbf{GAP-1 (SDN vs. hosts).} O projeto fundamenta toda a proposta no
+paradigma SDN; o NOC Lite monitora hosts IP/DNS arbitrários, sem controlador,
+topologia virtualizada ou planos separados \cite{rA19}. \textbf{GAP-2 (modelo
+fechado).} O projeto exige LLMs \textit{open source} e classifica explicitamente
+o Gemini como modelo fechado \cite{rRODRIGUES}; o sistema o usa em regime \textit{
+zero-shot} \cite{rA317}. \textbf{GAP-3 (sem LoRA/QLoRA).} A seção de PEFT do projeto
+não tem correspondente: o único modelo treinável é uma árvore de decisão do
+zero \cite{rA41}\cite{rA42}. \textbf{GAP-4 (loop aberto).} A classificação por IA não está
+integrada ao laço de detecção; o ciclo observa e alerta, sem atuação autônoma
+\cite{rA133}. \textbf{GAP-5 (dados sintéticos).} O treino e o \textit{few-shot}
+repousam no simulador; ausente a validação cruzada com UNSW-NB15,
+\cite{rA512}. \textbf{GAP-6 (escopo).} O foco do
+projeto é performance (congestionamento, falha de enlace, degradação de
+desempenho); o sistema privilegia classes de segurança \cite{rA512}. \textbf{GAP-7
+(XAI com fechado).} A justificativa provém de modelo opaco, fragilizando a
+promessa de XAI do projeto \cite{rA511}\cite{rA52}.
+
+% =====================================================================
+\section{Discussão}
+\label{sec:discussao}
+
+\subsection{Convergências preservadas}
+\label{sec:convergencias}
+
+Apesar dos desalinhamentos, o NOC Lite honra parcela da intenção do projeto:
+
+\begin{enumerate}
+  \item \textbf{Baselines de comparação} -- implementa exatamente heurística e
+  árvore de decisão, permitindo comparação direta lado a lado \cite{rA210}\cite{rA217}.
+  \item \textbf{Tokenização de métricas} -- \texttt{tokenise\_metrics} converte
+  o vetor numérico em representação semiestruturada, alinhada à recomendação de
+  conversão textual \cite{rA616}\cite{rA431}.
+  \item \textbf{Justificativa textual / XAI} -- todos os classificadores retornam
+  \texttt{explanation}, atendendo ao objetivo qualitativo de interpretabilidade
+  \cite{rA511}\cite{rA537}.
+  \item \textbf{Métricas de tempo de resposta} -- o endpoint mede
+  \texttt{latency\_ms} de cada classificador, entregando a métrica de desempenho
+  exigida \cite{rA31}.
+  \item \textbf{Métricas resumidas de rede} -- SLA, jitter, tendência e
+  health-score capturam latência/perda/jitter, coincidentes com as métricas de
+  performance do projeto \cite{rA19}.
+\end{enumerate}
+
+\subsection{Limitações e ameaças à validade}
+\label{sec:ameacas}
+
+\textbf{Viés de dados sintéticos.} O classificador de ML é treinado 100\% com o
+próprio simulador, que compartilha os mesmos limiares da heurística; a árvore
+aprende essencialmente a ``copiar'' a heurística em forma de árvore, com alto
+desempenho no sintético e provável colapso em produção \cite{rA414}\cite{rA615}.
+\textbf{Confiança não calibrada.} A confiança do Gemini é autorreportada e a do
+ML é probabilidade de folha não calibrada \cite{rA532}; a comparação entre
+classificadores é, portanto, metodologicamente assimétrica. \textbf{
+Orquestração} ausente: a classificação está fora do ciclo de monitoramento,
+impossibilitando detecção contínua. \textbf{Validade externa}: a ausência de
+datasets públicos impede a comparação com o estado da arte \cite{rA65}\cite{rA630}.
+
+\textbf{Ameaças à validade interna} incluem a dependência de API externa paga
+(Gemini) e a fragilidade do \textit{parser} JSON (apenas checagem de presença
+de chave). \textbf{Ameaças à validade de construção}: os limiares de 50~Mb/s e
+120~ms são fixos e universais, sem \textit{baseline} por host/link, gerando
+falsos positivos em enlaces de capacidades distintas \cite{rA21}.
+
+% =====================================================================
+\section{Diretrizes de Arquitetura para Alinhamento}
+\label{sec:diretrizes}
+
+Para reduzir a distância entre o NOC Lite e o projeto, propõe-se uma evolução
+arquitetural incremental, respeitando o que já existe e fechando os sete gaps.
+O ponto central é a transição de um \textit{loop aberto} para um \textit{ciclo
+fechado} com LLM \textit{open source}, LoRA e mitigação, conforme a
+Figura~\ref{fig:ciclo}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig_ciclo_fechado_proposto}
+  \caption{Arquitetura proposta de ciclo fechado: coleta (SDN + hosts) $\rightarrow$
+  tokenização $\rightarrow$ classificação (LLM \textit{open source} + LoRA)
+  $\rightarrow$ mitigação (módulo de ação) $\rightarrow$ reconfiguração via
+  controlador. Fonte: elaborada por Chris.}
+  \label{fig:ciclo}
+\end{figure}
+
+\begin{enumerate}
+  \item \textbf{Substituição do modelo fechado por LLM local (fecha GAP-2,
+  GAP-3).} Introduzir contêiner de inferência local (vLLM/llama.cpp/Ollama)
+  servindo Llama 3 (7--13B) ou Falcon via endpoint compatível com OpenAI;
+  substituir \texttt{gemini-1.5-flash} por cliente HTTP local, mantendo o
+  \textit{fallback} heurístico. Aplicar LoRA/QLoRA (rank 16--32, alpha 32)
+  sobre o modelo base, reutilizando os \textit{prompts} de \texttt{
+  tokenise\_metrics} \cite{rA41}\cite{rA42}\cite{rA312}.
+  \item \textbf{Pipeline de dados com datasets públicos (fecha GAP-5).} Criar
+  módulo \texttt{data\_ingest} que baixa/normaliza UNSW-NB15, CSE-CIC-IDS2018
+  e Synthetic SDN para o \textit{schema} de \textit{features}; treinar LoRA e a
+  árvore com dados reais, preservando o simulador para demonstração \cite{rA61}\cite{rA64}.
+  \item \textbf{Ambiente SDN e fechamento do ciclo (fecha GAP-1, GAP-4).}
+  Adicionar contêiner Mininet + controlador Ryu que emule a topologia e exponha
+  telemetria de enlace/fluxo; generalizar \texttt{Host}/\texttt{CheckResult}
+  para telemetria de fluxo SDN; criar \texttt{mitigation\_engine} que mapeia
+  \texttt{classification} $\rightarrow$ ação corretiva (re-rota, QoS,
+  \textit{drop} de fluxo) via NorthBound API do controlador; integrar o
+  classificador dentro do \texttt{MonitorEngine}, fechando o ciclo \cite{rA14}\cite{rA116}\cite{rA133}.
+  \item \textbf{Realinhamento do catálogo de anomalias (fecha GAP-6).}
+  Separar claramente performance SDN (congestionamento de enlace, falha de
+  enlace, degradação de throughput/jitter) de segurança/operacional (DDoS, port
+  scan, exfiltração, host down), priorizando a primeira família \cite{rA512}.
+  \item \textbf{Preservação dos pontos fortes.} Manter \texttt{tokenise\_metrics},
+  o par baseline heurístico + ML, a medição de \texttt{latency\_ms} e o formato
+  de \texttt{explanation} como base do novo pipeline \cite{rA616}\cite{rA431}.
+  \item \textbf{Roadmap de alinhamento} (espelhando o cronograma do projeto):
+  (1) contêiner de LLM \textit{open source} local + \texttt{tokenise\_metrics}
+  $\rightarrow$ \textit{zero-shot}; (2) ingestão dos 3 datasets + treino
+  LoRA/QLoRA; (3) Mininet + controlador + telemetria de fluxo; (4)
+  \texttt{mitigation\_engine} + integração da classificação no
+  \texttt{MonitorEngine}; (5) fechamento do ciclo e avaliação comparativa
+  (heurística vs. ML vs. LLM \textit{open source} com/sem LoRA), reutilizando
+  \texttt{latency\_ms} e acrescentando acurácia/consistência.
+\end{enumerate}
+
+% =====================================================================
+\section{Conclusão}
+\label{sec:conclusao}
+
+O presente artigo correlacionou o projeto de pesquisa que propõe detecção e
+mitigação de anomalias em SDN com LLMs \textit{open source} ajustados por
+PEFT/LoRA \cite{rRODRIGUES} com o sistema efetivamente implementado, o NOC Lite.
+Evidenciou-se que o sistema realiza com sucesso a parcela de \textit{
+baselines} e de representação textual do projeto -- heurística, árvore de
+decisão, tokenização de métricas, justificativa textual e medição de latência
+-- mas diverge estruturalmente nos eixos centrais da proposta. Especificamente,
+o NOC Lite (i) monitora hosts genéricos e não SDN; (ii) emprega o modelo
+fechado Gemini em vez de LLM \textit{open source}; (iii) não aplica LoRA/QLoRA;
+(iv) não realiza mitigação nem opera em ciclo fechado; e (v) depende
+exclusivamente de dados sintéticos, sem validação cruzada com datasets
+públicos.
+
+Tais gaps não são ajustes pontuais: exigem evolução arquitetural substantiva,
+sintetizada nas diretrizes de um ciclo fechado com LLM local, LoRA e módulo de
+mitigação. As convergências identificadas funcionam como alicerce seguro sobre
+o qual construir essa evolução, uma vez que o \texttt{tokenise\_metrics}, os
+baselines e a medição de latência já cumprem objetivos específicos do projeto.
+Como trabalho futuro, recomenda-se a implementação do \texttt{mitigation\_engine}
+e a condução do experimento comparativo head-to-head entre LLM \textit{open
+source} ajustado por QLoRA e LLM fechado \textit{zero-shot} sobre o mesmo
+conjunto de métricas de rede -- lacuna exatamente apontada pela literatura
+\cite{rA49}\cite{rA630}.
+
+% =====================================================================
+% Referencias (ABNT manual, geradas a partir das areas de literatura)
+\section*{Referências}
+% restored numeric
+
+\end{document}
