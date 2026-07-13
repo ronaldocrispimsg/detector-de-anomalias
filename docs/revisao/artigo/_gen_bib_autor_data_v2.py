@@ -1,0 +1,99 @@
+
+import re
+from pathlib import Path
+
+base = Path('/Users/marcio/Projetos/rodrigo/docs/revisao/artigo')
+root = base.parent
+out = base/'referencias_autor_data.bib'
+
+# 1) metadados por número a partir dos areaNN_*.txt
+area_meta = {}
+for p in sorted((root/'docs/revisao/literature').glob('area*.txt')):
+    txt = p.read_text(encoding='utf-8')
+    for bloc in re.split(r'\n\s*\n', txt):
+        m = re.search(r'\[(\d+)\]\s*(.*?)\n\s*DOI/URL:\s*(\S+)', bloc, re.DOTALL)
+        if not m:
+            continue
+        num, cap, doi = m.group(1), m.group(2), m.group(3)
+        first, *rest = cap.splitlines()
+        first = first.strip()
+        year_m = re.search(r'\(?(\d{4})\)?', first)
+        year = year_m.group(1) if year_m else ''
+        author = re.sub(r'[\(,\)]\s*\d{4}.*', '', first).strip()
+        if not author:
+            author = 'Desconhecido'
+        title = ' '.join(x.strip() for x in rest).strip()
+        if not title:
+            title = first
+        title = re.sub(r'^(ESSENCIAL|RECOMENDADO|COMPLEMENTAR)[\.\-]\s*', '', title, flags=re.IGNORECASE)
+        title = re.sub(r'\s+', ' ', title).strip()
+        area_meta[num] = dict(author=author, year=year, title=title, doi=doi)
+
+# 2) fallback da .bib atual
+source = base/'referencias.bib'
+bib_text = source.read_text(encoding='utf-8') if source.exists() else ''
+entries = {}
+pattern = re.compile(r'@(\w+)\s*\{\s*([^,\s]+)\s*,\s*(.*?)\n\}', re.DOTALL|re.IGNORECASE)
+for m in pattern.finditer(bib_text):
+    entries[m.group(2).strip()] = m.group(3)
+
+def clean(s):
+    if not s:
+        return ''
+    for pat in [r'IMPORTÂNCIA:.*?(?=\n\s*CONTRIBUIÇÃO:|$)', r'CONTRIBUIÇÃO:.*', r'\[ver areaNN_\*\.txt\]']:
+        s = re.sub(pat, '', s, flags=re.DOTALL)
+    s = re.sub(r'\s+', ' ', s)
+    return s.strip(' ,;.-')
+
+def get_field(body, key):
+    m = re.search(r'\b' + key + r'\s*=\s*\{(.*?)\}(?=\s*,\s*\w+\s*=|$)', body, re.DOTALL)
+    return m.group(1) if m else ''
+
+# chaves citadas
+tex = (base/'artigo.tex').read_text(encoding='utf-8')
+cited = sorted(set(re.findall(r'\\cite\{([^}]+)\}', tex)))
+cited = ['rRODRIGUES' if x == 'rRODRIGUES2026' else x for x in cited]
+
+lines = []
+lines.append('# Gerado para ABNT autor-data (usar com plainnat/natbib ou biblatex-abnt)\n\n')
+kept = []
+for key in cited:
+    m_num = re.match(r'rA(\d+)$', key)
+    if m_num and m_num.group(1) in area_meta:
+        meta = area_meta[m_num.group(1)]
+        author = meta['author'] or key
+        year = meta['year'] or '2026'
+        title = meta['title'] or key
+        doi = meta['doi'] or ''
+    elif key == 'rRODRIGUES':
+        author = 'Rodrigues, Joao Pedro Santos'
+        year = '2026'
+        title = 'Projeto de pesquisa: deteccao e mitigacao inteligente de anomalias em redes definidas por software com LLMs open-source'
+        doi = ''
+    elif key in entries:
+        body = entries[key]
+        author = clean(get_field(body, 'author') or key)
+        year = re.sub(r'\D', '', get_field(body, 'year')) or '2026'
+        title = clean(get_field(body, 'title') or key)
+        doi = clean(get_field(body, 'url') or get_field(body, 'URL') or get_field(body, 'DOI') or '')
+    else:
+        author = 'Desconhecido'
+        year = '2026'
+        title = key
+        doi = ''
+
+    if not title:
+        title = key
+    lines.append(f'@misc{{{key},\n')
+    lines.append(f'  author={{{author}}},\n')
+    lines.append(f'  year={{{year}}},\n')
+    lines.append(f'  title={{{title}}},\n')
+    if doi:
+        lines.append(f'  doi={{{doi}}},\n')
+    lines.append('}\n\n')
+    kept.append(key)
+
+out.write_text(''.join(lines), encoding='utf-8')
+print('Gerado:', out)
+print('Citadas:', len(cited), 'Mantidas:', len(kept))
+print('Ausentes:', sorted(set(cited) - set(kept)))

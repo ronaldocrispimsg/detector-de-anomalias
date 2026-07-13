@@ -2,12 +2,15 @@ FIGURA 4 — Gaps principais entre o Artigo e o NOC Lite
 
 Legenda (caption):
 Diagrama dos principais gaps de alinhamento, da intenção do artigo (esquerda)
-para a realidade do sistema (direita). GAP-1 (CRÍTICO): SDN (controlador, Mininet,
-OVS) → Hosts IP/DNS genéricos. GAP-2 (CRÍTICO): LLM open-source (Llama/Falcon) →
-Gemini 1.5 Flash (fechado). GAP-3 (CRÍTICO): Fine-tuning LoRA/QLoRA (PEFT) →
-inexistente (DecisionTree do zero). GAP-4 (CRÍTICO): Mitigação / ciclo fechado →
-loop aberto (só alerta Telegram). GAP-5 (MAIOR): Datasets públicos (UNSW/CIC) →
-dados 100% sintéticos.
+para a realidade do sistema (direita). GAP-1 (CRÍTICO): SDN (controlador,
+Mininet, OVS) → Hosts IP/DNS genéricos. GAP-2 (CRÍTICO): LLM open-source
+(Llama/Falcon) → Gemini 1.5 Flash (fechado). GAP-3 (CRÍTICO): Fine-tuning
+LoRA/QLoRA (PEFT) → inexistente (DecisionTree do zero). GAP-4 (CRÍTICO):
+Mitigação / ciclo fechado → loop aberto (só alerta Telegram). GAP-5 (MAIOR):
+Datasets públicos (UNSW/CIC) → dados 100% sintéticos. GAP-6 (MAIOR):
+Anomalias de performance (enlace/throughput) → foco em segurança/operacionais
+(DDoS, scan, exf.). GAP-7 (MENOR): Interpretabilidade XAI rastreável (local) →
+justificativa via Gemini fechado (opaco).
 
 Label sugerida (LaTeX):
 fig:gaps
