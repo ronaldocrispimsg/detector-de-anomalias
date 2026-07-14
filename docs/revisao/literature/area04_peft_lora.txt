@@ -4,13 +4,6 @@ FINE-TUNING EFICIENTE DE LLMs (PEFT): LoRA, QLoRA E ADAPTAÇÃO DE LLMs
 A DOMÍNIO DE TRÁFEGO DE REDE
 ================================================================================
 
-Pesquisador: Serj (agente de estado da arte)
-Data: 2026-07-13
-Projeto: "Detecção e Mitigação Inteligente de Anomalias em Redes Definidas por
-         Software com Grandes Modelos de Linguagem Open Source" (goal.pdf)
-Working dir: ~/Projetos/rodrigo
-Arquivo: docs/revisao/literature/area04_peft_lora.txt
-
 --------------------------------------------------------------------------------
 1. ESCOPO
 --------------------------------------------------------------------------------

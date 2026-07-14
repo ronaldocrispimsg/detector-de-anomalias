@@ -2,11 +2,6 @@
 REVISÃO DE LITERATURA — ÁREA 01: REDES DEFINIDAS POR SOFTWARE (SDN)
 E VIRTUALIZAÇÃO DE FUNÇÕES DE REDE (NFV)
 ================================================================================
-Pesquisador: Serj (estado da arte)
-Data: 2026-07-13
-Projeto: Detecção/mitigação de anomalias em SDN com LLMs open-source (LoRA/QLoRA)
-Arquivo alvo: ~/Projetos/rodrigo/docs/revisao/literature/area01_sdn_nfv.txt
-Total de referências validadas: 35 (todas confirmadas via web_search/web_extract)
 
 --------------------------------------------------------------------------------
 1. ESCOPO E CONTEXTO

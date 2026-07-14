@@ -4,10 +4,6 @@ LLMs OPEN-SOURCE E MODELOS DE LINGUAGEM PARA NETWORK OPERATIONS & MANAGEMENT
 (LLMs para NetOps / NO&M)
 ================================================================================
 
-Pesquisador : Serj (Pesquisador de Estado da Arte)
-Data        : 2026-07-13
-Working dir : ~/Projetos/rodrigo
-Alvo        : ~/Projetos/rodrigo/docs/revisao/literature/area03_llm_netops.txt
 Contexto    : Dissertação "Detecção e Mitigação Inteligente de Anomalias em Redes
               Definidas por Software com Grandes Modelos de Linguagem Open Source"
               (Edital Nº 26/2026). O artigo PROPÕE o uso de LLMs open-source, mas o

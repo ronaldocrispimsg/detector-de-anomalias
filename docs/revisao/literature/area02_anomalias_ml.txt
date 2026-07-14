@@ -4,12 +4,6 @@ Detecção e Classificação de Anomalias de Rede por Métodos Tradicionais
 (Heurísticas, ML Clássico e Baselines de Comparação)
 ================================================================================
 
-Pesquisador: Serj (estado da arte)
-Data: 2026-07-13
-Projeto: NOC Lite — Detecção de Anomalias de Rede por IA (com baselines heurístico
-         + Árvore de Decisão comparados à IA Generativa / Gemini)
-Arquivo: ~/Projetos/rodrigo/docs/revisao/literature/area02_anomalias_ml.txt
-
 --------------------------------------------------------------------------------
 1. ESCOPO DA REVISÃO
 --------------------------------------------------------------------------------

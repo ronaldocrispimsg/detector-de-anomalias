@@ -1,11 +1,6 @@
 # Análise de Projeto Orientado ao Objetivo (APOO)
 ## Sistema NOC Lite × Artigo Norteador: Detecção e Mitigação de Anomalias em SDN com LLMs Open-Source
 
-**Autor da análise:** Dan — Arquiteto de Software
-**Data:** 13/07/2026
-**Escopo:** Análise arquitetural do sistema implementado em `~/Projetos/rodrigo` (`NOC Lite`), correlacionado ao artigo `docs/goal.pdf` (Edital nº 26/2026 — João Pedro Santos Rodrigues).
-**Repositório analisado:** Backend (FastAPI) + Frontend (HTML/JS estático) + SQLite.
-
 ---
 
 ## 1. Visão Geral da Arquitetura Atual

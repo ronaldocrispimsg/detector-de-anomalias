@@ -1,17 +1,4 @@
-# Notas do Coder — Análise do Subsistema de Classificação de Anomalias (NOC Lite)
-
-> Autor: John (Coder fullstack — modo somente leitura/análise)
-> Escopo: interpretação e explicação do código existente + sugestões textuais para
-> aproximação do sistema do artigo de referência (detecção de anomalias de rede por IA).
-> Nenhuma linha de código foi alterada. Arquivos analisados:
-> - `Backend/anomaly_classifier.py`
-> - `Backend/anomaly_simulator.py`
-> - `Backend/metrics.py` (funções de saúde/SLA/jitter/tendência)
-> - `Backend/scheduler.py` (orquestração dos checks)
-> - `Backend/checker.py` (ping/tcp/http/dns reais)
-> - `Backend/snmp_engine.py` (coleta SNMP real)
-> - `Backend/routes/anomalies.py` (API REST dos classificadores/simulador)
-> - `Backend/models.py` (modelos SQLAlchemy)
+# Notas da Análise do Subsistema de Classificação de Anomalias (NOC Lite)
 
 ---
 

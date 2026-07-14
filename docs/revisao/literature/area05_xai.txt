@@ -3,17 +3,6 @@ RELATÓRIO DE ESTADO DA ARTE — ÁREA 05
 EXPLAINABLE AI (XAI) E INTERPRETABILIDADE EM DETECÇÃO DE ANOMALIAS DE REDE
 ================================================================================
 
-Pesquisador........: Serj (Perfil pesquisador / Hermes)
-Data...............: 2026-07-13
-Projeto............: Detecção e Mitigação Inteligente de Anomalias em Redes
-                    Definidas por Software com LLMs Open-Source (Edital 26/2026)
-Arquivo de saída...: ~/Projetos/rodrigo/docs/revisao/literature/area05_xai.txt
-Contexto...........: docs/goal.pdf (XAI, HuntGPT, interpretabilidade); sistema
-                    retorna classification['explanation'] (justificativa textual
-                    XAI-like do Gemini)
-Idioma do relatório: Português (PT-BR)
-Fontes prioritárias: arXiv, IEEE Xplore, ACM DL, Elsevier/ScienceDirect, ACL
-
 --------------------------------------------------------------------------------
 1. ESCOPO E JUSTIFICATIVA
 --------------------------------------------------------------------------------
