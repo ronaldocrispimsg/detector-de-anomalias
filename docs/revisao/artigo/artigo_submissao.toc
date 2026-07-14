@@ -8,9 +8,10 @@
 \contentsline {subsection}{\numberline {2.6}Inteligência Artificial Explicável (XAI)}{6}{subsection.2.6}%
 \contentsline {subsection}{\numberline {2.7}Geração de Cenários Anômalos e Datasets Públicos}{6}{subsection.2.7}%
 \contentsline {section}{\numberline {3}O Sistema Implementado: NOC Lite}{7}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Pipeline de Classificação}{8}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}Simulador}{9}{subsection.3.2}%
-\contentsline {section}{\numberline {4}Mapeamento Projeto $\times $ Sistema e Gaps}{9}{section.4}%
+\contentsline {subsection}{\numberline {3.1}Pipeline de Classificação}{7}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Simulador}{8}{subsection.3.2}%
+\contentsline {section}{\numberline {4}Caracterização do Sistema}{9}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Pontos de evolução}{10}{subsection.4.1}%
 \contentsline {section}{\numberline {5}Discussão}{13}{section.5}%
 \contentsline {subsection}{\numberline {5.1}Convergências preservadas}{13}{subsection.5.1}%
 \contentsline {subsection}{\numberline {5.2}Limitações e ameaças à validade}{13}{subsection.5.2}%

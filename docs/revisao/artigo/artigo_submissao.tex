@@ -40,22 +40,11 @@
 %  "Missing begin document" no preâmbulo)
 
 % ---------------------------------------------------------------------
-\title{\textbf{Detecção e Mitigação Inteligente de Anomalias em Redes
-Definidas por Software com Grandes Modelos de Linguagem Open Source:
-correlação entre o Projeto de Pesquisa e o Sistema Implementado (NOC Lite)}}
+\title{\textbf{Detecção e Mitigação Inteligente de Anomalias em Redes Definidas por Software com LLMs Open Source: o Sistema NOC Lite}}
 
-\author{Estudo de correlação elaborado a partir do Projeto de Pesquisa
-de \mbox{Rodrigues} (2026, Edital n\textsuperscript{o} 26/2026) e do
-sistema \textit{NOC Lite} implementado \\[2mm]
-\textit{Artigo técnico-científico — revisão integrativa e análise arquitetural}}
+\author{Sistema NOC Lite: arquitetura, classificação e avaliação experimental \\[2mm] \textit{Artigo técnico-científico}}
 
 \date{Julho de 2026}
-
-% ===== autor-data macros
-\makeatletter
-\newcommand{\citea}[1]{\begingroup\edef\@currentlabel{\csname citea@#1\endcsname}\@currentlabel\endgroup}
-% ===== end macros
-
 \thispagestyle{empty}
 
 \begin{document}
@@ -68,7 +57,8 @@ sistema \textit{NOC Lite} implementado \\[2mm]
 Este artigo descreve a arquitetura e a avaliação do sistema \textit{NOC Lite}, voltado à detecção e classificação de anomalias em redes por meio de LLMs e modelos clássicos de aprendizado de máquina. O sistema combina heurísticas, árvore de decisão e classificação generativa com justificativa textual, executando monitoramento por sondas ICMP/TCP/HTTP/DNS/SNMP. São apresentados objetivos, metodologia, pipeline, métricas e resultados experimentais, além de diretrizes para evolução com LLMs \textit{open source} e ajuste fino.
 \end{abstract}
 
-\noindent\textbf{Palavras-chave:} Redes Definidas por Software. Anomalias de Rede. LLMs Open Source. PEFT/LoRA. Inteligência Artificial Explicável. NOC Lite.
+\noindent\textbf{Palavras-chave:} Redes Definidas por Software; Anomalias de Rede;
+Grandes Modelos de Linguagem; PEFT/LoRA; Inteligência Artificial Explicável.
 
 \vspace{6pt}
 \hrule
@@ -78,10 +68,9 @@ Este artigo descreve a arquitetura e a avaliação do sistema \textit{NOC Lite},
 \section{Introdução}
 \label{sec:intro}
 
-Redes de computadores modernas operam sob demandas rigorosas de desempenho,
-confiabilidade e segurança. Nesse contexto, a detecção e a classificação de
-anomalias tornam-se atividades fundamentais para a operação eficiente de
-sistemas computacionais. Nesse contexto, a identificação e a classificação de fenômenos
+Redes de computadores modernas apresentam alta complexidade, heterogeneidade de
+aplicações e demandas rigorosas de desempenho, confiabilidade e segurança
+. Nesse contexto, a identificação e a classificação de fenômenos
 anômalos -- congestionamento transiente, falhas de enlace, degradação de
 desempenho -- tornam-se atividades fundamentais para a operação eficiente de
 sistemas distribuídos \cite{rA39}. Tradicionalmente, a análise de anomalias depende
@@ -99,13 +88,9 @@ textual \cite{rA321}. O paradigma SDN, ao separar o plano de controle do plano d
 dados, fornece a agilidade necessária para que agentes de IA percebam o estado
 da rede e executem ações de otimização ou segurança de forma autônoma \cite{rA19}.
 
-O sistema autônomo baseado em LLMs \textit{open source} (ex.: Llama, Falcon) e em
-ajuste fino eficiente de parâmetros (PEFT), notadamente LoRA/QLoRA, para
-detectar anomalias de performance em SDN e mitigá-las via reconfiguração
-proativa de topologia virtual (VNT) e roteamento, em ciclo fechado. 
-\textbf{Problema e gap.} Há uma distância estrutural entre a proposta do
-projeto e o sistema construído. Essa distância motiva a presente análise, que
-tem por objetivos: (i) expor o referencial teórico das seis áreas de
+O sistema NOC Lite combina heurísticas, árvore de decisão e classificação generativa com justificativa textual, realizando monitoramento por sondas ICMP/TCP/HTTP/DNS/SNMP.
+
+\textbf{Problema.} A presente análise tem por objetivos: (i) expor o referencial teórico das seis áreas de
 conhecimento envolvidas; (ii) descrever o sistema implementado e seu pipeline
 de classificação; (iii) apresentar o mapeamento projeto$\times$sistema e a
 taxonomia de gaps; (iv) discutir convergências, limitações e ameaças à
@@ -317,23 +302,23 @@ O agendamento em tempo real usa estado em memória. Trata-se de dados 100\%
 sintéticos, sem dependência de datasets públicos.
 
 % =====================================================================
-\section{Mapeamento Projeto $\times$ Sistema e Gaps}
+\section{Caracterização do Sistema}
 \label{sec:mapeamento}
 
 A Tabela~\ref{tab:mapa} sintetiza a correspondência entre os objetivos/componentes
-do projeto norteador  e o que o NOC Lite efetivamente entrega, com
+do sistema e o que o NOC Lite efetivamente entrega, com
 o respectivo status de alinhamento. A Figura~\ref{fig:mapa} ilustra essa
 relação.
 
-\small\setlength{\tabcolsep}{1pt}\begin{longtable}{cp{3.6cm}p{3.2cm}c}
-\caption{Arquitetura e componentes do NOC Lite.}
+\begin{longtable}{cp{5.4cm}p{5.0cm}c}
+\caption{Mapeamento Projeto de Pesquisa $\times$ NOC Lite.}
 \label{tab:mapa}\\
 \toprule
-\textbf{\#} & \textbf{Componente} & \textbf{Descrição} & \textbf{Status} \\
+\textbf{\#} & \textbf{Objetivo/Componente do Projeto} & \textbf{Entrega do NOC Lite} & \textbf{Status} \\
 \midrule
 \endfirsthead
 \toprule
-\textbf{\#} & \textbf{Componente} & \textbf{Descrição} & \textbf{Status} \\
+\textbf{\#} & \textbf{Objetivo/Componente do Projeto} & \textbf{Entrega do NOC Lite} & \textbf{Status} \\
 \midrule
 \endhead
 1 & LLM \textit{open source} (Llama/Falcon) com fine-tuning & Gemini 1.5 Flash (fechado); Árvore de Decisão & Divergente \\
@@ -359,11 +344,13 @@ relação.
   \label{fig:mapa}
 \end{figure}
 
+\subsection{Pontos de evolução}
+\label{sec:evolucao}
 
-A análise arquitetural descreve os pontos internos do NOC Lite.
+A análise arquitetural identifica pontos fortes e lacunas do NOC Lite.
 
-\small\setlength{\tabcolsep}{1pt}\begin{longtable}{cp{2.8cm}p{5.6cm}c}
-\caption{Taxonomia interna do NOC Lite.}
+\begin{longtable}{cp{4.0cm}p{8.0cm}c}
+\caption{Taxonomia de gaps (NOC Lite $\times$ Projeto).}
 \label{tab:gaps}\\
 \toprule
 \textbf{ID} & \textbf{Gap} & \textbf{Evidência no código / Descrição} & \textbf{Severidade} \\
@@ -544,9 +531,126 @@ conjunto de métricas de rede -- lacuna exatamente apontada pela literatura
 % restored numeric
 \input{referencias.tex}
 
+
+
 \begin{thebibliography}{99}
 \raggedright
+\bibitem{rA39} Liu, X. and Ji, K. and Fu, Y. and Tam, W. L. and Du, Z. and Yang, Z. and Tang, J., 2022. P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks.
+\bibitem{rA512} Neupane, S. and Ables, M. and Chen, W. and others, 2022. Explainable Intrusion Detection Systems (X-IDS): A Survey of Current Methods, Challenges, and Opportunities.
+\bibitem{rA31} Liu, F. and Behrooz, F. and others, 2025. Large Language Models for Computer Networking Operations and Management: A Survey on Applications, Key Techniques, and Opportunities.
+\bibitem{rA321} Wei, J. and Wang, X. and Schuurmans, D. and others, 2022. Chain-of-Thought Prompting Elicits Reasoning in Large Language Models.
+\bibitem{rA28} Chandola, V. and Banerjee, A. and Kumar, V., 2009. Anomaly Detection: A Survey.
+\bibitem{rA212} Buczak, A. L. and Guven, E., 2016. A Survey of Data Mining and Machine Learning Methods for Cyber Security Intrusion Detection.
+\bibitem{rA11} McKeown, N. and Anderson, T. and Balakrishnan, H. and Parulkar, G. and Peterson, L. and Rexford, J. and Shenker, S. and Turner, J., 2008. OpenFlow: Enabling Innovation in Campus Networks.
+\bibitem{rA12} Gude, N. and Koponen, T. and Pettit, J. and Pfaff, B. and McKeown, N. and Shenker, S. and Casado, M., 2008. NOX: Towards an Operating System for Networks.
+\bibitem{rA116} NTT Laboratories, 2014. Ryu SDN Framework -- Open-source SDN Platform Software.
+\bibitem{rA114} Medved, J. and Varga, R. and Tkacik, A. and Gray, K., 2014. OpenDaylight: Towards a Model-Driven SDN Controller Architecture.
+\bibitem{rA115} Berde, P. and Gerola, M. and Hart, J. and Higuchi, Y. and Kobayashi, M. and Koide, T. and others, 2014. ONOS: Towards an Open, Distributed SDN OS.
+\bibitem{rA122} Porras, P. and Shin, S. and Yegneswaran, V. and Fong, M. and Tyson, M. and Gu, G., 2012. A Security Enforcement Kernel for OpenFlow Networks.
+\bibitem{rA123} Li, W. and Meng, W. and Kwok, L.-F., 2016. A Survey on OpenFlow-based Software Defined Networks: Security Challenges and Countermeasures.
+\bibitem{rA124} Bhuiyan, Z. A. and Islam, S. and Islam, M. M. and Ullah, A. A. and Naz, F. and Rahman, M. S., 2023. On the (In)Security of the Control Plane of SDN Architecture: A Survey.
+\bibitem{rA14} Lantz, B. and Heller, B. and McKeown, N., 2010. A Network in a Laptop: Rapid Prototyping for Software-Defined Networks.
+\bibitem{rA15} Pfaff, B. and Pettit, J. and Koponen, T. and Amidon, K. and Casado, M. and Shenker, S., 2015. The Design and Implementation of Open vSwitch.
+\bibitem{rA110} Xia, W. and Wen, Y. and Foh, C. H. and Niyato, D. and Xie, H., 2015. A Survey on Software-Defined Networking.
+\bibitem{rA127} Chiosi, M. and Clarke, D. and Hampson, P. and others, 2012. Network Functions Virtualisation (NFV): White Paper \#1.
+\bibitem{rA128} ETSI NFV ISG, 2013. GS NFV 002 V1.1.1: Network Functions Virtualisation (NFV); Architectural Framework.
+\bibitem{rA129} ETSI NFV ISG, 2014. GS NFV-MAN 001 V1.1.1: Network Functions Virtualisation (NFV); Management and Orchestration.
+\bibitem{rA130} Mijumbi, R. and Serrat, J. and Gorricho, J.-L. and Bouten, N. and De Turck, F. and Boutaba, R., 2015. Network Function Virtualization: State-of-the-Art and Research Challenges.
+\bibitem{rA131} Mijumbi, R. and Serrat, J. and Gorricho, J.-L. and Bouten, N. and De Turck, F. and Boutaba, R., 2016. Network Function Virtualization: State-of-the-Art and Research Challenges.
+\bibitem{rA132} Laghrissi, A. and Taleb, T., 2019. A Survey on the Placement of Virtual Resources and Virtual Network Functions.
+\bibitem{rA133} Leivadeas, A. and Falkner, M., 2022. A Survey on Intent-Based Networking.
+\bibitem{rA134} Morales, F. and Ruiz, M. and Contreras, L. M. and Ferraris, G. and Stavdas, A. and Cugini, F. and Velasco, L., 2017. Virtual Network Topology Adaptability Based on Data Analytics for Traffic Prediction.
+\bibitem{rA135} Panayiotou, T. and others, 2022. Survey on Machine Learning for Traffic-Driven Service and Virtual Network Topology Reconfiguration.
+\bibitem{rA126} Latif, Z. and Sharif, K. and Li, F. and Karim, M. M. and Belghiti, M. A. and Sangeen, A., 2022. A Machine Learning-Based Anomaly Prediction Service for Software-Defined Networks.
+\bibitem{rA22} Roberts, S. W., 1959. Control Chart Tests Based on Geometric Moving Averages.
+\bibitem{rA21} Brutlag, J. D., 2000. Aberrant Behavior Detection in Time Series for Network Monitoring.
+\bibitem{rA25} Moayedi, H. Z. and Amini, M., 2008. ARIMA Model for Network Traffic Prediction and Anomaly Detection.
+\bibitem{rA27} Fondo-Ferreiro, P. and others, 2026. Real-time SARIMA-based anomaly detection in operator networks.
+\bibitem{rA213} Cortes, C. and Vapnik, V., 1995. Support-Vector Networks.
+\bibitem{rA210} Bhuyan, M. H. and Bhattacharyya, D. K. and Kalita, J. K., 2014. Network Anomaly Detection: Methods, Systems and Tools.
+\bibitem{rA217} Caruana, R. and Niculescu-Mizil, A., 2006. An Empirical Comparison of Supervised Learning Algorithms.
+\bibitem{rA231} Cannady, J. D., 1998. Artificial Neural Networks for Misuse Detection.
+\bibitem{rA29} Ahmed, M. and Mahmood, A. N. and Hu, J., 2016. A Survey of Network Anomaly Detection Techniques.
+\bibitem{rA222} Hodo, E. and Bellekens, X. and Hamilton, A. and Dubouil, C. and Pham, Q. N., 2017. Threat Analysis of IoT Networks Using Artificial Neural Network Intrusion Detection System.
+\bibitem{rA224} Alduailij, M. and Khan, Q. W. and Tahir, M. and Sardarez, M. and Malik, F., 2022. Machine-Learning-Based DDoS Attack Detection Using Mutual Information and Random Forest Feature Importance Method.
+\bibitem{rA225} Negandhi, P. and Trivedi, Y., 2016. Intrusion Detection System Using Random Forest on the NSL-KDD Dataset.
+\bibitem{rA227} Shehab, R. and others, 2024. Improving Port Scan Cybersecurity Risks Detection using Feature Selection and Machine Learning.
+\bibitem{rA229} Staniford-Chen, S. and Cheung, S. and Crawford, R. and Dilger, M. and Frank, J. and Hoagland, J. and Levitt, K. and Weintraub, C. and Yip, D. and Zerkle, D., 1996. GrIDS -- A Graph-Based Intrusion Detection System for Large Networks.
+\bibitem{rA226} Willems, D. and Kohls, K. and van der Kamp, B. and Vranken, H., 2023. Data Exfiltration Detection on Network Metadata with Autoencoders.
+\bibitem{rA232} Lakhina, A. and Crovella, M. and Diot, C., 2004. Diagnosing Network-Wide Traffic Anomalies.
+\bibitem{rA32} Liu, C. and Xie, X. and Zhang, X. and Cui, Y., 2024. Large Language Models for Networking: Workflow, Advances and Challenges.
+\bibitem{rA33} Boateng, G. O. and Sami, H. and Alagha, A. and others, 2024. A Survey on Large Language Models for Communication, Network, and Service Management: Application Insights, Challenges, and Future Directions.
+\bibitem{rA34} Tang, J. and others, 2024. Utilizing Large Language Models for Advanced Optimization and Intelligent Management in Space-Air-Ground Integrated Networks.
+\bibitem{rA35} Huang, Y. and others, 2025. Large Language Models for Networking: Applications, Enabling Techniques, and Challenges.
+\bibitem{rA36} Hong, J. and others, 2025. A Comprehensive Survey on LLM-Based Network Management and Orchestration.
+\bibitem{rA37} Zhang, L. and Jia, T. and Jia, M. and Wu, Y. and others, 2025. A Survey of AIOps in the Era of Large Language Models.
+\bibitem{rA310} Touvron, H. and Lavril, T. and Izacard, G. and others, 2023. LLaMA: Open and Efficient Foundation Language Models.
+\bibitem{rA311} Touvron, H. and Martin, L. and Stone, K. and others, 2023. Llama 2: Open Foundation and Fine-Tuned Chat Models.
+\bibitem{rA312} Jiang, A. Q. and Sablayrolles, A. and Mensch, A. and others, 2023. Mistral 7B.
+\bibitem{rA313} Almazrouei, E. and Alobeidli, H. and Alshamsi, A. and others, 2023. The Falcon Series of Open Language Models.
+\bibitem{rA314} Bai, J. and Bai, S. and others, 2023. Qwen Technical Report.
+\bibitem{rA315} Yang, A. and Yang, B. and others, 2024. Qwen2.5 Technical Report.
+\bibitem{rA316} BigScience Workshop, 2022. BLOOM: A 176B-Parameter Open-Access Multilingual Language Model.
+\bibitem{rA317} Gemma Team, 2024. Gemma: Open Models Based on Gemini Research and Technology.
+\bibitem{rA41} Hu, E. J. and Shen, Y. and Wallis, P. and others, 2021. LoRA: Low-Rank Adaptation of Large Language Models.
+\bibitem{rA319} Vaswani, A. and Shazeer, N. and Parmar, N. and others, 2017. Attention Is All You Need.
+\bibitem{rA320} Ouyang, L. and Wu, J. and Jiang, X. and others, 2022. Training Language Models to Follow Instructions with Human Feedback (InstructGPT).
+\bibitem{rA325} SDN-Xplain, 2026. SDN-Xplain: LLM-Driven Anomaly Detection and Human-Interpretable Explanation in SDN.
+\bibitem{rA327} Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN, 2025. Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN.
+\bibitem{rA324} Hossain, M. K. and others, 2025. NetIntent: Leveraging Large Language Models for End-to-End Intent-Based SDN Automation.
+\bibitem{rA332} Adanza, D. and others, 2025. Leveraging Generative AI for Intent-Based Networking.
+\bibitem{rA333} Towards Intent-Based Network Management: Large Language Models for Intent Extraction in 5G Core Networks, 2024. Towards Intent-Based Network Management: Large Language Models for Intent Extraction in 5G Core Networks.
+\bibitem{rA338} Chen, Y. and others, 2024. NetGPT: An AI-Native Network Architecture for Provisioning Beyond Personalized Generative Services.
+\bibitem{rA334} Exploring LLM-Based Agents for Root Cause Analysis, 2024. Exploring LLM-Based Agents for Root Cause Analysis.
+\bibitem{rA335} Empowering AIOps: Leveraging Large Language Models for IT Operations Management, 2025. Empowering AIOps: Leveraging Large Language Models for IT Operations Management.
+\bibitem{rA336} Wang, Z. and others, 2025. Intent-Driven Network Management with Multi-Agent LLMs.
+\bibitem{rA337} LLM-Driven Multi-Agent Framework for Autonomous Network Slice Management, 2026. LLM-Driven Multi-Agent Framework for Autonomous Network Slice Management.
+\bibitem{rA42} Dettmers, T. and Pagnoni, A. and Holtzman, A. and Zettlemoyer, L., 2023. QLoRA: Efficient Finetuning of Quantized LLMs.
+\bibitem{rA43} Zhang, Q. and Chen, M. and Bukharin, A. and others, 2023. AdaLoRA: Adaptive Budget Allocation for Parameter-Efficient Fine-Tuning.
+\bibitem{rA44} Liu, S.-Y. and Wang, C.-Y. and Yin, H. and others, 2024. DoRA: Weight-Decomposed Low-Rank Adaptation.
+\bibitem{rA45} Houlsby, N. and Giurgiu, A. and Jastrzebski, S. and others, 2019. Parameter-Efficient Transfer Learning for NLP.
+\bibitem{rA415} Han, Z. and Gao, C. and Liu, J. and Zhang, J. and Zhang, S. Q., 2024. Parameter-Efficient Fine-Tuning for Large Models: A Comprehensive Survey.
+\bibitem{rA411} Hu, Z. and Wang, L. and Lan, Y. and others, 2023. LLM-Adapters: An Adapter Family for Parameter-Efficient Fine-Tuning of Large Language Models.
+\bibitem{rA412} Zhang, R. and Han, J. and Liu, C. and Gao, P. and others, 2024. LLaMA-Adapter: Efficient Fine-tuning of Language Models with Zero-init Attention.
+\bibitem{rA425} Meng, X. and Lin, C. and Wang, Y. and Zhang, Y., 2025. NetGPT: Generative Pretrained Transformer for Network Traffic.
+\bibitem{rA426} Ginige, Y. and Dahanyayaka, T. and Huang, Y. and Jourjon, G. and Seneviratne, S., 2024. TrafficGPT: An LLM Approach for Open-Set Encrypted Traffic Classification.
+\bibitem{rA427} Cui, T. and Lin, X. and Li, S. and Chen, M. and others, 2025. TrafficLLM: Enhancing Large Language Models for Network Traffic Analysis with Generic Traffic Representation.
+\bibitem{rA422} Brown, T. B. and Mann, B. and Ryder, N. and others, 2020. Language Models are Few-Shot Learners.
+\bibitem{rA424} Achiam, J. and Adler, S. and Agarwal, S. and others, 2023. GPT-4 Technical Report.
+\bibitem{rA52} Arrieta, A. B. and Diaz-Rodriguez, N. and Del Ser, J. and Bennetot, A. and Tabik, S. and others, 2020. Explainable Artificial Intelligence (XAI): Concepts, Taxonomies, Opportunities and Challenges toward Responsible AI.
+\bibitem{rA531} Kadavath, S. and Conerly, T. and Askell, A. and others, 2022. Language Models (Mostly) Know What They Know.
+\bibitem{rA517} Sarker, I. H., 2024. Explainable AI for Cybersecurity Automation, Intelligence and Trustworthiness in Digital Twin: Methods, Taxonomy, Challenges and Prospects.
+\bibitem{rA51} Danilevsky, M. and Qian, K. and Aharonov, R. and Katsis, Y. and Kawas, B. and Sen, P., 2020. A Survey of the State of Explainable AI for Natural Language Processing.
+\bibitem{rA53} Ribeiro, M. T. and Singh, S. and Guestrin, C., 2016. ``Why Should I Trust You?'': Explaining the Predictions of Any Classifier.
+\bibitem{rA54} Lundberg, S. M. and Lee, S.-I., 2017. A Unified Approach to Interpreting Model Predictions.
+\bibitem{rA511} Ali, T. and Kostakos, P., 2023. HuntGPT: Integrating Machine Learning-Based Anomaly Detection and Explainable AI with Large Language Models (LLMs).
+\bibitem{rA520} Houssel, N. and Singh, S., 2024. Towards Explainable Network Intrusion Detection using Large Language Models.
+\bibitem{rA521} Pizarro, I. and others, 2025. X-Flow: Explanation-Augmented Prompting for LLM-Based Intrusion Detection.
+\bibitem{rA522} Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN, 2025. Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN.
+\bibitem{rA532} Guo, C. and Pleiss, G. and Sun, Y. and Weinberger, K. Q., 2017. On Calibration of Modern Neural Networks.
+\bibitem{rA533} Lin, S. and Hilton, J. and Evans, O., 2022. Teaching Models to Express Their Uncertainty in Words.
+\bibitem{rA534} Zhu, C. and Xu, B. and Wang, Q. and Zhang, Y. and Mao, Z., 2023. On the Calibration of Large Language Models and Alignment.
+\bibitem{rA61} Moustafa, N. and Slay, J., 2015. UNSW-NB15: A Comprehensive Data Set for Network Intrusion Detection Systems.
+\bibitem{rA62} Moustafa, N. and Slay, J., 2016. The Evaluation of Network Anomaly Detection Systems: Statistical Analysis of the UNSW-NB15 Data Set and the Comparison with the KDD99 Data Set.
+\bibitem{rA63} Sharafaldin, I. and Lashkari, A. H. and Ghorbani, A. A., 2018. Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization.
+\bibitem{rA64} Canadian Institute for Cybersecurity (CIC) and Communications Security Establishment (CSE), 2018. CSE-CIC-IDS2018 Dataset.
+\bibitem{rA65} Ring, M. and Wunderlich, S. and Scheuring, D. and Landes, D. and Hotho, A., 2019. A Survey of Network-Based Intrusion Detection Data Sets.
+\bibitem{rA66} Tavallaee, M. and Bagheri, E. and Lu, W. and Ghorbani, A. A., 2009. A Detailed Analysis of the KDD CUP 99 Data Set.
+\bibitem{rA69} Lantz, B. and Heller, B. and McKeown, N., 2010. A Network in a Laptop: Rapid Prototyping for Software-Defined Networks.
+\bibitem{rA629} Mohammadi, S. and Buzura, S. and others, 2023. A Hybrid Software and Hardware SDN Simulation Testbed.
+\bibitem{rA610} Elsayed, M. S. and Le-Khac, N.-A. and Dev, S. and Jurcut, A. D., 2020. InSDN: A Novel SDN Intrusion Dataset.
+\bibitem{rA614} Zhang, Y. and Liu, Q., 2022. On IoT Intrusion Detection Based on Data Augmentation for Enhancing Learning on Unbalanced Samples.
+\bibitem{rA615} Aceto, G. and Ciuonzo, D. and Montieri, A. and Persico, V. and Pescapa, A., 2024. Synthetic and Privacy-Preserving Traffic Trace Generation Using Generative AI Models for Training Network Intrusion Detection Systems.
+\bibitem{rA623} Kang, F. and others, 2025. A Class Imbalance Data Augmentation Method for Network Intrusion Detection Based on M2M-VAEGAN.
+\bibitem{rA616} Tsai, C.-P. and Teng, G. and Wallis, P. and Ding, W., 2025. AnoLLM: Large Language Models for Tabular Anomaly Detection.
+\bibitem{rA617} Fang, X. and Xu, W. and Tan, Z. and Liu, J. and Huang, Q. and others, 2024. Large Language Models on Tabular Data: A Survey.
+\bibitem{rA618} Li, A. and Wang, S. and Wang, G. and Zhong, S., 2024. Anomaly Detection of Tabular Data Using LLMs.
+\bibitem{rA630} Synthetic Network Traffic Data Generation: A Comparative Analysis, 2024. Synthetic Network Traffic Data Generation: A Comparative Analysis.
+\bibitem{rA431} Sui, Y. and Zhou, M. and Zhou, M. and Han, S. and Zhang, D., 2024. Table Meets LLM: Can Large Language Models Understand Structured Table Data? A Benchmark and Empirical Study.
+\bibitem{rA432} Hegselmann, S. and Buendia, A. and Lang, H. and Agrawal, M. and Jiang, X. and Sontag, D., 2023. TabLLM: Few-shot Classification of Tabular Data with Large Language Models.
+\bibitem{rA537} Wei, J. and Wang, X. and Schuurmans, D. and others, 2022. Chain-of-Thought Prompting Elicits Reasoning in Large Language Models.
+\bibitem{rA414} Ding, N. and Qin, Y. and Yang, G. and Wei, F. and others, 2022. Delta Tuning: A Comprehensive Study of Parameter Efficient Methods for Pre-trained Language Models.
+\bibitem{rRODRIGUES} Rodrigues, Joao Pedro Santos, 2026. Deteccao e Mitigacao Inteligente de Anomalias em Redes Definidas por Software com Grandes Modelos de Linguagem Open Source.
 \end{thebibliography}
 
 \end{document}
-
