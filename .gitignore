@@ -44,3 +44,15 @@ poetry.lock
 .cache/
 .pytest_cache/
 .mypy_cache/
+
+# ===== Docker volumes data =====
+Database/postgres_data/
+RabbitMQ/data/
+RabbitMQ/log/
+N8N/data/
+
+# ===== Modelos ML / Binários Pesados =====
+*.joblib
+*.pkl
+
+

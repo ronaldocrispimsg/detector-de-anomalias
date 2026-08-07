@@ -1,0 +1,92 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: netspot-db
+    restart: always
+    environment:
+      POSTGRES_USER: netspot
+      POSTGRES_PASSWORD: netspot_password
+      POSTGRES_DB: netspot
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./Database/postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U netspot -d netspot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
+    container_name: netspot-backend
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./Backend:/app/Backend
+      - ./.env:/app/.env
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://netspot:netspot_password@db:5432/netspot
+      - RABBITMQ_HOST=rabbitmq
+      - OLLAMA_URL=http://host.docker.internal:11434
+    restart: always
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: netspot-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./Frontend:/usr/share/nginx/html
+    depends_on:
+      - backend
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: netspot-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./RabbitMQ/data:/var/lib/rabbitmq
+      - ./RabbitMQ/log:/var/log/rabbitmq
+    restart: always
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: netspot-n8n
+    user: root
+    ports:
+      - "5678:5678"
+    depends_on:
+      - db
+    env_file:
+      - .env
+    volumes:
+      - ./N8N/data:/root/.n8n
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=db
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=netspot
+      - DB_POSTGRESDB_USER=netspot
+      - DB_POSTGRESDB_PASSWORD=netspot_password
+    restart: always

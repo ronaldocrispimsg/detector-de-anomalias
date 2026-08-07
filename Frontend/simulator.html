@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<script>
+  if (!localStorage.getItem("token")) {
+      window.location.replace("login.html");
+  }
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NetSpot - Simulador Visual de Anomalias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300..800&family=Roboto:wght@100..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/simulator.css">
+<script>
+  (function() {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "dark") {
+          document.documentElement.classList.add("dark-theme");
+      }
+  })();
+</script>
+</head>
+
+<body>
+<header class="app-topbar">
+    <div class="app-topbar-inner">
+        <button id="openMenuBtn" class="menu-trigger-btn icon-btn nav" title="Abrir menu" aria-label="Abrir menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <div class="hero-copy app-topbar-title">
+            <a href="dashboard.html" class="app-logo-link" title="Ir para o início">
+                <img src="images/logo/Prancheta 1.png" alt="NetSpot" class="app-logo logo-light">
+                <img src="images/logo/Prancheta 2.png" alt="NetSpot" class="app-logo logo-dark">
+            </a>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <a class="sim-btn sim-btn-secondary" href="dashboard.html" style="text-decoration:none; padding: 6px 14px; font-size:0.85rem;">📊 Dashboard</a>
+            <a class="sim-btn sim-btn-secondary" href="incidents.html" style="text-decoration:none; padding: 6px 14px; font-size:0.85rem;">🔔 Incidentes</a>
+        </div>
+        <button id="themeToggleBtn" class="theme-switch-pill" type="button" title="Alternar tema claro/escuro" aria-label="Alternar tema">
+            <svg class="theme-switch-icon-sun" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <svg class="theme-switch-icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 109 9 9.75 9.75 0 00-.67-3.4 6.78 6.78 0 01-7.93-7.93A9.75 9.75 0 0012 3z"/></svg>
+            <span class="theme-switch-thumb">
+                <svg id="themeToggleIcon" viewBox="0 0 24 24" width="14" height="14"></svg>
+            </span>
+        </button>
+    </div>
+</header>
+
+<div class="sim-container">
+    <!-- Topbar Header -->
+    <div class="sim-header">
+        <div class="sim-title-group">
+            <h1>🖥️ Simulador & Classificador Visual de Anomalias</h1>
+            <p>Selecione qualquer cenário abaixo com 1 clique para visualizar as métricas em tempo real e o diagnóstico inteligente (Heurísticas, ML e IA Generativa Local).</p>
+        </div>
+        <div class="sim-actions">
+            <span id="genaiStatusBadge" class="risk-badge" style="background: rgba(16,185,129,0.2); color:#34d399; font-size:0.75rem; border: 1px solid #059669;">Checando LLM...</span>
+            <button id="runBenchmarkBtn" class="sim-btn sim-btn-accent" type="button">⚡ Benchmark (10 Cenários)</button>
+        </div>
+    </div>
+
+    <!-- SEÇÃO 1: Galeria Visual dos 10 Cenários (1 Clique) -->
+    <div class="section-title">
+        <span>🎮 Selecione o Cenário para Simular (1 Clique)</span>
+        <span class="badge">10 Cenários Prontos</span>
+    </div>
+
+    <div id="scenarioCardsContainer" class="scenario-cards-grid">
+        <!-- Injetado dinamicamente via JS -->
+    </div>
+
+    <!-- SEÇÃO 2: Painel de Telemetria Visual (Métricas Animadas) -->
+    <div class="section-title">
+        <span>📊 Telemetria do Sistema em Tempo Real</span>
+        <span id="activeScenarioTag" class="badge" style="background:rgba(168,85,247,0.2); color:#c084fc;">NORMAL</span>
+    </div>
+
+    <div class="telemetry-grid">
+        <!-- Meter 1: CPU -->
+        <div class="meter-card">
+            <div class="meter-header">
+                <span>💻 USO DE CPU</span>
+                <span id="meterCpuVal" class="meter-value">28%</span>
+            </div>
+            <div class="progress-track">
+                <div id="meterCpuBar" class="progress-bar" style="width: 28%; background-color: #10b981;"></div>
+            </div>
+        </div>
+
+        <!-- Meter 2: RAM -->
+        <div class="meter-card">
+            <div class="meter-header">
+                <span>🧠 MEMÓRIA RAM</span>
+                <span id="meterRamVal" class="meter-value">45%</span>
+            </div>
+            <div class="progress-track">
+                <div id="meterRamBar" class="progress-bar" style="width: 45%; background-color: #3b82f6;"></div>
+            </div>
+        </div>
+
+        <!-- Meter 3: DISCO -->
+        <div class="meter-card">
+            <div class="meter-header">
+                <span>💽 ARMAZENAMENTO DISCO</span>
+                <span id="meterDiskVal" class="meter-value">40%</span>
+            </div>
+            <div class="progress-track">
+                <div id="meterDiskBar" class="progress-bar" style="width: 40%; background-color: #8b5cf6;"></div>
+            </div>
+        </div>
+
+        <!-- Meter 4: LATÊNCIA ICMP -->
+        <div class="meter-card">
+            <div class="meter-header">
+                <span>🚀 LATÊNCIA ICMP / LOSS</span>
+                <span id="meterLatencyVal" class="meter-value">15 ms</span>
+            </div>
+            <div class="progress-track">
+                <div id="meterLatencyBar" class="progress-bar" style="width: 15%; background-color: #10b981;"></div>
+            </div>
+            <div style="font-size:0.75rem; color:var(--sim-text-muted); margin-top:6px; display:flex; justify-content:space-between;">
+                <span>Perda Pacotes: <strong id="meterLossVal" style="color:#fff;">0%</strong></span>
+                <span>Jitter: <strong id="meterJitterVal" style="color:#fff;">2 ms</strong></span>
+            </div>
+        </div>
+
+        <!-- Meter 5: BANDA ENTRADA -->
+        <div class="meter-card">
+            <div class="meter-header">
+                <span>📥 BANDA ENTRADA (IN)</span>
+                <span id="meterNetInVal" class="meter-value">5.0 MB/s</span>
+            </div>
+            <div class="progress-track">
+                <div id="meterNetInBar" class="progress-bar" style="width: 10%; background-color: #06b6d4;"></div>
+            </div>
+        </div>
+
+        <!-- Meter 6: BANDA SAÍDA -->
+        <div class="meter-card">
+            <div class="meter-header">
+                <span>📤 BANDA SAÍDA (OUT)</span>
+                <span id="meterNetOutVal" class="meter-value">2.0 MB/s</span>
+            </div>
+            <div class="progress-track">
+                <div id="meterNetOutBar" class="progress-bar" style="width: 5%; background-color: #ec4899;"></div>
+            </div>
+        </div>
+
+        <!-- Meter 7: STATUS HTTP & SERVIÇO -->
+        <div class="meter-card">
+            <div class="meter-header">
+                <span>🌐 APLICAÇÃO HTTP</span>
+                <span id="meterHttpBadge" class="risk-badge risk-BAIXO" style="padding:2px 10px; font-size:0.8rem;">200 OK</span>
+            </div>
+            <div style="font-size:0.8rem; color:var(--sim-text-muted); margin-top:10px;">
+                Tempo Resposta: <strong id="meterHttpRespVal" style="color:#fff;">120 ms</strong>
+            </div>
+        </div>
+
+        <!-- Meter 8: CONEXÕES TCP -->
+        <div class="meter-card">
+            <div class="meter-header">
+                <span>🔌 CONEXÕES TCP ATIVAS</span>
+                <span id="meterConnVal" class="meter-value">45</span>
+            </div>
+            <div class="progress-track">
+                <div id="meterConnBar" class="progress-bar" style="width: 8%; background-color: #a855f7;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEÇÃO 3: Parecer Unificado & Diagnóstico dos 3 Motores -->
+    <div class="section-title">
+        <span>🎯 Diagnóstico Multi-Motor & Parecer Inteligente</span>
+    </div>
+
+    <!-- Banner Veredito Ensemble -->
+    <div class="verdict-banner">
+        <div class="verdict-info">
+            <p>VEREDITO DE CONSENSO (ENSEMBLE HYBRID)</p>
+            <h2 id="finalScenarioTitle">CENÁRIO DETECTADO: OPERAÇÃO NORMAL</h2>
+            <p id="finalScenarioMeta">Confiança: 98% | Consenso dos Motores: SIM</p>
+        </div>
+        <div id="riskLevelBadge" class="risk-badge risk-BAIXO">RISCO BAIXO</div>
+    </div>
+
+    <!-- Grade dos 3 Motores -->
+    <div class="motors-tri-grid">
+        <!-- Motor 1: Heurística -->
+        <div class="motor-card">
+            <div class="motor-title">📐 Motor 1: Regras Heurísticas</div>
+            <div id="heurScenario" class="motor-pred">NORMAL</div>
+            <div id="heurMeta" class="motor-meta">Confiança: 95% | Severidade: OK</div>
+            <strong style="font-size:0.75rem; color:var(--sim-text-muted);">REGRAS DISPARADAS:</strong>
+            <ul id="heurRulesList" class="rules-list" style="margin-top:6px;">
+                <li>Nenhuma violação registrada.</li>
+            </ul>
+        </div>
+
+        <!-- Motor 2: Machine Learning -->
+        <div class="motor-card">
+            <div class="motor-title">🤖 Motor 2: Machine Learning</div>
+            <div id="mlScenario" class="motor-pred">NORMAL</div>
+            <div id="mlMeta" class="motor-meta">IsolationForest Anomaly Score: 0.120</div>
+            <strong style="font-size:0.75rem; color:var(--sim-text-muted);">TOP MÉTRICAS DETERMINANTES:</strong>
+            <ul id="mlFeaturesList" class="features-list" style="margin-top:6px;">
+                <li>latency_ms: 15%</li>
+                <li>ram_usage_pct: 12%</li>
+            </ul>
+        </div>
+
+        <!-- Motor 3: IA Generativa Local -->
+        <div class="motor-card">
+            <div class="motor-title">🧠 Motor 3: IA Generativa Local</div>
+            <div id="genaiScenario" class="motor-pred">NORMAL</div>
+            <div id="genaiMeta" class="motor-meta">Provedor: Engine Local GenAI</div>
+            <strong style="font-size:0.75rem; color:var(--sim-text-muted);">SÍNTESE DIAGNÓSTICA:</strong>
+            <p id="genaiSummaryText" style="font-size:0.82rem; color:#cbd5e1; margin:6px 0 0 0;">Sistema operando em parâmetros normais.</p>
+        </div>
+    </div>
+
+    <!-- Diagnóstico Técnico e Playbook LLM -->
+    <div class="genai-box">
+        <h4>📋 Análise Técnica de Causa Raiz & Playbook de Resolução NOC</h4>
+        <p id="genaiRootCause"><strong>Causa Raiz:</strong> Operação dentro do SLA ideal sem anomalias detectadas.</p>
+        <p id="genaiImpact"><strong>Impacto NOC:</strong> Sem impacto na disponibilidade ou desempenho.</p>
+        <strong style="font-size:0.85rem; color:#c084fc; display:block; margin-bottom:8px; margin-top:12px;">PLAYBOOK DE MITIGAÇÃO RECOMENDADO:</strong>
+        <ol id="genaiPlaybookList" class="playbook-list">
+            <li>Manter rotina padrão de monitoramento ativo NOC.</li>
+        </ol>
+    </div>
+</div>
+
+<!-- Modal Benchmark -->
+<div id="benchmarkModal" class="modal hidden">
+    <div class="modal-content" style="max-width:800px; background:#0b1329; border: 1px solid var(--sim-card-border);">
+        <h2 style="color:var(--sim-accent-neon); margin-top:0;">⚡ Relatório de Benchmark Multi-Motor</h2>
+        <p style="color:var(--sim-text-muted); font-size:0.9rem;">Resultado do teste comparativo de acurácia executado em 100 amostras simuladas dos 10 cenários:</p>
+        
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin: 1.5rem 0;">
+            <div class="motor-card" style="text-align:center;">
+                <span style="font-size:0.8rem; color:var(--sim-text-muted);">Heurísticas</span>
+                <h2 id="benchHeurAcc" style="color:#60a5fa; margin:6px 0 0 0;">100%</h2>
+            </div>
+            <div class="motor-card" style="text-align:center;">
+                <span style="font-size:0.8rem; color:var(--sim-text-muted);">Machine Learning</span>
+                <h2 id="benchMLAcc" style="color:#34d399; margin:6px 0 0 0;">100%</h2>
+            </div>
+            <div class="motor-card" style="text-align:center;">
+                <span style="font-size:0.8rem; color:var(--sim-text-muted);">GenAI Local</span>
+                <h2 id="benchGenAIAcc" style="color:#c084fc; margin:6px 0 0 0;">100%</h2>
+            </div>
+            <div class="motor-card" style="text-align:center;">
+                <span style="font-size:0.8rem; color:var(--sim-text-muted);">Consensus Ensemble</span>
+                <h2 id="benchEnsAcc" style="color:#f472b6; margin:6px 0 0 0;">100%</h2>
+            </div>
+        </div>
+
+        <div style="max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.3); padding:10px; border-radius:8px;">
+            <table style="width:100%; font-size:0.8rem; border-collapse:collapse; text-align:left;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.1); color:var(--sim-text-muted);">
+                        <th>Cenário Esperado</th>
+                        <th>Heurística</th>
+                        <th>ML</th>
+                        <th>GenAI</th>
+                        <th>Ensemble</th>
+                    </tr>
+                </thead>
+                <tbody id="benchMatrixTable"></tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Personalização de Telemetria Customizada -->
+<div id="customTuningModal" class="modal hidden">
+    <div class="modal-content" style="max-width:850px; background:#0b1329; border: 1px solid var(--sim-card-border); padding: 2rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem;">
+            <h2 style="color:var(--sim-accent-neon); margin:0; font-size: 1.4rem;">🎛️ Personalizar Métricas do Cenário Customizado</h2>
+            <button type="button" class="sim-btn sim-btn-secondary" onclick="closeCustomModal()" style="padding: 4px 10px; font-size: 0.8rem;">✕ Fechar</button>
+        </div>
+        <p style="color:var(--sim-text-muted); font-size:0.88rem; margin-top:0;">Ajuste livremente os valores de telemetria abaixo para testar hipóteses personalizadas nos 3 motores de IA:</p>
+
+        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 1.2rem; margin: 1.5rem 0;">
+            <div class="slider-group">
+                <div class="slider-label"><span>Uso de CPU (%):</span><span><strong id="val_cpu">28</strong>%</span></div>
+                <input type="range" id="input_cpu" class="sim-slider" min="0" max="100" step="1" value="28" oninput="updateVal('cpu', this.value)">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>Uso de RAM (%):</span><span><strong id="val_ram">45</strong>%</span></div>
+                <input type="range" id="input_ram" class="sim-slider" min="0" max="100" step="1" value="45" oninput="updateVal('ram', this.value)">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>Uso de Disco (%):</span><span><strong id="val_disk">40</strong>%</span></div>
+                <input type="range" id="input_disk" class="sim-slider" min="0" max="100" step="1" value="40" oninput="updateVal('disk', this.value)">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>Latência ICMP (ms):</span><span><strong id="val_latency">15</strong> ms</span></div>
+                <input type="range" id="input_latency" class="sim-slider" min="0" max="1000" step="5" value="15" oninput="updateVal('latency', this.value)">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>Perda de Pacotes (%):</span><span><strong id="val_loss">0</strong>%</span></div>
+                <input type="range" id="input_loss" class="sim-slider" min="0" max="100" step="1" value="0" oninput="updateVal('loss', this.value)">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>Jitter (ms):</span><span><strong id="val_jitter">2</strong> ms</span></div>
+                <input type="range" id="input_jitter" class="sim-slider" min="0" max="200" step="1" value="2" oninput="updateVal('jitter', this.value)">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>Banda Entrada (IN MB/s):</span><span><strong id="val_net_in">5.0</strong> MB/s</span></div>
+                <input type="range" id="input_net_in" class="sim-slider" min="0" max="600" step="10" value="5" oninput="updateVal('net_in', this.value)">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>Banda Saída (OUT MB/s):</span><span><strong id="val_net_out">2.0</strong> MB/s</span></div>
+                <input type="range" id="input_net_out" class="sim-slider" min="0" max="600" step="10" value="2" oninput="updateVal('net_out', this.value)">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>Conexões TCP Ativas:</span><span><strong id="val_conn">45</strong></span></div>
+                <input type="range" id="input_conn" class="sim-slider" min="0" max="5000" step="50" value="45" oninput="updateVal('conn', this.value)">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>Status HTTP Aplicação:</span><span><strong id="val_http_code">200</strong></span></div>
+                <select id="input_http_code" class="scenario-pill" style="width:100%; text-align:left; background:rgba(0,0,0,0.4);" onchange="updateVal('http_code', this.value)">
+                    <option value="200">200 OK (Saudável)</option>
+                    <option value="500">500 Internal Server Error</option>
+                    <option value="502">502 Bad Gateway</option>
+                    <option value="503">503 Service Unavailable</option>
+                    <option value="504">504 Gateway Timeout</option>
+                    <option value="0">0 Connection Refused (Down)</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 1.5rem; padding-top: 1rem; border-top:1px solid rgba(255,255,255,0.1);">
+            <button type="button" class="sim-btn sim-btn-secondary" onclick="randomizeCustomNoise()">🎲 Injetar Ruído Aleatório</button>
+            <button type="button" class="sim-btn sim-btn-accent" onclick="applyCustomScenarioAndClassify()">🚀 Testar & Classificar Meu Cenário</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/simulator.js"></script>
+</body>
+</html>

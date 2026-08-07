@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arquitetura RAG na Prática | Dataset Definitivo src/dataset.csv</title>
+  <meta name="description" content="Visualizador interativo da Arquitetura RAG alimentado pelo dataset definitivo de telemetria e incidentes src/dataset.csv.">
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+
+  <!-- Header & Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <div>
+          <h1>Arquitetura <span>RAG</span> no Dataset Real</h1>
+          <p class="subtitle">Análise Diagnóstica do Dataset Definitivo <code>src/dataset.csv</code> com ChromaDB & Qwen 2.5:7B</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-purple" id="ollama-status">
+          <span class="status-dot"></span> Ollama: Verificando...
+        </span>
+        <span class="badge badge-cyan">ChromaDB + src/dataset.csv</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-container">
+
+    <!-- Section: Input & Control Panel -->
+    <section class="control-card glass-panel">
+      <div class="card-header">
+        <h2>📊 Dataset Definitivo e Consulta Diagnóstica</h2>
+        <span class="card-step-badge">src/dataset.csv</span>
+      </div>
+      <div class="control-grid">
+        <div class="input-group">
+          <label for="doc-input">Visualização dos Registros do Dataset (src/dataset.csv):</label>
+          <textarea id="doc-input" rows="8" placeholder="Carregando src/dataset.csv..."></textarea>
+          <div class="input-meta">
+            <span id="doc-stats">Carregando métricas...</span>
+            <button type="button" class="btn-secondary" id="btn-load-sample">Recarregar Dataset (src/dataset.csv)</button>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="query-input">Pergunta ou Diagnóstico Desejado:</label>
+          <input type="text" id="query-input" placeholder="Ex: Quais os impactos de rede, CPU e erros HTTP observados no cenário de DDOS_ATTACK?" value="Quais os impactos de rede, CPU e erros HTTP observados no cenário de DDOS_ATTACK?">
+          
+          <div class="quick-questions" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.3rem;">
+            <button type="button" class="btn-secondary btn-quick" data-query="Quais os impactos de rede, CPU e erros HTTP observados no cenário de DDOS_ATTACK?">⚡ DDOS Attack</button>
+            <button type="button" class="btn-secondary btn-quick" data-query="Qual o comportamento de uso de RAM e CPU no incidente de MEMORY_LEAK?">🧠 Memory Leak</button>
+            <button type="button" class="btn-secondary btn-quick" data-query="Como identificar o ataque de exfiltração de dados (DATA_EXFILTRATION)?">📡 Data Exfiltration</button>
+            <button type="button" class="btn-secondary btn-quick" data-query="Quais cenários causaram eotamento de disco (DISK_EXHAUSTION)?">💾 Disk Exhaustion</button>
+          </div>
+
+          <div class="config-row">
+            <div class="config-item">
+              <label for="chunk-size">Tamanho do Chunk (chars):</label>
+              <input type="number" id="chunk-size" value="500" min="200" max="1500">
+            </div>
+            <div class="config-item">
+              <label for="top-k">Top-K Chunks Recuperados:</label>
+              <input type="number" id="top-k" value="3" min="1" max="5">
+            </div>
+          </div>
+
+          <button type="button" class="btn-primary" id="btn-run-rag">
+            <span>🚀 Processar RAG no Dataset Real</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pipeline Visual Steps -->
+    <div class="pipeline-stepper">
+      <div class="step-tab active" data-step="1">
+        <span class="step-num">1</span>
+        <span class="step-label">Chunking CSV</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-tab" data-step="2">
+        <span class="step-num">2</span>
+        <span class="step-label">Embeddings</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-tab" data-step="3">
+        <span class="step-num">3</span>
+        <span class="step-label">ChromaDB</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-tab" data-step="4">
+        <span class="step-num">4</span>
+        <span class="step-label">Retrieval</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-tab" data-step="5">
+        <span class="step-num">5</span>
+        <span class="step-label">Geração Qwen</span>
+      </div>
+    </div>
+
+    <!-- Details Grid -->
+    <div class="steps-grid">
+
+      <!-- ETAPA 1: CHUNKING -->
+      <section class="step-card glass-panel" id="step1-card">
+        <div class="card-header">
+          <h3>1. Preparação e Chunking do Dataset</h3>
+          <span class="badge badge-purple">CSV Splitting</span>
+        </div>
+        <p class="step-desc">Os registros do <code>src/dataset.csv</code> são agrupados e divididos em pedaços textuais estruturados por cenário de telemetria.</p>
+        <div class="chunks-container" id="chunks-list">
+          <div class="empty-state">Clique em "Processar RAG no Dataset Real" para visualizar a divisão.</div>
+        </div>
+      </section>
+
+      <!-- ETAPA 2 & 3: EMBEDDINGS & CHROMADB -->
+      <section class="step-card glass-panel" id="step2-card">
+        <div class="card-header">
+          <h3>2 & 3. Embeddings + ChromaDB</h3>
+          <span class="badge badge-cyan">Vector Store</span>
+        </div>
+        <p class="step-desc">Cada cenário e métrica do CSV é convertido em vetores densos e armazenados na coleção do ChromaDB.</p>
+        <div class="vector-container" id="vectors-list">
+          <div class="empty-state">Aguardando geração dos vetores do dataset...</div>
+        </div>
+      </section>
+
+      <!-- ETAPA 4: RETRIEVAL -->
+      <section class="step-card glass-panel" id="step3-card">
+        <div class="card-header">
+          <h3>4. Busca (Retrieval Semântico)</h3>
+          <span class="badge badge-gold">Cosine Distance</span>
+        </div>
+        <p class="step-desc">Busca os trechos do dataset com métricas e evidências mais relevantes para responder à consulta.</p>
+        <div class="retrieval-container" id="retrieval-list">
+          <div class="empty-state">Aguardando execução da busca vetorial no dataset...</div>
+        </div>
+      </section>
+
+      <!-- ETAPA 5: GERAÇÃO -->
+      <section class="step-card glass-panel highlight-card" id="step4-card">
+        <div class="card-header">
+          <h3>5. Geração com Qwen 2.5:7B</h3>
+          <span class="badge badge-green">Diagnóstico Final</span>
+        </div>
+        <p class="step-desc">Prompt final formatado com o contexto extraído diretamente do <code>src/dataset.csv</code> e enviado ao Qwen 2.5:7B.</p>
+        
+        <div class="prompt-preview-box">
+          <label>Prompt Formatado Final enviado ao LLM:</label>
+          <pre id="prompt-preview">Aguardando geração de prompt...</pre>
+        </div>
+
+        <div class="llm-response-box">
+          <label>🤖 Diagnóstico Gerado pelo Qwen 2.5:7B:</label>
+          <div id="llm-response-output" class="response-content">
+            <span class="placeholder-text">Clique em "Processar RAG no Dataset Real" para visualizar o diagnóstico fundamentado nos dados de telemetria.</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <p>Arquitetura RAG na Prática — Processando o dataset definitivo <code>src/dataset.csv</code> com ChromaDB e Qwen 2.5:7B.</p>
+  </footer>
+
+  <script src="src/app.js"></script>
+</body>
+</html>

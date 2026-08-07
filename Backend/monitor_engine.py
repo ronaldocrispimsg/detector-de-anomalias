@@ -10,8 +10,9 @@ from Backend.scheduler import (
     get_active_host_ids,
     process_host_check,
 )
+from Backend.mq_manager import mq_manager
 
-logger = logging.getLogger("noc_lite.monitor_engine")
+logger = logging.getLogger("netspot.monitor_engine")
 
 
 class MonitorEngine:
@@ -23,7 +24,7 @@ class MonitorEngine:
     ) -> None:
         self.interval_seconds = max(1, int(interval_seconds))
         self.cleanup_interval_seconds = max(60, int(cleanup_interval_seconds))
-        default_concurrency = int(os.getenv("NOC_MONITOR_MAX_CONCURRENCY", "20"))
+        default_concurrency = int(os.getenv("NETSPOT_MONITOR_MAX_CONCURRENCY", "20"))
         self.max_concurrency = max(1, int(max_concurrency or default_concurrency))
         self._task: asyncio.Task | None = None
         self._semaphore = asyncio.Semaphore(self.max_concurrency)
@@ -39,7 +40,7 @@ class MonitorEngine:
             return
 
         self._next_cleanup_at = time.monotonic() + self.cleanup_interval_seconds
-        self._task = asyncio.create_task(self._run_loop(), name="noc-monitor-loop")
+        self._task = asyncio.create_task(self._run_loop(), name="netspot-monitor-loop")
         logger.info(
             "monitor loop iniciado | interval=%ss | cleanup=%ss | max_concurrency=%s",
             self.interval_seconds,
@@ -95,45 +96,31 @@ class MonitorEngine:
         cycle_ts = time.strftime("%Y-%m-%d %H:%M:%S")
         logger.info("ciclo iniciado em %s", cycle_ts)
 
-        host_ids = await asyncio.to_thread(get_active_host_ids)
+        host_ids = await get_active_host_ids()
         logger.info("hosts ativos para checagem: %s", len(host_ids))
 
         if not host_ids:
             logger.info("ciclo finalizado: nenhum host ativo")
             return
 
-        tasks = [asyncio.create_task(self.check_host(host_id)) for host_id in host_ids]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
         failures = 0
-        for host_id, result in zip(host_ids, results):
-            if isinstance(result, Exception):
+        for host_id in host_ids:
+            try:
+                await mq_manager.publish_host_check(host_id)
+            except Exception:
                 failures += 1
-                logger.exception(
-                    "erro na task do host id=%s",
-                    host_id,
-                    exc_info=result,
-                )
+                logger.exception("erro ao publicar tarefa de checagem do host id=%s", host_id)
 
         logger.info(
-            "ciclo finalizado | total_hosts=%s | falhas=%s",
+            "ciclo finalizado | total_hosts=%s | falhas_publicacao=%s",
             len(host_ids),
             failures,
         )
 
-    async def check_host(self, host_id: int) -> None:
-        async with self._semaphore:
-            try:
-                await asyncio.to_thread(process_host_check, host_id)
-            except asyncio.CancelledError:
-                raise
-            except Exception:
-                logger.exception("erro no processamento do host id=%s", host_id)
-
     async def _run_cleanup(self) -> None:
         try:
             logger.info("iniciando rotina de cleanup")
-            await asyncio.to_thread(cleanup_old_data)
+            await cleanup_old_data()
         except asyncio.CancelledError:
             raise
         except Exception:

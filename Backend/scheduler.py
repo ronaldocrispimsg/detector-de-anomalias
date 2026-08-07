@@ -5,10 +5,16 @@ import json
 from datetime import datetime, timedelta
 from threading import Lock
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from Backend.checker import ping_host, tcp_check, resolve_dns_cached, http_check
-from Backend.database import SessionLocal, ensure_runtime_schema
+from Backend.database import SessionLocal, AsyncSessionLocal
+from Backend.utils import (
+    open_incident_async,
+    close_incident_async,
+    consecutive_failures_async,
+)
 from Backend.metrics import (
     apply_preventive_logic,
     calc_jitter_http,
@@ -19,6 +25,14 @@ from Backend.metrics import (
     calc_sla_rolling_http,
     calc_sla_rolling_ping,
     calc_sla_rolling_tcp_ports,
+    calc_sla_rolling_ping_async,
+    calc_sla_rolling_tcp_ports_async,
+    calc_sla_rolling_http_async,
+    calc_jitter_ping_async,
+    calc_jitter_tcp_ports_async,
+    calc_jitter_http_async,
+    calc_latency_trend_ping_async,
+    calc_latency_trend_http_async,
     classify_trend,
     classify_trend_http,
     compute_health,
@@ -34,6 +48,7 @@ from Backend.notifications import (
     build_preventive_alert_message,
     build_recovery_message,
     send_telegram_alert,
+    send_telegram_alert_async,
 )
 from Backend.snmp_engine import (
     can_attempt_snmp,
@@ -51,7 +66,7 @@ from Backend.utils import (
     open_incident,
 )
 
-logger = logging.getLogger("noc_lite.scheduler")
+logger = logging.getLogger("netspot.scheduler")
 
 ALERT_FAIL_THRESHOLD = 2
 ALERT_RECOVER_THRESHOLD = 1
@@ -62,9 +77,9 @@ _ALERT_COOLDOWN_LOCK = Lock()
 _DEGRADED_STREAKS = {}
 _DEGRADED_STREAKS_LOCK = Lock()
 
-MONITOR_INTERVAL_SECONDS = int(os.getenv("NOC_MONITOR_INTERVAL_SECONDS", "20"))
-CLEANUP_INTERVAL_SECONDS = int(os.getenv("NOC_CLEANUP_INTERVAL_SECONDS", "3600"))
-SNMP_ALLOWED_COMMUNITY = "noc-lite"
+MONITOR_INTERVAL_SECONDS = int(os.getenv("NETSPOT_MONITOR_INTERVAL_SECONDS", "10"))
+CLEANUP_INTERVAL_SECONDS = int(os.getenv("NETSPOT_CLEANUP_INTERVAL_SECONDS", "3600"))
+SNMP_ALLOWED_COMMUNITY = "netspot"
 
 
 def _alert_cooldown_passed(
@@ -238,23 +253,14 @@ def _extract_ips_and_ttl(dns_result):
     return ips, ttl, ttl_remaining
 
 
-def _host_check_blocking(host_id: int) -> None:
-    ensure_runtime_schema()
-    db: Session = SessionLocal()
+async def _host_check_async(host_id: int) -> None:
+    db = AsyncSessionLocal()
     try:
-        host = (
-            db.query(Host)
-            .filter(Host.id == host_id, Host.active.is_(True))
-            .first()
-        )
+        stmt = select(Host).filter(Host.id == host_id, Host.active.is_(True))
+        res = await db.execute(stmt)
+        host = res.scalars().first()
         if host is None:
-            return
-
-        # Interceptação para simulação de anomalia ativa
-        from Backend.anomaly_simulator import get_active_simulation, run_simulated_check_cycle
-        sim = get_active_simulation(host_id)
-        if sim is not None:
-            run_simulated_check_cycle(host_id, sim["anomaly_type"], db)
+            await db.close()
             return
 
         old_status = host.status
@@ -262,7 +268,7 @@ def _host_check_blocking(host_id: int) -> None:
         old_status_normalized = str(old_status or "").strip().upper()
         baseline_pending = bool(getattr(host, "baseline_pending", False))
 
-        dns_result = resolve_dns_cached(host.address, db)
+        dns_result = await resolve_dns_cached(host.address, db)
         ips, ttl, ttl_remaining = _extract_ips_and_ttl(dns_result)
 
         if ttl is not None:
@@ -288,9 +294,13 @@ def _host_check_blocking(host_id: int) -> None:
                         new_status=str(ttl),
                     )
                 )
-                send_telegram_alert(
-                    build_dns_ttl_low_message(host, host.address, ttl, datetime.utcnow())
-                )
+                await send_telegram_alert_async({
+                    "event": "dns_ttl_low",
+                    "host_name": host.name,
+                    "host_address": host.address,
+                    "ttl": ttl,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
                 host.last_ttl_alert = datetime.utcnow()
 
         if not ips:
@@ -314,10 +324,10 @@ def _host_check_blocking(host_id: int) -> None:
             host.fail_streak = (host.fail_streak or 0) + 1
             host.success_streak = 0
 
-            db.flush()
+            await db.flush()
 
-            if consecutive_failures(db, host.id, limit=3, check_types=["dns"]):
-                open_incident(
+            if await consecutive_failures_async(db, host.id, limit=3, check_types=["dns"]):
+                await open_incident_async(
                     db,
                     host,
                     "Falha na resolução DNS",
@@ -325,20 +335,20 @@ def _host_check_blocking(host_id: int) -> None:
                     check_used="DNS",
                     auto_commit=False,
                 )
-                close_incident(
+                await close_incident_async(
                     db,
                     host.name,
                     incident_type=INCIDENT_TYPE_SERVICE_DOWN,
                     auto_commit=False,
                 )
-                close_incident(
+                await close_incident_async(
                     db,
                     host.name,
                     incident_type=INCIDENT_TYPE_SERVICE_DEGRADED,
                     auto_commit=False,
                 )
 
-            db.commit()
+            await db.commit()
             return
 
         db.add(
@@ -369,29 +379,28 @@ def _host_check_blocking(host_id: int) -> None:
                         new_status=new_ip,
                     )
                 )
-                send_telegram_alert(
-                    build_dns_change_message(
-                        host,
-                        host.address,
-                        old_ip,
-                        new_ip,
-                        datetime.utcnow(),
-                    )
-                )
+                await send_telegram_alert_async({
+                    "event": "dns_change",
+                    "host_name": host.name,
+                    "host_address": host.address,
+                    "old_ip": old_ip,
+                    "new_ip": new_ip,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
 
         host.last_resolved_ip = ip
-        close_incident(
+        await close_incident_async(
             db,
             host.name,
             incident_type=INCIDENT_TYPE_DNS_FAILURE,
             auto_commit=False,
         )
 
-        ping_result = ping_host(ip)
+        ping_result = await ping_host(ip)
 
         tcp_results = []
         for tcp_port in _host_tcp_ports(host):
-            result = tcp_check(ip, tcp_port)
+            result = await tcp_check(ip, tcp_port)
             result["port"] = tcp_port
             tcp_results.append(result)
 
@@ -400,7 +409,7 @@ def _host_check_blocking(host_id: int) -> None:
         http_result = None
         url = _resolve_host_check_url(host)
         if url:
-            http_result = http_check(url)
+            http_result = await http_check(url)
             protocol = str(http_result.get("protocol") or "").lower()
             host.last_http_protocol = protocol.upper() if protocol in {"http", "https"} else None
             host.http_latency = http_result.get("latency")
@@ -408,15 +417,15 @@ def _host_check_blocking(host_id: int) -> None:
             host.web_tcp_port = 443 if protocol == "https" else (80 if protocol == "http" else None)
             host.web_tcp_port_latency = None
 
-            def _probe_aux_port(target_port: int) -> dict:
+            async def _probe_aux_port(target_port: int) -> dict:
                 existing = next(
                     (r for r in tcp_results if int(r.get("port") or -1) == int(target_port)),
                     None,
                 )
-                return existing or tcp_check(ip, int(target_port))
+                return existing or await tcp_check(ip, int(target_port))
 
-            http_port_result = _probe_aux_port(80)
-            https_port_result = _probe_aux_port(443)
+            http_port_result = await _probe_aux_port(80)
+            https_port_result = await _probe_aux_port(443)
 
             host.tcp_http_port_ok = bool(http_port_result.get("success"))
             host.tcp_http_port_latency = (
@@ -464,14 +473,13 @@ def _host_check_blocking(host_id: int) -> None:
                     new_status=f"score={score}",
                 )
             )
-            send_telegram_alert(
-                build_health_critical_message(
-                    host,
-                    "health_score",
-                    score,
-                    datetime.utcnow(),
-                )
-            )
+            await send_telegram_alert_async({
+                "event": "health_critical",
+                "host_name": host.name,
+                "host_address": host.address,
+                "health_score": score,
+                "timestamp": datetime.utcnow().isoformat()
+            })
 
         new_status, primary_check, service_up_without_icmp = determine_operational_state(
             host,
@@ -514,16 +522,16 @@ def _host_check_blocking(host_id: int) -> None:
                         new_status=new_status,
                     )
                 )
-                send_telegram_alert(
-                    build_failure_confirmed_message(
-                        host,
-                        old_status,
-                        new_status,
-                        host.fail_streak,
-                        datetime.utcnow(),
-                        check_used=primary_check,
-                    )
-                )
+                await send_telegram_alert_async({
+                    "event": "failure_confirmed",
+                    "host_name": host.name,
+                    "host_address": host.address,
+                    "old_status": old_status,
+                    "new_status": new_status,
+                    "fail_streak": host.fail_streak,
+                    "check_used": primary_check,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
             elif is_real_recovery:
                 db.add(
                     Alert(
@@ -532,9 +540,13 @@ def _host_check_blocking(host_id: int) -> None:
                         new_status="UP_RECOVERED",
                     )
                 )
-                send_telegram_alert(
-                    build_recovery_message(host, old_status, datetime.utcnow())
-                )
+                await send_telegram_alert_async({
+                    "event": "recovery",
+                    "host_name": host.name,
+                    "host_address": host.address,
+                    "old_status": old_status,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
 
         host.last_check = datetime.utcnow()
 
@@ -589,22 +601,22 @@ def _host_check_blocking(host_id: int) -> None:
                 )
             )
 
-        db.flush()
+        await db.flush()
 
-        host.sla_rolling_ping = calc_sla_rolling_ping(db, host.id, 50)
-        host.jitter_ms_ping = calc_jitter_ping(db, host.id, 10)
+        host.sla_rolling_ping = await calc_sla_rolling_ping_async(db, host.id, 50)
+        host.jitter_ms_ping = await calc_jitter_ping_async(db, host.id, 10)
 
         active_tcp_ports = _host_tcp_ports(host)
-        host.sla_rolling_tcp = calc_sla_rolling_tcp_ports(db, host.id, active_tcp_ports, 50)
-        host.jitter_ms_tcp = calc_jitter_tcp_ports(db, host.id, active_tcp_ports, 10)
+        host.sla_rolling_tcp = await calc_sla_rolling_tcp_ports_async(db, host.id, active_tcp_ports, 50)
+        host.jitter_ms_tcp = await calc_jitter_tcp_ports_async(db, host.id, active_tcp_ports, 10)
 
-        host.sla_rolling_http = calc_sla_rolling_http(db, host.id, 50)
-        host.jitter_ms_http = calc_jitter_http(db, host.id, 10)
+        host.sla_rolling_http = await calc_sla_rolling_http_async(db, host.id, 50)
+        host.jitter_ms_http = await calc_jitter_http_async(db, host.id, 10)
 
-        host.slope = calc_latency_trend_ping(db, host.id, 10)
+        host.slope = await calc_latency_trend_ping_async(db, host.id, 10)
         host.trend = classify_trend(host.slope)
 
-        host.slope_http = calc_latency_trend_http(db, host.id, 10)
+        host.slope_http = await calc_latency_trend_http_async(db, host.id, 10)
         host.trend_http = classify_trend_http(host.slope_http)
 
         if service_up_without_icmp:
@@ -628,7 +640,7 @@ def _host_check_blocking(host_id: int) -> None:
 
         if host.status == "UP" and _snmp_is_configured(host) and can_attempt_snmp(host.id):
             try:
-                snmp_data = update_host_snmp(host, db)
+                snmp_data = await update_host_snmp(host, db)
             except Exception:
                 logger.exception("[SNMP ERROR] host=%s", host.name)
                 register_snmp_failure(host.id, host.name)
@@ -649,13 +661,13 @@ def _host_check_blocking(host_id: int) -> None:
         final_status = host.status
         primary_checks = [primary_check.lower()]
 
-        if final_status == "DOWN" and consecutive_failures(
+        if final_status == "DOWN" and await consecutive_failures_async(
             db,
             host.id,
             limit=3,
             check_types=primary_checks,
         ):
-            open_incident(
+            await open_incident_async(
                 db,
                 host,
                 f"Serviço {primary_check} indisponível",
@@ -663,7 +675,7 @@ def _host_check_blocking(host_id: int) -> None:
                 check_used=primary_check,
                 auto_commit=False,
             )
-            close_incident(
+            await close_incident_async(
                 db,
                 host.name,
                 incident_type=INCIDENT_TYPE_SERVICE_DEGRADED,
@@ -673,7 +685,7 @@ def _host_check_blocking(host_id: int) -> None:
             final_status == "DEGRADED"
             and _get_degraded_streak(host.id) >= DEGRADED_OPEN_THRESHOLD
         ):
-            open_incident(
+            await open_incident_async(
                 db,
                 host,
                 f"Instabilidade detectada no serviço {primary_check}",
@@ -681,20 +693,20 @@ def _host_check_blocking(host_id: int) -> None:
                 check_used=primary_check,
                 auto_commit=False,
             )
-            close_incident(
+            await close_incident_async(
                 db,
                 host.name,
                 incident_type=INCIDENT_TYPE_SERVICE_DOWN,
                 auto_commit=False,
             )
         elif final_status == "UP" and host.success_streak >= ALERT_RECOVER_THRESHOLD:
-            close_incident(
+            await close_incident_async(
                 db,
                 host.name,
                 incident_type=INCIDENT_TYPE_SERVICE_DOWN,
                 auto_commit=False,
             )
-            close_incident(
+            await close_incident_async(
                 db,
                 host.name,
                 incident_type=INCIDENT_TYPE_SERVICE_DEGRADED,
@@ -737,78 +749,79 @@ def _host_check_blocking(host_id: int) -> None:
                     1800,
                     fingerprint=prevent_fingerprint,
                 ):
-                    send_telegram_alert(
-                        build_preventive_alert_message(
-                            host,
-                            condition_text,
-                            details_text,
-                            datetime.utcnow(),
-                        )
-                    )
+                    await send_telegram_alert_async({
+                        "event": "preventive_alert",
+                        "host_name": host.name,
+                        "host_address": host.address,
+                        "condition": condition_text,
+                        "details": details_text,
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
                     host.last_preventive_alert = datetime.utcnow()
 
-        db.commit()
+        await db.commit()
     except Exception:
         logger.exception("[HOST ERROR] host_id=%s", host_id)
-        db.rollback()
+        await db.rollback()
     finally:
-        db.close()
+        await db.close()
 
 
-def get_active_host_ids() -> list[int]:
-    ensure_runtime_schema()
-    db: Session = SessionLocal()
-    try:
-        rows = db.query(Host.id).filter(Host.active.is_(True)).all()
-        return [row[0] for row in rows]
-    finally:
-        db.close()
+async def get_active_host_ids() -> list[int]:
+    async with AsyncSessionLocal() as db:
+        stmt = select(Host.id).filter(Host.active.is_(True))
+        rows = await db.execute(stmt)
+        return [row[0] for row in rows.all()]
 
 
-def process_host_check(host_id: int) -> None:
-    _host_check_blocking(host_id)
+async def process_host_check(host_id: int) -> None:
+    await _host_check_async(host_id)
 
 
-def check_all_hosts() -> None:
+async def check_all_hosts() -> None:
     """
     Compatibilidade com scripts existentes: executa o ciclo de forma síncrona/sequencial.
     """
-    host_ids = get_active_host_ids()
+    host_ids = await get_active_host_ids()
     for host_id in host_ids:
-        process_host_check(host_id)
+        await process_host_check(host_id)
 
 
-def trim_history(db, host_id, check_type, limit=500):
-    old = (
-        db.query(CheckResult)
+async def trim_history(db, host_id, check_type, limit=500):
+    stmt = (
+        select(CheckResult)
         .filter(
             CheckResult.host_id == host_id,
             CheckResult.check_type == check_type,
         )
         .order_by(CheckResult.timestamp.desc())
         .offset(limit)
-        .all()
     )
+    res = await db.execute(stmt)
+    old = res.scalars().all()
 
     for row in old:
         db.delete(row)
 
 
-def cleanup_old_data():
-    ensure_runtime_schema()
-    db: Session = SessionLocal()
-    try:
-        hosts = db.query(Host).all()
-        for host in hosts:
-            for c_type in ["ping", "tcp", "http", "dns"]:
-                trim_history(db, host.id, c_type, limit=30000)
-        db.commit()
-        logger.info("Limpeza de histórico concluída.")
-    except Exception:
-        logger.exception("[CLEANUP ERROR]")
-        db.rollback()
-    finally:
-        db.close()
+async def cleanup_old_data():
+    async with AsyncSessionLocal() as db:
+        try:
+            from Backend.services.retention_service import purge_old_data
+            stats = await purge_old_data(db)
+            logger.info(f"[RETENÇÃO DE DADOS] Limpeza executada com base no NETSPOT_RETENTION_DAYS ({stats['retention_days']} dias): {stats['check_results']} checks, {stats['snmp_metrics']} snmp removidos.")
+
+            stmt = select(Host)
+            res = await db.execute(stmt)
+            hosts = res.scalars().all()
+            for host in hosts:
+                for c_type in ["ping", "tcp", "http", "dns"]:
+                    await trim_history(db, host.id, c_type, limit=30000)
+            await db.commit()
+            logger.info("Limpeza de histórico concluída.")
+        except Exception:
+            logger.exception("[CLEANUP ERROR]")
+            await db.rollback()
 
 
 def start_scheduler():
