@@ -1,4 +1,6 @@
-const API = "http://127.0.0.1:8000";
+const API = (window.location.protocol === "file:" || window.location.port === "5500" || window.location.port === "3000")
+    ? "http://127.0.0.1:8000"
+    : "/api";
 
 async function fetchWithAuth(url, options = {}) {
     const token = localStorage.getItem("token");
@@ -13,13 +15,18 @@ async function fetchWithAuth(url, options = {}) {
         "Authorization": `Bearer ${token}`,
     };
 
-    const response = await fetch(url, { ...options, headers });
-    if (response.status === 401) {
-        localStorage.clear();
-        window.location.href = "login.html";
+    try {
+        const response = await fetch(url, { ...options, headers });
+        if (response.status === 401) {
+            localStorage.clear();
+            window.location.href = "login.html";
+            return null;
+        }
+        return response;
+    } catch (error) {
+        console.error("Erro de conexão:", error);
         return null;
     }
-    return response;
 }
 
 function formatDateTime(value) {
@@ -91,3 +98,36 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (searchInput) searchInput.addEventListener("input", applySearch);
     await loadIncidents();
 });
+
+/* ==========================================================================
+   THEME TOGGLER MANAGER (LIGHT / DARK THEME)
+   ========================================================================== */
+(function initThemeManager() {
+    const themeToggleBtn = document.getElementById("themeToggleBtn");
+    
+    // Ler o estado atual do tema
+    const savedTheme = localStorage.getItem("theme");
+    const isDark = savedTheme === "dark";
+    
+    // Atualizar o ícone de carregamento inicial
+    updateThemeIcon(isDark);
+    
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener("click", () => {
+            const currentIsDark = document.documentElement.classList.toggle("dark-theme");
+            localStorage.setItem("theme", currentIsDark ? "dark" : "light");
+            updateThemeIcon(currentIsDark);
+        });
+    }
+    
+    function updateThemeIcon(isDarkState) {
+        const icon = document.getElementById("themeToggleIcon");
+        if (!icon) return;
+        if (isDarkState) {
+            icon.innerHTML = `<path d="M12 3a9 9 0 109 9 9.75 9.75 0 00-.67-3.4 6.78 6.78 0 01-7.93-7.93A9.75 9.75 0 0012 3z" fill="currentColor"/>`;
+            icon.removeAttribute("stroke");
+        } else {
+            icon.innerHTML = `<circle cx="12" cy="12" r="4" fill="#f9ab00"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="#f9ab00" stroke-width="2" stroke-linecap="round"/>`;
+        }
+    }
+})();

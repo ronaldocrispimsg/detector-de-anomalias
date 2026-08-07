@@ -6,12 +6,12 @@ from threading import Lock
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-TELEGRAM_BOT_TOKEN = os.getenv("NOC_TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("NOC_TELEGRAM_CHAT_ID")
-TELEGRAM_ANTISPAM_ENABLED = os.getenv("NOC_TELEGRAM_ANTISPAM_ENABLED", "1") != "0"
-TELEGRAM_ANTISPAM_WINDOW_SECONDS = int(os.getenv("NOC_TELEGRAM_ANTISPAM_WINDOW_SECONDS", "120"))
-TELEGRAM_ANTISPAM_MAX_ENTRIES = int(os.getenv("NOC_TELEGRAM_ANTISPAM_MAX_ENTRIES", "5000"))
-DISPLAY_TIMEZONE = os.getenv("NOC_DISPLAY_TIMEZONE", "America/Sao_Paulo")
+TELEGRAM_BOT_TOKEN = os.getenv("NETSPOT_TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("NETSPOT_TELEGRAM_CHAT_ID")
+TELEGRAM_ANTISPAM_ENABLED = os.getenv("NETSPOT_TELEGRAM_ANTISPAM_ENABLED", "1") != "0"
+TELEGRAM_ANTISPAM_WINDOW_SECONDS = int(os.getenv("NETSPOT_TELEGRAM_ANTISPAM_WINDOW_SECONDS", "120"))
+TELEGRAM_ANTISPAM_MAX_ENTRIES = int(os.getenv("NETSPOT_TELEGRAM_ANTISPAM_MAX_ENTRIES", "5000"))
+DISPLAY_TIMEZONE = os.getenv("NETSPOT_DISPLAY_TIMEZONE", "America/Sao_Paulo")
 STATUS_LABELS = {
     "UP": "Online",
     "DOWN": "Offline",
@@ -73,7 +73,7 @@ def build_generic_alert_message(host, status, message, timestamp=None):
         status if status is not None else "Desconhecido"
     )
     return (
-        "🚨 ALERTA NOC LITE\n\n"
+        "🚨 ALERTA NETSPOT\n\n"
         f"Host: {_safe_host_name(host)}\n"
         f"Endereço: {_safe_host_address(host)}\n"
         f"Status: {status_label}\n\n"
@@ -237,8 +237,12 @@ def build_incident_closed_message(host, timestamp=None, incident_type=None):
     )
 
 
-def _message_fingerprint(message: str) -> str:
-    normalized = " ".join(str(message or "").split())
+def _message_fingerprint(message) -> str:
+    import json
+    if isinstance(message, dict):
+        normalized = json.dumps(message, sort_keys=True)
+    else:
+        normalized = " ".join(str(message or "").split())
     return hashlib.sha1(normalized.encode("utf-8")).hexdigest()
 
 
@@ -275,17 +279,24 @@ def send_telegram_alert(message):
         print("[TELEGRAM ANTISPAM] alerta duplicado suprimido")
         return False
 
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = {"chat_id": chat_id, "text": message, "parse_mode": "HTML"}
-    try:
-        response = requests.post(url, json=payload, timeout=5)
-        if response.status_code != 200:
-            print(f"Erro Telegram: status={response.status_code}")
-            return False
-        return True
-    except Exception as e:
-        print(f"Erro Telegram: {e}")
+    from Backend.mq_manager import mq_manager
+    mq_manager.publish_notification_sync(message)
+    return True
+
+async def send_telegram_alert_async(message):
+    token = TELEGRAM_BOT_TOKEN
+    chat_id = TELEGRAM_CHAT_ID
+    if not token or not chat_id:
         return False
+
+    now_ts = time.time()
+    if _is_suppressed_by_antispam(message, now_ts):
+        print("[TELEGRAM ANTISPAM] alerta duplicado suprimido")
+        return False
+
+    from Backend.mq_manager import mq_manager
+    await mq_manager.publish_notification(message)
+    return True
 
 def telegram_health_check():
 

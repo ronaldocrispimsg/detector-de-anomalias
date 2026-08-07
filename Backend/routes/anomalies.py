@@ -1,204 +1,164 @@
+"""
+Rotas RESTful para Simulação e Classificação de Anomalias de Sistema no NetSpot.
+"""
+
 import time
-import logging
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from Backend.database import get_db
-from Backend.models import Host
-from Backend.dependencies import get_current_user
-from Backend.anomaly_simulator import (
-    start_simulation,
-    stop_simulation,
-    get_active_simulation,
-    generate_historical_data
-)
-from Backend.anomaly_classifier import (
-    extract_features_from_db,
-    tokenise_metrics,
-    classify_heuristic,
-    classify_ml,
-    classify_generative_ai,
-    train_decision_tree_baseline,
-    CLASSES
-)
+from typing import Dict, Any, List, Optional
+from fastapi import APIRouter, HTTPException, Query, Depends
+from pydantic import BaseModel, Field
 
-router = APIRouter(prefix="/api/anomalies", tags=["Anomalias"])
-logger = logging.getLogger("noc_lite.routes.anomalies")
+try:
+    from Backend.services.anomaly_simulator import anomaly_simulator, SystemMetricsSample, SCENARIOS_META
+    from Backend.services.anomaly_classifier import (
+        anomaly_classifier, EnsembleResult, HeuristicResult, MLResult, GenAIResult
+    )
+except ImportError:
+    from services.anomaly_simulator import anomaly_simulator, SystemMetricsSample, SCENARIOS_META
+    from services.anomaly_classifier import (
+        anomaly_classifier, EnsembleResult, HeuristicResult, MLResult, GenAIResult
+    )
 
-@router.post("/simulator/start")
-def api_start_simulation(
-    host_id: int,
-    anomaly_type: str,
-    duration_seconds: int = 300,
-    db: Session = Depends(get_db),
-    user: str = Depends(get_current_user)
-):
-    """
-    Inicia uma simulação de anomalia em tempo real para um host específico.
-    """
-    host = db.query(Host).filter(Host.id == host_id).first()
-    if not host:
-        raise HTTPException(status_code=404, detail="Host não encontrado.")
+router = APIRouter(prefix="/anomalies", tags=["Simulador e Classificador de Anomalias"])
 
-    if anomaly_type not in CLASSES:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Tipo de anomalia inválido. Escolha entre: {CLASSES}"
-        )
 
-    sim = start_simulation(host_id, anomaly_type, duration_seconds)
+class SimulationRequest(BaseModel):
+    scenario: str = Field(default="NORMAL", description="Nome do cenário de simulação")
+    custom_params: Optional[Dict[str, Any]] = Field(default=None, description="Sobrescrita de métricas")
+
+
+class ClassificationRequest(BaseModel):
+    sample: Optional[SystemMetricsSample] = None
+    scenario: Optional[str] = "NORMAL"
+    custom_params: Optional[Dict[str, Any]] = None
+    engine: str = Field(default="ensemble", description="Motor de classificação: 'heuristics', 'ml', 'genai', ou 'ensemble'")
+
+
+class BenchmarkResponse(BaseModel):
+    scenarios_tested: int
+    total_samples: int
+    execution_time_ms: float
+    accuracy: Dict[str, float]
+    results_matrix: List[Dict[str, Any]]
+
+
+@router.get("/scenarios", summary="Lista os cenários de anomalia disponíveis")
+def get_scenarios():
     return {
-        "status": "success",
-        "message": f"Simulação de '{anomaly_type}' iniciada para o host {host.name}.",
-        "expires_at": sim["expires_at"].isoformat()
-    }
-
-@router.post("/simulator/stop")
-def api_stop_simulation(
-    host_id: int,
-    db: Session = Depends(get_db),
-    user: str = Depends(get_current_user)
-):
-    """
-    Para uma simulação de anomalia ativa.
-    """
-    host = db.query(Host).filter(Host.id == host_id).first()
-    if not host:
-        raise HTTPException(status_code=404, detail="Host não encontrado.")
-
-    stopped = stop_simulation(host_id)
-    if not stopped:
-        return {"status": "info", "message": "Nenhuma simulação ativa para parar."}
-        
-    return {"status": "success", "message": f"Simulação de anomalias para {host.name} parada."}
-
-@router.get("/simulator/status")
-def api_simulator_status(
-    host_id: int,
-    db: Session = Depends(get_db),
-    user: str = Depends(get_current_user)
-):
-    """
-    Verifica se existe simulação ativa para o host.
-    """
-    sim = get_active_simulation(host_id)
-    if not sim:
-        return {"active": False, "anomaly_type": None}
-    
-    return {
-        "active": True,
-        "anomaly_type": sim["anomaly_type"],
-        "expires_at": sim["expires_at"].isoformat(),
-        "started_at": sim["started_at"].isoformat()
-    }
-
-@router.post("/simulator/generate-history")
-def api_generate_history(
-    host_id: int,
-    anomaly_type: str,
-    records: int = 150,
-    db: Session = Depends(get_db),
-    user: str = Depends(get_current_user)
-):
-    """
-    Gera um histórico retroativo de métricas anômalas no banco.
-    """
-    host = db.query(Host).filter(Host.id == host_id).first()
-    if not host:
-        raise HTTPException(status_code=404, detail="Host não encontrado.")
-
-    if anomaly_type not in CLASSES:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Tipo de anomalia inválido. Escolha entre: {CLASSES}"
-        )
-
-    # Executa a geração em background/thread para não travar a chamada HTTP
-    import threading
-    threading.Thread(
-        target=generate_historical_data, 
-        args=(host_id, anomaly_type, records)
-    ).start()
-
-    return {
-        "status": "success", 
-        "message": f"Geração de histórico de '{anomaly_type}' para o host {host.name} iniciada em background."
-    }
-
-@router.get("/classify")
-def api_classify_host(
-    host_id: int,
-    window_minutes: int = 5,
-    db: Session = Depends(get_db),
-    user: str = Depends(get_current_user)
-):
-    """
-    Executa a classificação nos 3 modelos (IA, Heurística e ML) e retorna a comparação
-    com os tempos de resposta de cada classificador.
-    """
-    host = db.query(Host).filter(Host.id == host_id).first()
-    if not host:
-        raise HTTPException(status_code=404, detail="Host não encontrado.")
-
-    features = extract_features_from_db(host_id, db, window_minutes)
-    if not features:
-        raise HTTPException(status_code=400, detail="Sem métricas suficientes no host para analisar.")
-
-    tokenized_text = tokenise_metrics(features, host.name)
-
-    # 1. Classificação Heurística
-    t0 = time.perf_counter()
-    heur_result = classify_heuristic(features)
-    t_heur = (time.perf_counter() - t0) * 1000.0 # ms
-
-    # 2. Classificação Machine Learning (Decision Tree)
-    t0 = time.perf_counter()
-    ml_result = classify_ml(features)
-    t_ml = (time.perf_counter() - t0) * 1000.0 # ms
-
-    # 3. Classificação IA Generativa (Gemini)
-    t0 = time.perf_counter()
-    ai_result = classify_generative_ai(features, tokenized_text)
-    t_ai = (time.perf_counter() - t0) * 1000.0 # ms
-
-    return {
-        "host": {
-            "id": host.id,
-            "name": host.name,
-            "status": host.status
-        },
-        "features": features,
-        "tokenized_text": tokenized_text,
-        "classifications": {
-            "generative_ai": {
-                "result": ai_result["classification"],
-                "confidence": ai_result["confidence"],
-                "explanation": ai_result["explanation"],
-                "latency_ms": round(t_ai, 2)
-            },
-            "heuristic": {
-                "result": heur_result["classification"],
-                "confidence": heur_result["confidence"],
-                "explanation": heur_result["explanation"],
-                "latency_ms": round(t_heur, 2)
-            },
-            "machine_learning": {
-                "result": ml_result["classification"],
-                "confidence": ml_result["confidence"],
-                "explanation": ml_result["explanation"],
-                "latency_ms": round(t_ml, 2)
+        "count": len(SCENARIOS_META),
+        "scenarios": [
+            {
+                "key": key,
+                "title": meta["title"],
+                "description": meta["description"],
+                "category": meta["category"]
             }
-        }
+            for key, meta in SCENARIOS_META.items()
+        ]
     }
 
-@router.post("/train")
-def api_train_model(
-    user: str = Depends(get_current_user)
-):
-    """
-    Treina o modelo de árvore de decisão baseline usando dados de treino sintéticos.
-    """
-    result = train_decision_tree_baseline()
-    if "Erro" in result:
-        raise HTTPException(status_code=500, detail=result)
-    
-    return {"status": "success", "message": result}
+
+@router.post("/simulate", response_model=SystemMetricsSample, summary="Gera amostra simulada de métricas")
+def simulate_metrics(req: SimulationRequest):
+    return anomaly_simulator.generate_sample(
+        scenario=req.scenario,
+        custom_params=req.custom_params
+    )
+
+
+@router.post("/classify", summary="Classifica anomalia via Heurística, ML, GenAI ou Ensemble")
+async def classify_anomaly(req: ClassificationRequest):
+    # Se a amostra não for enviada no corpo, gera com base no cenário/parâmetros
+    if req.sample is None:
+        sample = anomaly_simulator.generate_sample(
+            scenario=req.scenario or "NORMAL",
+            custom_params=req.custom_params
+        )
+    else:
+        sample = req.sample
+
+    engine = req.engine.lower()
+
+    if engine == "heuristics":
+        res = anomaly_classifier.heuristics_engine.classify(sample)
+        return {"engine": "heuristics", "sample": sample, "result": res}
+    elif engine == "ml":
+        res = anomaly_classifier.ml_engine.classify(sample)
+        return {"engine": "ml", "sample": sample, "result": res}
+    elif engine == "genai":
+        heur_sc = anomaly_classifier.heuristics_engine.classify(sample).predicted_scenario
+        res = await anomaly_classifier.genai_engine.classify(sample, heur_scenario=heur_sc)
+        return {"engine": "genai", "sample": sample, "result": res}
+    else:
+        res = await anomaly_classifier.classify(sample)
+        return {"engine": "ensemble", "sample": sample, "result": res}
+
+
+@router.post("/train", summary="Re-treina o modelo de Machine Learning")
+def train_ml_model(samples_per_scenario: int = Query(50, ge=10, le=500)):
+    res = anomaly_classifier.ml_engine.train_custom(samples_per_scenario=samples_per_scenario)
+    return res
+
+
+@router.get("/genai/status", summary="Verifica disponibilidade da IA Generativa Local (Ollama)")
+async def get_genai_status():
+    ollama_active = await anomaly_classifier.genai_engine.check_ollama_available()
+    return {
+        "ollama_available": ollama_active,
+        "ollama_url": anomaly_classifier.genai_engine.ollama_url,
+        "active_provider": "Ollama (Local LLM)" if ollama_active else "Engine Local GenAI (Offline)",
+        "status": "online" if ollama_active else "offline_fallback_ready"
+    }
+
+
+@router.post("/benchmark", response_model=BenchmarkResponse, summary="Executa teste comparativo de acurácia entre os motores")
+async def run_benchmark(samples_per_scenario: int = Query(10, ge=2, le=50)):
+    start_time = time.time()
+    scenarios = list(SCENARIOS_META.keys())
+    results_matrix = []
+
+    heur_correct = 0
+    ml_correct = 0
+    genai_correct = 0
+    ensemble_correct = 0
+    total_samples = len(scenarios) * samples_per_scenario
+
+    for sc in scenarios:
+        samples = anomaly_simulator.generate_batch(scenario=sc, count=samples_per_scenario)
+        for s in samples:
+            heur_res = anomaly_classifier.heuristics_engine.classify(s)
+            ml_res = anomaly_classifier.ml_engine.classify(s)
+            genai_res = await anomaly_classifier.genai_engine.classify(s, heur_scenario=heur_res.predicted_scenario)
+            ens_res = await anomaly_classifier.classify(s)
+
+            if heur_res.predicted_scenario == sc:
+                heur_correct += 1
+            if ml_res.predicted_scenario == sc:
+                ml_correct += 1
+            if genai_res.predicted_scenario == sc:
+                genai_correct += 1
+            if ens_res.final_scenario == sc:
+                ensemble_correct += 1
+
+            results_matrix.append({
+                "expected": sc,
+                "heuristics": heur_res.predicted_scenario,
+                "ml": ml_res.predicted_scenario,
+                "genai": genai_res.predicted_scenario,
+                "ensemble": ens_res.final_scenario,
+                "is_match": ens_res.final_scenario == sc
+            })
+
+    exec_time = round((time.time() - start_time) * 1000, 2)
+
+    return BenchmarkResponse(
+        scenarios_tested=len(scenarios),
+        total_samples=total_samples,
+        execution_time_ms=exec_time,
+        accuracy={
+            "heuristics": round(heur_correct / total_samples, 4),
+            "ml": round(ml_correct / total_samples, 4),
+            "genai": round(genai_correct / total_samples, 4),
+            "ensemble": round(ensemble_correct / total_samples, 4)
+        },
+        results_matrix=results_matrix[:30]  # Limita resposta do matrix aos primeiros 30 para brevidade
+    )

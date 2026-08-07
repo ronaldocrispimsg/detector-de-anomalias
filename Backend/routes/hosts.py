@@ -11,7 +11,7 @@ import psutil
 from Backend.database import get_db
 from Backend.metrics import total_downtime, total_incidents, availability_last_10_min
 from Backend.models import CheckResult, Host, Alert, Incident, User, SNMPMetric
-from Backend.checker import ping_host, tcp_check, resolve_dns_cached
+from Backend.checker import ping_host, tcp_check, resolve_dns_cached_sync
 from Backend.notifications import telegram_health_check
 from Backend.schemas import (
     HostCreate,
@@ -53,10 +53,13 @@ _IGNORED_INTERFACE_PREFIXES = (
 _MAX_DISCOVERY_ADDRESSES = 4096
 
 
-def _apply_snmp_policy(host: Host, snmp_enabled: bool) -> None:
-    enabled = bool(snmp_enabled)
-    host.snmp_enabled = enabled
-    host.snmp_community = "noc-lite" if enabled else None
+def _apply_snmp_policy(host: Host, snmp_enabled: bool | None, snmp_community: str | None = None) -> None:
+    if snmp_enabled is not None:
+        host.snmp_enabled = bool(snmp_enabled)
+    comm = (snmp_community or getattr(host, "snmp_community", "netspot") or "netspot").strip()
+    if not comm:
+        comm = "netspot"
+    host.snmp_community = comm
 
 
 def _apply_http_policy(host: Host, http_enabled: bool | None, selected_http: str | None) -> None:
@@ -167,11 +170,23 @@ def _interface_ignored(interface_name: str) -> bool:
 
 def _run_nmap_discovery(subnet: str) -> str:
     try:
+        dns_server = None
+        try:
+            net = ipaddress.ip_network(subnet, strict=False)
+            dns_server = str(next(net.hosts()))
+        except Exception:
+            pass
+
+        nmap_args = ["nmap", "-sn", "-PE", "-PS22,80,443", "-T4", "--max-rtt-timeout", "200ms", "--max-retries", "1"]
+        if dns_server:
+            nmap_args += ["--dns-servers", dns_server]
+        nmap_args += [subnet, "-oX", "-"]
+
         result = subprocess.run(
-            ["nmap", "-sn", subnet, "-oX", "-"],
+            nmap_args,
             capture_output=True,
             text=True,
-            timeout=45,
+            timeout=60,
             check=False,
         )
     except FileNotFoundError:
@@ -467,7 +482,7 @@ def create_host(data: HostCreate, db: Session = Depends(get_db), user: str = Dep
     if is_ip(data.address):
         resolved = reverse_dns(data.address)
     else:
-        dns_result = resolve_dns_cached(data.address, db)  # Verifica se o endereço é válido
+        dns_result = resolve_dns_cached_sync(data.address, db)  # Verifica se o endereço é válido
         ips = extract_ips_from_dns_result(dns_result)
         
         if not ips:
@@ -491,7 +506,7 @@ def create_host(data: HostCreate, db: Session = Depends(get_db), user: str = Dep
 
             selected_http = _resolve_http_input(data)
             _apply_http_policy(existing_host, data.http_enabled, selected_http)
-            _apply_snmp_policy(existing_host, data.snmp_enabled)
+            _apply_snmp_policy(existing_host, data.snmp_enabled, getattr(data, "snmp_community", "netspot"))
 
             db.commit()
             db.refresh(existing_host)
@@ -504,6 +519,7 @@ def create_host(data: HostCreate, db: Session = Depends(get_db), user: str = Dep
     else:
         ports = _normalize_ports(data.ports, data.port)
         selected_http = _resolve_http_input(data)
+        comm = (getattr(data, "snmp_community", "netspot") or "netspot").strip() or "netspot"
         host = Host(
             name=normalized_name,
             address=data.address,
@@ -517,7 +533,7 @@ def create_host(data: HostCreate, db: Session = Depends(get_db), user: str = Dep
             http_enabled=bool(data.http_enabled),
             last_http_protocol=None,
             snmp_enabled=bool(data.snmp_enabled),
-            snmp_community="noc-lite" if data.snmp_enabled else None,
+            snmp_community=comm,
             hostname_resolved=resolved,
         )
         _store_host_ports(host, ports)
@@ -692,7 +708,7 @@ def check_host(host_name: str, db: Session = Depends(get_db), user: User = Depen
     if not host:
         raise HTTPException(status_code=404, detail="Host não encontrado")
 
-    dns_result = resolve_dns_cached(host.address, db)
+    dns_result = resolve_dns_cached_sync(host.address, db)
     ips = extract_ips_from_dns_result(dns_result)
 
     if not ips:
@@ -928,7 +944,7 @@ def update_host(host_name: str, data: HostUpdate, db: Session = Depends(get_db),
     if is_ip(data.address):
         resolved = reverse_dns(data.address)
     else:
-        dns_result = resolve_dns_cached(data.address, db)
+        dns_result = resolve_dns_cached_sync(data.address, db)
         ips = extract_ips_from_dns_result(dns_result)
 
         if not ips:
@@ -945,8 +961,8 @@ def update_host(host_name: str, data: HostUpdate, db: Session = Depends(get_db),
     selected_http = _resolve_http_input(data)
     _apply_http_policy(host, data.http_enabled, selected_http)
 
-    if data.snmp_enabled is not None:
-        _apply_snmp_policy(host, data.snmp_enabled)
+    if data.snmp_enabled is not None or getattr(data, "snmp_community", None) is not None:
+        _apply_snmp_policy(host, data.snmp_enabled, getattr(data, "snmp_community", None))
 
     db.commit()
 
