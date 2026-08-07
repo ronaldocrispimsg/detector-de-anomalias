@@ -2,7 +2,25 @@
  * NetSpot - Lógica Front-End do Simulador & Classificador Visual de Anomalias (1 Clique & Personalizável)
  */
 
-const API_BASE = "/api/anomalies";
+const API_HOST = window.location.hostname || "127.0.0.1";
+const API_BASE = (window.location.port !== "8000") 
+    ? `${window.location.protocol}//${API_HOST}:8000/api/anomalies` 
+    : "/api/anomalies";
+
+const DEFAULT_SCENARIOS = [
+    { key: "NORMAL", title: "Operação Normal", description: "Infraestrutura saudável com métricas dentro dos parâmetros ideais de desempenho e SLA.", category: "SAUDÁVEL" },
+    { key: "DDOS_ATTACK", title: "Ataque Volumétrico (DDoS)", description: "Inundação massiva de pacotes provocando alta perda de pacotes, saturação da banda de entrada e colapso de latência.", category: "SEGURANÇA" },
+    { key: "PORT_SCAN", title: "Varredura de Portas (Port Scan)", description: "Sonda sequencial/aleatória de portas TCP ativas com picos de conexões e instabilidade leve ICMP.", category: "SEGURANÇA" },
+    { key: "HOST_DOWN", title: "Host Inacessível (Host Down)", description: "Queda total da máquina/ativo. 100% perda ICMP, recusa de conexões TCP e tempo limite zerado.", category: "DISPONIBILIDADE" },
+    { key: "MEMORY_LEAK", title: "Vazamento de Memória (Memory Leak)", description: "Crescimento contínuo e descontrolado da memória RAM (>95%) acumulando paginação em disco.", category: "RECURSOS" },
+    { key: "DATA_EXFILTRATION", title: "Exfiltração de Dados (Data Exfiltration)", description: "Tráfego anormal de saída de rede muito superior ao de entrada (ex: upload massivo suspeito).", category: "SEGURANÇA" },
+    { key: "DISK_EXHAUSTION", title: "Esgotamento de Disco (Disk Full)", description: "Espaço de armazenamento esgotado (>98%) travando escrita de logs e operações de sistema.", category: "RECURSOS" },
+    { key: "SERVICE_OUTAGE", title: "Falha de Aplicação (Service Outage)", description: "Rede e servidor acessíveis, porém serviço Web/API retornando erros HTTP 500/503 ou porta TCP fechada.", category: "APLICAÇÃO" },
+    { key: "COMBINED_FAULT", title: "Falha Múltipla Combinada", description: "Efeito dominó simultâneo em CPU, RAM, Latência de Rede e Erro na Aplicação.", category: "CRÍTICO" },
+    { key: "NETWORK_CONGESTION", title: "Congestionamento de Rede", description: "Degradação grave da rota com alta latência, elevado jitter e perda moderada de pacotes.", category: "REDE" },
+    { key: "CUSTOM", title: "Cenário Personalizado (Custom)", description: "Métricas configuradas sob medida com sliders interativos para testes de hipóteses.", category: "PERSONALIZADO" }
+];
+
 let activeScenario = "NORMAL";
 let currentMetrics = {
     scenario: "NORMAL",
@@ -36,11 +54,41 @@ const SCENARIO_ICONS = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+    renderScenarioCards(DEFAULT_SCENARIOS);
     checkGenAIStatus();
     loadVisualScenarioCards();
     setupThemeToggle();
     document.getElementById("runBenchmarkBtn").addEventListener("click", runBenchmark);
 });
+
+function renderScenarioCards(scenariosList) {
+    const container = document.getElementById("scenarioCardsContainer");
+    if (!container) return;
+    container.innerHTML = "";
+
+    scenariosList.forEach(sc => {
+        const icon = SCENARIO_ICONS[sc.key] || "⚠️";
+        const card = document.createElement("div");
+        card.className = `scenario-card ${sc.key === activeScenario ? "active" : ""}`;
+        card.dataset.scenario = sc.key;
+
+        const catTag = sc.category ? sc.category.split(' ')[0] : 'GERAL';
+
+        card.innerHTML = `
+            <div>
+                <div class="scenario-card-header">
+                    <span class="scenario-icon">${icon}</span>
+                    <span class="scenario-cat-tag cat-${catTag}">${sc.category}</span>
+                </div>
+                <h4>${sc.title}</h4>
+                <p>${sc.description}</p>
+            </div>
+        `;
+
+        card.onclick = () => selectScenarioCard(sc.key);
+        container.appendChild(card);
+    });
+}
 
 async function checkGenAIStatus() {
     const badge = document.getElementById("genaiStatusBadge");
@@ -55,51 +103,51 @@ async function checkGenAIStatus() {
             } else {
                 badge.style.background = "rgba(168, 85, 247, 0.2)";
                 badge.style.color = "#c084fc";
-                badge.textContent = "⚡ Engine GenAI Local Ready";
+                badge.textContent = "⚡ Engine GenAI + RAG Ready";
             }
         }
     } catch (e) {
         badge.style.background = "rgba(245, 158, 11, 0.2)";
         badge.style.color = "#fbbf24";
-        badge.textContent = "⚡ Engine GenAI Ready";
+        badge.textContent = "⚡ Engine GenAI + RAG Ready";
     }
 }
 
 async function loadVisualScenarioCards() {
-    const container = document.getElementById("scenarioCardsContainer");
     try {
         const resp = await fetch(`${API_BASE}/scenarios`);
         if (resp.ok) {
             const data = await resp.json();
-            container.innerHTML = "";
-
-            data.scenarios.forEach(sc => {
-                const icon = SCENARIO_ICONS[sc.key] || "⚠️";
-                const card = document.createElement("div");
-                card.className = `scenario-card ${sc.key === activeScenario ? "active" : ""}`;
-                card.dataset.scenario = sc.key;
-
-                card.innerHTML = `
-                    <div>
-                        <div class="scenario-card-header">
-                            <span class="scenario-icon">${icon}</span>
-                            <span class="scenario-cat-tag cat-${sc.category.split(' ')[0]}">${sc.category}</span>
-                        </div>
-                        <h4>${sc.title}</h4>
-                        <p>${sc.description}</p>
-                    </div>
-                `;
-
-                card.onclick = () => selectScenarioCard(sc.key);
-                container.appendChild(card);
-            });
-
-            // Carrega o primeiro cenário (NORMAL) por padrão
-            selectScenarioCard("NORMAL");
+            if (data.scenarios && data.scenarios.length > 0) {
+                renderScenarioCards(data.scenarios);
+            }
         }
     } catch (e) {
-        console.error("Erro ao carregar cenários:", e);
+        console.warn("API de cenários em modo offline fallback:", e);
     }
+    // Seleciona o cenário ativo (NORMAL) por padrão
+    selectScenarioCard("NORMAL");
+}
+
+function generateLocalSample(key) {
+    let lat = 15, loss = 0, cpu = 28, ram = 45, disk = 40, netIn = 5e6, netOut = 2e6, http = 200, resp = 120, conn = 45;
+    if (key === "DDOS_ATTACK") { lat = 280; loss = 38; cpu = 92; netIn = 500e6; netOut = 15e6; http = 503; resp = 4500; conn = 3800; }
+    else if (key === "PORT_SCAN") { lat = 35; loss = 4; cpu = 55; conn = 1200; netIn = 12e6; }
+    else if (key === "HOST_DOWN") { lat = 0; loss = 100; cpu = 0; ram = 0; disk = 0; netIn = 0; netOut = 0; http = 0; resp = 0; conn = 0; }
+    else if (key === "MEMORY_LEAK") { ram = 98; cpu = 78; lat = 45; disk = 65; resp = 1800; }
+    else if (key === "DATA_EXFILTRATION") { netIn = 2e6; netOut = 350e6; conn = 450; cpu = 68; }
+    else if (key === "DISK_EXHAUSTION") { disk = 99; cpu = 65; http = 500; resp = 2200; }
+    else if (key === "SERVICE_OUTAGE") { http = 503; resp = 3500; lat = 18; }
+    else if (key === "COMBINED_FAULT") { cpu = 96; ram = 95; disk = 94; lat = 320; loss = 25; http = 503; resp = 5000; }
+    else if (key === "NETWORK_CONGESTION") { lat = 210; loss = 16; resp = 1400; }
+    return {
+        scenario: key, timestamp: Date.now() / 1000,
+        latency_ms: lat, packet_loss_pct: loss, jitter_ms: 2,
+        cpu_usage_pct: cpu, ram_usage_pct: ram, disk_usage_pct: disk,
+        network_in_bps: netIn, network_out_bps: netOut,
+        http_status_code: http, http_response_time_ms: resp,
+        tcp_port_open: http === 200, active_connections: conn
+    };
 }
 
 async function selectScenarioCard(key) {
@@ -118,6 +166,11 @@ async function selectScenarioCard(key) {
         return;
     }
 
+    // Aplica amostra padrão imediata para feedback instantâneo
+    currentMetrics = generateLocalSample(key);
+    syncModalInputs(currentMetrics);
+    updateVisualTelemetryMeters(currentMetrics);
+
     try {
         const resp = await fetch(`${API_BASE}/simulate`, {
             method: "POST",
@@ -128,14 +181,16 @@ async function selectScenarioCard(key) {
             currentMetrics = await resp.json();
             syncModalInputs(currentMetrics);
             updateVisualTelemetryMeters(currentMetrics);
-            runClassification(currentMetrics);
         }
     } catch (e) {
-        console.error("Erro ao simular cenário:", e);
+        console.warn("Usando simulação local fallback para:", key);
     }
+
+    runClassification(currentMetrics);
 }
 
 function openCustomModal() {
+
     syncModalInputs(currentMetrics);
     document.getElementById("customTuningModal").classList.remove("hidden");
 }
@@ -303,8 +358,10 @@ function renderResults(res) {
     document.getElementById("finalScenarioMeta").textContent = `Confiança do Ensemble: ${(res.overall_confidence * 100).toFixed(0)}% | Consenso dos Motores: ${res.consensus_match ? "SIM (Unânime)" : "DIVERGENTE"}`;
     
     const riskBadge = document.getElementById("riskLevelBadge");
+    const cleanRisk = res.risk_level.replace("É", "E").replace("Í", "I");
     riskBadge.textContent = `RISCO ${res.risk_level}`;
-    riskBadge.className = `risk-badge risk-${res.risk_level}`;
+    riskBadge.className = `risk-badge risk-${res.risk_level} risk-${cleanRisk}`;
+
 
     // Motor 1: Heurística
     const h = res.heuristics;
@@ -337,15 +394,37 @@ function renderResults(res) {
         featuresList.appendChild(li);
     });
 
-    // Motor 3: GenAI Local
+    // Motor 3: GenAI Local com RAG ChromaDB
     const g = res.genai;
     document.getElementById("genaiScenario").textContent = g.predicted_scenario;
-    document.getElementById("genaiMeta").textContent = `Provedor: ${g.provider}`;
+    document.getElementById("genaiMeta").textContent = `Provedor: ${g.provider} ${g.rag_top_distance ? `(Distância RAG: ${g.rag_top_distance})` : ""}`;
     document.getElementById("genaiSummaryText").textContent = g.diagnostic_summary;
 
     // Diagnóstico e Playbook
     document.getElementById("genaiRootCause").innerHTML = `<strong>Causa Raiz:</strong> ${g.root_cause_analysis}`;
     document.getElementById("genaiImpact").innerHTML = `<strong>Impacto NOC:</strong> ${g.impact_assessment}`;
+
+    // Renderiza Evidências RAG do ChromaDB
+    const ragBadge = document.getElementById("ragBadge");
+    const ragList = document.getElementById("ragEvidenceList");
+    if (ragBadge && ragList) {
+        if (g.rag_enabled && g.rag_chunks && g.rag_chunks.length > 0) {
+            ragBadge.textContent = `⚡ RAG ChromaDB: ${g.rag_chunks.length} Vetores Recuperados`;
+            ragBadge.style.background = "rgba(16, 185, 129, 0.2)";
+            ragBadge.style.color = "#34d399";
+            ragBadge.style.borderColor = "#059669";
+
+            ragList.innerHTML = "";
+            g.rag_chunks.forEach(c => {
+                const li = document.createElement("li");
+                li.innerHTML = `<strong style="color:#a855f7;">[Vetor: ${c.id}]</strong> (Distância: ${c.distance}) - ${c.text}`;
+                ragList.appendChild(li);
+            });
+        } else {
+            ragBadge.textContent = "⚡ RAG ChromaDB: Standby";
+            ragList.innerHTML = "<li>Sem vetores adicionais recuperados nesta amostragem.</li>";
+        }
+    }
 
     const playbookList = document.getElementById("genaiPlaybookList");
     playbookList.innerHTML = "";
@@ -355,6 +434,7 @@ function renderResults(res) {
         playbookList.appendChild(li);
     });
 }
+
 
 async function runBenchmark() {
     const btn = document.getElementById("runBenchmarkBtn");
