@@ -44,14 +44,21 @@ create_default_admin()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     reset_snmp_backoff()
-    await mq_manager.connect()
-    await mq_manager.start_consumers()
+    try:
+        await mq_manager.connect()
+        await mq_manager.start_consumers()
+    except Exception as e:
+        print(f"Aviso: RabbitMQ não disponível localmente ({e}). Continuando sem serviço de fila...")
     await monitor_engine.start()
     try:
         yield
     finally:
         await monitor_engine.stop()
-        await mq_manager.close()
+        try:
+            await mq_manager.close()
+        except Exception:
+            pass
+
 
 
 app = FastAPI(lifespan=lifespan)
@@ -64,3 +71,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from fastapi.staticfiles import StaticFiles
+frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "Frontend"))
+if os.path.exists(frontend_path):
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+

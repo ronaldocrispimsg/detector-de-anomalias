@@ -23,7 +23,7 @@ class QueueManager:
         password = os.getenv("RABBITMQ_PASSWORD", "guest")
 
         # Retry logic for RabbitMQ startup robustness
-        for attempt in range(1, 10):
+        for attempt in range(1, 3):
             try:
                 self.connection = await aio_pika.connect_robust(
                     host=host,
@@ -36,13 +36,14 @@ class QueueManager:
                 break
             except Exception as e:
                 logger.warning(
-                    "Tentativa %s/10 de conexão com RabbitMQ falhou: %s. Re-tentando em 3s...",
+                    "Tentativa %s/2 de conexão com RabbitMQ falhou: %s. Re-tentando...",
                     attempt,
                     e
                 )
-                await asyncio.sleep(3)
+                await asyncio.sleep(0.5)
         else:
-            raise RuntimeError("Não foi possível conectar ao RabbitMQ após 10 tentativas.")
+            raise RuntimeError("Não foi possível conectar ao RabbitMQ (offline).")
+
 
         # Declare Queues
         self.host_check_queue = await self.channel.declare_queue(

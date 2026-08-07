@@ -99,15 +99,19 @@ def train_ml_model(samples_per_scenario: int = Query(50, ge=10, le=500)):
     return res
 
 
-@router.get("/genai/status", summary="Verifica disponibilidade da IA Generativa Local (Ollama)")
+@router.get("/genai/status", summary="Verifica disponibilidade da IA Generativa Local (Ollama) e RAG ChromaDB")
 async def get_genai_status():
     ollama_active = await anomaly_classifier.genai_engine.check_ollama_available()
+    rag_ready = anomaly_classifier.genai_engine.rag_retriever.is_ready
     return {
         "ollama_available": ollama_active,
         "ollama_url": anomaly_classifier.genai_engine.ollama_url,
-        "active_provider": "Ollama (Local LLM)" if ollama_active else "Engine Local GenAI (Offline)",
-        "status": "online" if ollama_active else "offline_fallback_ready"
+        "rag_enabled": rag_ready,
+        "rag_engine": "ChromaDB Vector Store" if rag_ready else "Offline",
+        "active_provider": "Ollama + RAG (Local LLM)" if ollama_active else "Engine Local GenAI com RAG (ChromaDB)",
+        "status": "online" if ollama_active else "rag_fallback_ready"
     }
+
 
 
 @router.post("/benchmark", response_model=BenchmarkResponse, summary="Executa teste comparativo de acurácia entre os motores")

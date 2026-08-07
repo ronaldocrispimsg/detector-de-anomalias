@@ -56,6 +56,10 @@ class GenAIResult(BaseModel):
     root_cause_analysis: str
     impact_assessment: str
     remediation_playbook: List[str]
+    rag_enabled: bool = True
+    rag_top_distance: float = 0.0
+    rag_chunks: List[Dict[str, Any]] = Field(default_factory=list)
+
 
 
 class EnsembleResult(BaseModel):
@@ -286,14 +290,15 @@ class MLEngine:
                 logger.info("Modelo ML treinado em 220.000 amostras carregado com sucesso do disco!")
                 return
 
-            logger.info("Treinando modelo ML com 220.000 amostras sintéticas (20.000 por cenário)...")
+            logger.info("Treinando modelo ML com 10.000 amostras sintéticas (1.000 por cenário)...")
             X_train = []
             y_train = []
             for sc in self.scenarios_list:
-                batch = anomaly_simulator.generate_batch(scenario=sc, count=20000)
+                batch = anomaly_simulator.generate_batch(scenario=sc, count=1000)
                 for s in batch:
                     X_train.append(self._extract_features(s)[0])
                     y_train.append(sc)
+
 
             X_arr = np.array(X_train)
             y_arr = np.array(y_train)
@@ -395,22 +400,160 @@ class MLEngine:
 
 
 # ==========================================
-# 3. MOTOR DE IA GENERATIVA LOCAL
+# 3. MOTOR DE RETRIEVAL VETORIAL (RAG CHROMADB)
+# ==========================================
+class RAGAnomalyRetriever:
+    """Motor RAG baseado em ChromaDB indexando o dataset real de telemetria."""
+
+    def __init__(self):
+        self.chroma_client = None
+        self.collection = None
+        self.is_ready = False
+        self.dataset_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "netspot_anomaly_dataset.csv"))
+        if not os.path.exists(self.dataset_path):
+            self.dataset_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "RAG", "src", "dataset.csv"))
+        self._initialize_rag()
+
+    def _initialize_rag(self):
+        try:
+            import chromadb
+            from chromadb.utils import embedding_functions
+            import csv
+
+            self.chroma_client = chromadb.Client()
+            default_ef = embedding_functions.DefaultEmbeddingFunction()
+            collection_name = "netspot_telemetry_rag"
+
+            try:
+                self.chroma_client.delete_collection(collection_name)
+            except Exception:
+                pass
+
+            self.collection = self.chroma_client.create_collection(
+                name=collection_name,
+                embedding_function=default_ef
+            )
+
+            documentos = []
+            metadatas = []
+            ids = []
+
+            for sc_key, meta in SCENARIOS_META.items():
+                if sc_key == "CUSTOM":
+                    continue
+                desc_chunk = f"PERFIL DO CENÁRIO {sc_key}: {meta['title']}. {meta['description']}. Categoria: {meta['category']}."
+                documentos.append(desc_chunk)
+                metadatas.append({"scenario": sc_key, "type": "scenario_profile"})
+                ids.append(f"rag_profile_{sc_key}")
+
+            if os.path.exists(self.dataset_path):
+                cenarios_samples = {}
+                with open(self.dataset_path, mode="r", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        sc = row.get("scenario", "UNKNOWN")
+                        if sc not in cenarios_samples:
+                            cenarios_samples[sc] = []
+                        if len(cenarios_samples[sc]) < 30:
+                            cenarios_samples[sc].append(row)
+                        if len(cenarios_samples) >= 10 and all(len(v) >= 30 for v in cenarios_samples.values()):
+                            break
+
+
+                for sc, rows in cenarios_samples.items():
+                    if not rows:
+                        continue
+                    avg_lat = sum(float(r["latency_ms"]) for r in rows) / len(rows)
+                    avg_loss = sum(float(r["packet_loss_pct"]) for r in rows) / len(rows)
+                    avg_cpu = sum(float(r["cpu_usage_pct"]) for r in rows) / len(rows)
+                    avg_ram = sum(float(r["ram_usage_pct"]) for r in rows) / len(rows)
+                    avg_net_in = sum(float(r["network_in_bps"]) for r in rows) / len(rows) / (1024 * 1024)
+                    avg_net_out = sum(float(r["network_out_bps"]) for r in rows) / len(rows) / (1024 * 1024)
+                    avg_conns = sum(float(r["active_connections"]) for r in rows) / len(rows)
+                    status_codes = list(set(r["http_status_code"] for r in rows))
+
+                    chunk_text = (
+                        f"EVIDÊNCIA HISTÓRICA DO DATASET REAL ({sc}): "
+                        f"Latência Média={avg_lat:.1f}ms | Perda Pacotes={avg_loss:.1f}% | CPU={avg_cpu:.1f}% | "
+                        f"RAM={avg_ram:.1f}% | NetIn={avg_net_in:.1f}Mbps | NetOut={avg_net_out:.1f}Mbps | "
+                        f"Conexões={avg_conns:.0f} | HTTP Status={', '.join(status_codes)}"
+                    )
+                    documentos.append(chunk_text)
+                    metadatas.append({"scenario": sc, "type": "historical_telemetry"})
+                    ids.append(f"rag_dataset_{sc}")
+
+            if documentos:
+                self.collection.add(
+                    documents=documentos,
+                    metadatas=metadatas,
+                    ids=ids
+                )
+                self.is_ready = True
+                logger.info(f"RAG Engine (ChromaDB) inicializado com {len(documentos)} vetores!")
+        except Exception as e:
+            logger.warning(f"RAG Engine ChromaDB não pôde ser iniciado: {e}")
+            self.is_ready = False
+
+    def retrieve_context(self, sample: SystemMetricsSample, top_k: int = 3) -> Dict[str, Any]:
+        if not self.is_ready or not self.collection:
+            return {"chunks": [], "top_distance": 0.0, "rag_enabled": False}
+
+        try:
+            query_str = (
+                f"Cenário {sample.scenario}: Latência={sample.latency_ms}ms Perda={sample.packet_loss_pct}% "
+                f"CPU={sample.cpu_usage_pct}% RAM={sample.ram_usage_pct}% Disco={sample.disk_usage_pct}% "
+                f"NetIn={sample.network_in_bps / 1e6:.1f}MB NetOut={sample.network_out_bps / 1e6:.1f}MB "
+                f"HTTP={sample.http_status_code} Conexões={sample.active_connections}"
+            )
+            results = self.collection.query(
+                query_texts=[query_str],
+                n_results=top_k
+            )
+
+            docs = results['documents'][0] if results.get('documents') else []
+            dists = results['distances'][0] if results.get('distances') else []
+            metas = results['metadatas'][0] if results.get('metadatas') else []
+            ids = results['ids'][0] if results.get('ids') else []
+
+            chunks = []
+            for doc, dist, meta, chunk_id in zip(docs, dists, metas, ids):
+                chunks.append({
+                    "id": chunk_id,
+                    "text": doc,
+                    "distance": round(float(dist), 4),
+                    "scenario": meta.get("scenario", "UNKNOWN"),
+                    "type": meta.get("type", "telemetry")
+                })
+
+            top_dist = round(float(dists[0]), 4) if dists else 0.0
+            return {
+                "chunks": chunks,
+                "top_distance": top_dist,
+                "rag_enabled": True
+            }
+        except Exception as e:
+            logger.error(f"Erro ao consultar RAG ChromaDB: {e}")
+            return {"chunks": [], "top_distance": 0.0, "rag_enabled": False}
+
+
+# ==========================================
+# 4. MOTOR DE IA GENERATIVA LOCAL COM RAG
 # ==========================================
 class LocalGenAIEngine:
-    """Motor de IA Generativa Local (Ollama + Local Deep Reasoning Engine)."""
+    """Motor de IA Generativa Local (Ollama + RAG ChromaDB + Engine Local Deep Reasoning)."""
 
     def __init__(self, ollama_url: Optional[str] = None):
         import os
-        self.ollama_url = ollama_url or os.getenv("OLLAMA_URL", "http://host.docker.internal:11434")
+        self.ollama_url = ollama_url or os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
+        self.rag_retriever = RAGAnomalyRetriever()
 
     async def get_available_models(self) -> List[str]:
-        urls = [self.ollama_url, "http://localhost:11434", "http://host.docker.internal:11434", "http://172.17.0.1:11434"]
+        urls = [self.ollama_url, "http://127.0.0.1:11434", "http://localhost:11434"]
         PREFERRED_ORDER = ["qwen2.5:7b", "llama3.1:8b", "gemma2:9b", "gemma:2b"]
         
         for u in urls:
             try:
-                async with httpx.AsyncClient(timeout=2.0) as client:
+                async with httpx.AsyncClient(timeout=0.2) as client:
                     res = await client.get(f"{u}/api/tags")
                     if res.status_code == 200:
                         self.ollama_url = u
@@ -421,6 +564,8 @@ class LocalGenAIEngine:
             except Exception:
                 continue
         return []
+
+
 
     async def check_ollama_available(self) -> bool:
         models = await self.get_available_models()
@@ -439,12 +584,13 @@ class LocalGenAIEngine:
             logger.debug(f"Ollama local não acessível ({model}): {e}")
         return None
 
-    def _fallback_deep_reasoning(self, sample: SystemMetricsSample, heur_sc: str) -> GenAIResult:
-        """Engine local de síntese generativa e raciocínio técnico."""
+    def _fallback_deep_reasoning(self, sample: SystemMetricsSample, heur_sc: str, rag_data: Optional[Dict[str, Any]] = None) -> GenAIResult:
+        """Engine local de síntese generativa e raciocínio técnico alimentado por RAG."""
         sc = sample.scenario if sample.scenario not in ["NORMAL", "CUSTOM"] else heur_sc
         meta = SCENARIOS_META.get(sc, SCENARIOS_META["NORMAL"])
 
         is_anomaly = (sc != "NORMAL")
+        rag_info = rag_data or {"chunks": [], "top_distance": 0.0, "rag_enabled": False}
 
         # Geração de Raciocínio Diagnóstico
         if sc == "DDOS_ATTACK":
@@ -537,25 +683,40 @@ class LocalGenAIEngine:
                 "Manter rotina padrão de monitoramento ativo NOC"
             ]
 
+        # Anexa informações do RAG ao diagnóstico técnico
+        if rag_info.get("rag_enabled") and rag_info.get("chunks"):
+            top_c = rag_info["chunks"][0]
+            diag += f" [RAG ChromaDB Context: Vetor '{top_c['id']}' com distância {top_c['distance']}]"
+
         return GenAIResult(
             predicted_scenario=sc,
             is_anomaly=is_anomaly,
             confidence=0.94 if is_anomaly else 0.98,
-            provider="Engine Local GenAI (Offline)",
+            provider="Engine Local GenAI com RAG (ChromaDB)",
             diagnostic_summary=diag,
             root_cause_analysis=root_cause,
             impact_assessment=impact,
-            remediation_playbook=playbook
+            remediation_playbook=playbook,
+            rag_enabled=rag_info.get("rag_enabled", False),
+            rag_top_distance=rag_info.get("top_distance", 0.0),
+            rag_chunks=rag_info.get("chunks", [])
         )
 
     async def classify(self, sample: SystemMetricsSample, heur_scenario: str = "NORMAL") -> GenAIResult:
         import re
+
+        # 1. Recupera Contexto Vetorial via RAG (ChromaDB)
+        rag_data = self.rag_retriever.retrieve_context(sample, top_k=3)
+        rag_context_text = ""
+        if rag_data.get("chunks"):
+            rag_context_text = "\n".join([f"• [{c['id']}] {c['text']}" for c in rag_data["chunks"]])
+
         models = await self.get_available_models()
         if models:
             active_model = models[0]
             
             prompt = f"""Você é um Engenheiro Sênior de NOC e Segurança de Redes.
-Sua missão é analisar PUREMENTE os dados brutos de telemetria abaixo e IDENTIFICAR SOZINHO qual anomalia de sistema está ocorrendo.
+Sua missão é analisar os dados brutos de telemetria e o contexto histórico de RAG recuperado do ChromaDB e IDENTIFICAR SOZINHO qual anomalia de sistema está ocorrendo.
 
 [TELEMETRIA DO SISTEMA EMBUTIDA]
 - Latência ICMP: {sample.latency_ms} ms
@@ -570,6 +731,9 @@ Sua missão é analisar PUREMENTE os dados brutos de telemetria abaixo e IDENTIF
 - Resposta HTTP: {sample.http_response_time_ms} ms
 - Conexões TCP Ativas: {sample.active_connections}
 
+[CONTEXTO VETORIAL RAG DO CHROMADB (HISTÓRICO DO DATASET REAL)]
+{rag_context_text or "Nenhum histórico RAG recuperado."}
+
 Instruções Estritas:
 1. Classifique 'predicted_scenario' EXCLUSIVAMENTE em um destes 10 nomes exatos:
    NORMAL, DDOS_ATTACK, PORT_SCAN, HOST_DOWN, MEMORY_LEAK, DATA_EXFILTRATION, DISK_EXHAUSTION, SERVICE_OUTAGE, COMBINED_FAULT, NETWORK_CONGESTION.
@@ -578,8 +742,8 @@ Instruções Estritas:
 Responda EXCLUSIVAMENTE em formato JSON com esta estrutura exata:
 {{
   "predicted_scenario": "NOME_DO_CENARIO_DEDUZIDO",
-  "diagnostic_summary": "resumo técnico detalhado em Português sobre o que você identificou na telemetria",
-  "root_cause_analysis": "análise técnica da causa raiz provável",
+  "diagnostic_summary": "resumo técnico detalhado em Português sobre o que você identificou na telemetria e no RAG",
+  "root_cause_analysis": "análise técnica da causa raiz provável com base nas evidências",
   "impact_assessment": "impacto operacional no SLA e NOC",
   "remediation_playbook": [
     "Ação prática de mitigação 1",
@@ -612,17 +776,21 @@ Responda EXCLUSIVAMENTE em formato JSON com esta estrutura exata:
                             predicted_scenario=pred,
                             is_anomaly=(pred != "NORMAL"),
                             confidence=0.95,
-                            provider=f"Ollama Local ({active_model})",
-                            diagnostic_summary=str(data.get("diagnostic_summary", f"Diagnóstico de anomalia {pred} sintetizado pelo modelo local {active_model}.")),
+                            provider=f"Ollama RAG ({active_model})",
+                            diagnostic_summary=str(data.get("diagnostic_summary", f"Diagnóstico RAG de anomalia {pred} sintetizado pelo modelo local {active_model}.")),
                             root_cause_analysis=str(data.get("root_cause_analysis", f"Análise de causa raiz para {pred} gerada pelo modelo local {active_model}.")),
                             impact_assessment=str(data.get("impact_assessment", f"Avaliação de impacto no NOC gerada por {active_model}.")),
-                            remediation_playbook=playbook
+                            remediation_playbook=playbook,
+                            rag_enabled=rag_data.get("rag_enabled", False),
+                            rag_top_distance=rag_data.get("top_distance", 0.0),
+                            rag_chunks=rag_data.get("chunks", [])
                         )
                 except Exception as e:
                     logger.debug(f"Erro no parse de JSON do Ollama: {e}")
 
-        # Utiliza o Motor de Raciocínio Local Fallback
-        return self._fallback_deep_reasoning(sample, heur_scenario)
+        # Utiliza o Motor de Raciocínio Local Fallback com RAG
+        return self._fallback_deep_reasoning(sample, heur_scenario, rag_data)
+
 
 
 # ==========================================
