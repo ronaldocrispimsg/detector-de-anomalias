@@ -1,0 +1,11 @@
+{
+  "scenario": "DDOS_ATTACK",
+  "seed": 1,
+  "trajectory_hash": "5dec6883b79f9b4f2fd6d477b2a68df5f96cdb46b6749566f00a05c74bc1dcb3",
+  "reproducible": true,
+  "generated_at": "2026-10-18T13:11:21.227524+00:00",
+  "versions": {
+    "kathara": "unknown",
+    "kathara_base_image": "sha256:8a2e7"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "scenario": "NETWORK_CONGESTION",
+  "metric": "latency_ms",
+  "before": 0.069,
+  "after": 0.065,
+  "verdict": "unverified",
+  "outcome": "mitigated",
+  "trajectory_hash": "9c2d6e4f48eb5f18bb7f235f035944e4a5f83f5d59e306f06018345b8e081896",
+  "operational_metrics": {
+    "steps_planned": 1.0,
+    "actions_applied": 1.0,
+    "mitigation_success_rate": 1.0,
+    "rollback_rate": 0.0
+  }
+}

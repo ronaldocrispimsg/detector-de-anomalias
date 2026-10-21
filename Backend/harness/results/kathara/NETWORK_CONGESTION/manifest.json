@@ -1,0 +1,11 @@
+{
+  "scenario": "NETWORK_CONGESTION",
+  "seed": 1,
+  "trajectory_hash": "9c2d6e4f48eb5f18bb7f235f035944e4a5f83f5d59e306f06018345b8e081896",
+  "reproducible": true,
+  "generated_at": "2026-10-18T13:13:02.265996+00:00",
+  "versions": {
+    "kathara": "unknown",
+    "kathara_base_image": "sha256:8a2e7"
+  }
+}

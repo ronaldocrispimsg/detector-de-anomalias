@@ -1,0 +1,15 @@
+{
+  "scenario": "SERVICE_OUTAGE",
+  "metric": "http_response_time_ms",
+  "before": 0.1,
+  "after": 0.2,
+  "verdict": "reverted",
+  "outcome": "reverted",
+  "trajectory_hash": "c2c1fe28fdfd8225d6cf09ce49be7b0f0c24356517ba040f2934937a0425b18b",
+  "operational_metrics": {
+    "steps_planned": 1.0,
+    "actions_applied": 0.0,
+    "mitigation_success_rate": 0.0,
+    "rollback_rate": 0.0
+  }
+}

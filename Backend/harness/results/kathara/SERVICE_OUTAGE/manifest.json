@@ -1,0 +1,11 @@
+{
+  "scenario": "SERVICE_OUTAGE",
+  "seed": 1,
+  "trajectory_hash": "c2c1fe28fdfd8225d6cf09ce49be7b0f0c24356517ba040f2934937a0425b18b",
+  "reproducible": true,
+  "generated_at": "2026-10-18T13:12:47.229906+00:00",
+  "versions": {
+    "kathara": "unknown",
+    "kathara_base_image": "sha256:8a2e7"
+  }
+}

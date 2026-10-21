@@ -1,0 +1,15 @@
+{
+  "scenario": "NORMAL",
+  "metric": null,
+  "before": null,
+  "after": null,
+  "verdict": "noop",
+  "outcome": "noop",
+  "trajectory_hash": "71d237830e86dab35e643bb1f1c6463d5f0a323e30d0c964f32c272508c0886a",
+  "operational_metrics": {
+    "steps_planned": 1.0,
+    "actions_applied": 1.0,
+    "mitigation_success_rate": 0.0,
+    "rollback_rate": 0.0
+  }
+}

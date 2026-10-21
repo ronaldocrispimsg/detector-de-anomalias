@@ -1,0 +1,11 @@
+{
+  "scenario": "COMBINED_FAULT",
+  "seed": 1,
+  "trajectory_hash": "b8ddad48cf320aa7256a4c9f8c9dd7024f3b338eb62f6cf9f2629bc1c6817688",
+  "reproducible": true,
+  "generated_at": "2026-10-18T13:12:49.833709+00:00",
+  "versions": {
+    "kathara": "unknown",
+    "kathara_base_image": "sha256:8a2e7"
+  }
+}

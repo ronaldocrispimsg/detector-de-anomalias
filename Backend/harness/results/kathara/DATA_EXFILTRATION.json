@@ -1,0 +1,41 @@
+{
+  "scenario": "DATA_EXFILTRATION",
+  "metric": "network_in_bps",
+  "metric_before": 145792144.0,
+  "metric_after": 0.0,
+  "outcome": "mitigated",
+  "trajectory_hash": "b8ca76476b33e7e7b8f1a297b448f4ab1f2a06c1a4c9c6da2bba57d9ab994a74",
+  "operational_metrics": {
+    "steps_planned": 1.0,
+    "actions_applied": 1.0,
+    "mitigation_success_rate": 1.0,
+    "rollback_rate": 0.0
+  },
+  "trajectory": {
+    "scenario": "DATA_EXFILTRATION",
+    "level": 2,
+    "metric": "network_in_bps",
+    "outcome": "mitigated",
+    "steps": [
+      {
+        "index": 0,
+        "scenario": "DATA_EXFILTRATION",
+        "tool_id": "block_egress",
+        "source": "deterministic",
+        "command": "ebtables -A FORWARD -p IPv4 --ip-dst 10.0.0.3 -j DROP",
+        "rollback_command": "ebtables -D FORWARD -p IPv4 --ip-dst 10.0.0.3 -j DROP",
+        "params": {
+          "dst": "10.0.0.3"
+        },
+        "metric_before": 145792144.0,
+        "metric_after": 0.0,
+        "gate_allowed": true,
+        "applied": true,
+        "verified": true,
+        "rolled_back": false,
+        "verdict": "kept",
+        "reason": "métrica melhorou (145792144.0 → 0.0)"
+      }
+    ]
+  }
+}

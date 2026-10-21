@@ -1,0 +1,11 @@
+{
+  "scenario": "PORT_SCAN",
+  "seed": 1,
+  "trajectory_hash": "7e2ef152e1be577fe49f4b0e9c8e53631a1281163372430c2a6ae3947fabfd9a",
+  "reproducible": true,
+  "generated_at": "2026-10-18T13:11:33.582412+00:00",
+  "versions": {
+    "kathara": "unknown",
+    "kathara_base_image": "sha256:8a2e7"
+  }
+}

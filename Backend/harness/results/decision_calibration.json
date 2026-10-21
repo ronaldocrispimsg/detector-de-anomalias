@@ -1,0 +1,35 @@
+{
+  "per_engine": [
+    {
+      "engine": "random_forest",
+      "ece_before": 0.12210750000000004,
+      "ece_after": 0.002175414867692771,
+      "temperature": 0.11344314637730009
+    },
+    {
+      "engine": "hist_gradient_boosting",
+      "ece_before": 0.03884557850246055,
+      "ece_after": 0.03480090339345001,
+      "temperature": 1.3852741000921267
+    },
+    {
+      "engine": "logistic_regression",
+      "ece_before": 0.08846905307469895,
+      "ece_after": 0.08773128743342402,
+      "temperature": 1.063671649140901
+    }
+  ],
+  "ensemble": {
+    "ece": 0.165413453228807,
+    "weights": [
+      0.43527358930798116,
+      0.35090787190207684,
+      0.213818538789942
+    ]
+  },
+  "target_coverage": 0.7,
+  "chosen_threshold": 0.8200528785811814,
+  "test_coverage": 0.427,
+  "test_risk_at_threshold": 0.0661592505854801,
+  "test_abstain_rate": 0.573
+}

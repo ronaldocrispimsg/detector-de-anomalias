@@ -1,0 +1,11 @@
+{
+  "scenario": "NORMAL",
+  "seed": 1,
+  "trajectory_hash": "71d237830e86dab35e643bb1f1c6463d5f0a323e30d0c964f32c272508c0886a",
+  "reproducible": true,
+  "generated_at": "2026-10-18T13:11:06.978563+00:00",
+  "versions": {
+    "kathara": "unknown",
+    "kathara_base_image": "sha256:8a2e7"
+  }
+}

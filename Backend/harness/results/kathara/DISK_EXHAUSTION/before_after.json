@@ -1,0 +1,15 @@
+{
+  "scenario": "DISK_EXHAUSTION",
+  "metric": "disk_usage_pct",
+  "before": 14.0,
+  "after": 14.0,
+  "verdict": "reverted",
+  "outcome": "reverted",
+  "trajectory_hash": "2f2e60c6481bea9e3ed429fa8eec83bfe616bd7923fd64e760c358c099d17e99",
+  "operational_metrics": {
+    "steps_planned": 1.0,
+    "actions_applied": 0.0,
+    "mitigation_success_rate": 0.0,
+    "rollback_rate": 0.0
+  }
+}

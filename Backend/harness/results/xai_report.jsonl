@@ -1,0 +1,11 @@
+{"label": "COMBINED_FAULT", "n": 15, "mean_rubric": 1.4666666666666666, "evidence_agreement": 0.06666666666666667}
+{"label": "DATA_EXFILTRATION", "n": 15, "mean_rubric": 2.4, "evidence_agreement": 1.0}
+{"label": "DDOS_ATTACK", "n": 15, "mean_rubric": 2.0, "evidence_agreement": 0.0}
+{"label": "DISK_EXHAUSTION", "n": 15, "mean_rubric": 2.2666666666666666, "evidence_agreement": 1.0}
+{"label": "HOST_DOWN", "n": 15, "mean_rubric": 1.8666666666666667, "evidence_agreement": 0.06666666666666667}
+{"label": "MEMORY_LEAK", "n": 15, "mean_rubric": 2.6666666666666665, "evidence_agreement": 1.0}
+{"label": "NETWORK_CONGESTION", "n": 15, "mean_rubric": 2.0, "evidence_agreement": 0.0}
+{"label": "NORMAL", "n": 15, "mean_rubric": 2.533333333333333, "evidence_agreement": 1.0}
+{"label": "PORT_SCAN", "n": 15, "mean_rubric": 2.1333333333333333, "evidence_agreement": 0.26666666666666666}
+{"label": "SERVICE_OUTAGE", "n": 15, "mean_rubric": 1.9333333333333333, "evidence_agreement": 0.7333333333333333}
+{"global_permutation_importance": {"latency_ms": 0.02666666666666666, "packet_loss_pct": 0.057333333333333306, "jitter_ms": 0.09466666666666664, "cpu_usage_pct": 0.034666666666666644, "ram_usage_pct": 0.026666666666666637, "disk_usage_pct": 0.024, "network_in_bps": 0.06533333333333331, "network_out_bps": 0.09466666666666665, "http_status_code": 0.08666666666666664, "http_response_time_ms": 0.11866666666666666, "tcp_port_open": 0.011999999999999988, "active_connections": 0.09999999999999998}}

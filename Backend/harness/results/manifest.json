@@ -1,0 +1,49 @@
+{
+  "git_commit": "4c6c1d0",
+  "generated_at": "20261018T120635Z",
+  "seed": 0,
+  "n_per_class": 500,
+  "n_boot": 1000,
+  "package_versions": {
+    "numpy": "2.5.1",
+    "scipy": "1.18.0",
+    "sklearn": "1.9.0",
+    "pandas": "3.0.5",
+    "matplotlib": "3.11.1",
+    "torch": "2.14.1",
+    "transformers": "5.20.1"
+  },
+  "config_hashes": {
+    "baseline:heuristic": "e27f3e69f61f4fb5",
+    "baseline:random_forest": "a876516dd542ba91"
+  },
+  "dataset_hashes": {
+    "train": "9b252753460df9a4ac59144ca49fbf3f",
+    "val": "f8ca1bc5a9743f901929aba847341205",
+    "test": "8f65562979eef3b6cd27e78f781fae59"
+  },
+  "engines": {
+    "heuristic": "heuristic",
+    "majority": "majority",
+    "random_forest": "random_forest",
+    "hist_gradient_boosting": "hist_gradient_boosting",
+    "logistic_regression": "logistic_regression",
+    "isolation_forest": "isolation_forest"
+  },
+  "metric_hashes": {
+    "heuristic": "e0bc5249229079437af9967fdf430e4dba5122475f2b810eca9ee0d82bf5adc0",
+    "majority": "9b80a83f83dc97d5c796438f1a01493328fa8ea7a00ebbf8f64ee42efa4fc973",
+    "random_forest": "7cda1a8d215b54788312dbb11ff14ab054cad0cca30857788415f1d107728909",
+    "hist_gradient_boosting": "2d503840fdd7f054ffed1379004dfa8b252c271dd5eb5e30afb7ec1651bef3e7",
+    "logistic_regression": "ca9aca5d42a37dc13fa5ec48bc1beaca248763e705742712bf6547fa14fa0814",
+    "isolation_forest": "4192ca14dc91faf560945038ed8543d1ca6496240c3fb81ea51996172a4ab45b"
+  },
+  "baseline_macro_f1": {
+    "heuristic": 0.26015,
+    "majority": 0.018182,
+    "random_forest": 0.706228,
+    "hist_gradient_boosting": 0.518799,
+    "logistic_regression": 0.681121,
+    "isolation_forest": 0.376405
+  }
+}

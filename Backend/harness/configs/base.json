@@ -1,0 +1,9 @@
+{
+  "name": "base-smoke",
+  "dataset_id": "synthetic-smoke",
+  "split_id": "train-test-v1",
+  "engine": "dummy",
+  "seed": 0,
+  "engine_params": {},
+  "metrics": ["macro_f1", "balanced_accuracy"]
+}

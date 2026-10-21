@@ -1,0 +1,11 @@
+{
+  "scenario": "MEMORY_LEAK",
+  "seed": 1,
+  "trajectory_hash": "7b45a4f6fbba19047af5ff06ded3b5abb3f484eb99cb864c632619fdcd0787df",
+  "reproducible": true,
+  "generated_at": "2026-10-18T13:11:52.116521+00:00",
+  "versions": {
+    "kathara": "unknown",
+    "kathara_base_image": "sha256:8a2e7"
+  }
+}
