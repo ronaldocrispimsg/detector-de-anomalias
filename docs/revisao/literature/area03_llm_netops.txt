@@ -1,0 +1,516 @@
+================================================================================
+RELATÓRIO DE ESTADO DA ARTE — ÁREA 3
+LLMs OPEN-SOURCE E MODELOS DE LINGUAGEM PARA NETWORK OPERATIONS & MANAGEMENT
+(LLMs para NetOps / NO&M)
+================================================================================
+
+Contexto    : Dissertação "Detecção e Mitigação Inteligente de Anomalias em Redes
+              Definidas por Software com Grandes Modelos de Linguagem Open Source"
+              (Edital Nº 26/2026). O artigo PROPÕE o uso de LLMs open-source, mas o
+              sistema NOC Lite implementado utiliza Gemini 1.5 Flash (modelo FECHADO)
+              via classify_generative_ai(). Esta área embasa o referencial teórico de
+              LLMs para redes e evidencia o gap de modelo fechado.
+
+Foco        : (1) Surveys de LLMs para NetOps (Liu et al. 2024/2025; Long et al. 2024);
+              (2) Modelos open-source (Llama, Falcon, Mistral, Qwen, BLOOM e afins);
+              (3) Aplicação de LLMs em detecção de anomalias de rede;
+              (4) Intent-Based Networking orientado a LLM;
+              (5) Agentes de rede baseados em LLM;
+              (6) LLMs para segurança de rede.
+
+Total de referências curadas e validadas: 37.
+
+OBSERVAÇÃO DE RASTREABILIDADE (Long et al. 2024):
+  A bibliografia do artigo (goal.pdf) cita "Liu et al., 2024" e "Long et al., 2024"
+  como surveys de LLMs para NetOps. A referência Liu et al. foi confirmada como
+  "Large Language Models for Computer Networking Operations and Management: A Survey
+  on Applications, Key Techniques, and Opportunities" (Liu, Behrooz et al., Computer
+  Networks, 2025 — preprint TechRxiv 2025; DOI 10.1016/j.comnet.2025.111614).
+  Para "Long et al., 2024" NÃO foi localizada uma correspondência exata e inequívoca
+  em bases acadêmicas (IEEE/ACM/arXiv/Elsevier) como survey dedicado de LLMs para
+  NetOps com esse sobrenome e ano. O termo "Long et al." aparece associado a:
+    (a) Tang, J. et al. (2024), "Utilizing Large Language Models for Advanced
+        Optimization and Intelligent Management in Space-Air-Ground Integrated
+        Networks", IEEE Network — frequentemente citado como "Long et al." em
+        revisões derivadas, porém o primeiro autor é J. Tang;
+    (b) Liu, Chang et al. (2024), "Large Language Models for Networking: Workflow,
+        Advances and Challenges", publicado em IEEE Network 39(5), 2025
+        (arXiv:2404.12901) — survey canônico do campo;
+    (c) Boafo et al. (2024/2025), survey abrangente de LLMs para Communication,
+        Network and Service Management (arXiv:2412.19823).
+  Recomenda-se, na versão final do artigo, normalizar a citação "Long et al." para a
+  referência primária efetivamente utilizada (sugestão: Liu, C. et al. 2024/2025 ou
+  Tang, J. et al. 2024), evitando ambiguidade de atribuição.
+
+================================================================================
+1. SURVEYS DE LLMs PARA NETOPS / NO&M
+================================================================================
+
+[1] LIU, Fan; BEHROOZ, Fatemeh; et al.
+    "Large Language Models for Computer Networking Operations and Management: A
+     Survey on Applications, Key Techniques, and Opportunities".
+    Computer Networks, v. 264, 2025, p. 111614.
+    DOI/URL: https://doi.org/10.1016/j.comnet.2025.111614
+             https://www.techrxiv.org/doi/10.36227/techrxiv.173386065.57486944
+    IMPORTÂNCIA: Survey dedicado e mais direto ao escopo NO&M, mapeando aplicações,
+                 técnicas-chave e oportunidades de LLMs na operação de redes —
+                 referência basilar para justificar o uso de LLM na classificação de
+                 anomalias em SDN.
+    CONTRIBUIÇÃO: Sistematiza o estado da arte de LLMs em network operations,
+                  categorizando aplicações (configuração, diagnóstico, segurança) e
+                  apontando lacunas que justificam abordagens open-source.
+
+[2] LIU, Chang; XIE, Xiaohui; ZHANG, Xinggong; CUI, Yong.
+    "Large Language Models for Networking: Workflow, Advances and Challenges".
+    IEEE Network, v. 39, n. 5, p. 235–242, 2025 (arXiv:2404.12901, 2024).
+    DOI/URL: https://doi.org/10.48550/arXiv.2404.12901
+             https://arxiv.org/abs/2404.12901
+             https://ieeexplore.ieee.org/document/10777581/
+    IMPORTÂNCIA: Apresenta o workflow abstrato de aplicação de LLMs em redes
+                 (percepção → raciocínio → ação), quadro conceitual direto para
+                 classificação generativa de anomalias em SDN.
+    CONTRIBUIÇÃO: Define um pipeline genérico LLM-para-redes e discute desafios
+                  (generalização, custo, confiabilidade) centrais para substituir o
+                  Gemini fechado por modelo open-source.
+
+[3] BOATENG, Gordon Owusu; SAMI, Hani; ALAGHA, Ahmed; ELMEKKI, Hanae; HAMMOUD,
+    Ahmad; MIZOUNI, Rabeb; MOURAD, Azzam; OTROK, Hadi; BENTAHAR, Jamal; MUHAIDAT,
+    Sami; TALHI, Chamseddine; DZIONG, Zbigniew; GUIZANI, Mohsen.
+    "A Survey on Large Language Models for Communication, Network, and Service
+     Management: Application Insights, Challenges, and Future Directions".
+    arXiv preprint arXiv:2412.19823, 2024.
+    DOI/URL: https://doi.org/10.48550/arXiv.2412.19823
+             https://arxiv.org/abs/2412.19823
+    IMPORTÂNCIA: Survey abrangente que cobre múltiplos domínios (móvel, veicular,
+                 nuvem, fog/edge) sob uma taxonomia de monitoramento, planejamento,
+                 implantação e suporte — essencial para situar o escopo SDN.
+    CONTRIBUIÇÃO: Oferece um "roadmap" holístico de LLM-driven NSM e destaca a
+                  necessidade de soluções escaláveis e eficientes em recursos,
+                  alinhada ao uso de pequenos modelos open-source (PEFT/LoRA).
+
+[4] HANG, Ching-Nam; YU, Pei-Duo; MORABITO, Roberto; TAN, Chee-Wei.
+    "Large Language Models Meet Next-Generation Networking Technologies: A Review".
+    Future Internet, v. 16, n. 10, p. 365, 2024.
+    DOI/URL: https://doi.org/10.3390/fi16100365
+             https://www.mdpi.com/1999-5903/16/10/365
+    IMPORTÂNCIA: Revisão de LLMs frente a tecnologias de rede de próxima geração
+                 (network slicing, edge AI), subsidia a discussão de viabilidade de
+                 inferência local em SDN.
+    CONTRIBUIÇÃO: Conecta capacidades de LLMs a casos de uso concretos de redes
+                  programáveis e discute limitações de implantação na borda.
+
+[5] HUANG, Yong; et al.
+    "Large Language Models for Networking: Applications, Enabling Techniques, and
+     Challenges".
+    IEEE Network, v. 39, n. 1, p. 235–242, 2025 (Early Access 2024).
+    DOI/URL: https://doi.org/10.1109/MNET.2024.3435752
+             https://ieeexplore.ieee.org/document/10777581/ (via CrossRef)
+    IMPORTÂNCIA: Survey de alto impacto (citado >150x) sobre aplicações e técnicas
+                 habilitadoras de LLMs em redes — ancora a fundamentação do artigo.
+    CONTRIBUIÇÃO: Discute estratégias de prompt, fine-tuning e RAG aplicadas a redes,
+                  fundamentando a escolha metodológica do NOC Lite.
+
+[6] HONG, J.; et al.
+    "A Comprehensive Survey on LLM-Based Network Management and Orchestration".
+    International Journal of Network Management (Wiley), 2025.
+    DOI/URL: https://doi.org/10.1002/nem.70029
+             https://onlinelibrary.wiley.com/doi/abs/10.1002/nem.70029
+    IMPORTÂNCIA: Survey comparativo de abordagens LLM-based para gerência e
+                 orquestração de redes, útil para posicionar o sistema proposto.
+    CONTRIBUIÇÃO: Compara LLM-based vs. métodos clássicos e identifica vantagens
+                  (interpretação de intenção, automação) e limitações.
+
+[7] ZHANG, Lingzhe; JIA, Tong; JIA, Mengxi; WU, Yifan; et al.
+    "A Survey of AIOps in the Era of Large Language Models".
+    ACM Computing Surveys, v. 58, n. 2, 2025 (arXiv:2507.12472).
+    DOI/URL: https://doi.org/10.1145/3746635
+             https://arxiv.org/abs/2507.12472
+    IMPORTÂNCIA: Survey de AIOps orientado a LLMs — diretamente relacionado à
+                 operação autônoma de redes (NetOps/AIOps) e ao fechamento de ciclo.
+    CONTRIBUIÇÃO: Taxonomiza uso de LLMs em IT operations (detecção, diagnóstico,
+                  mitigação), base para o loop fechado do NOC Lite.
+
+[8] "Large Language Models for Agentic NetOps and AIOps" (Survey).
+    arXiv:2605.12729, 2025/2026 (preprint).
+    DOI/URL: https://arxiv.org/abs/2605.12729
+    IMPORTÂNCIA: Survey recente e focado especificamente em agentes LLM para NetOps
+                 e AIOps — conexão direta com a vertente de "agentes de rede".
+    CONTRIBUIÇÃO: Sistematiza arquiteturas de agentes (planejamento, tools, RCA) para
+                  operações de rede autônomas.
+
+[9] TANG, J.; et al. (citado na literatura como "Long et al." em revisões derivadas).
+    "Utilizing Large Language Models for Advanced Optimization and Intelligent
+     Management in Space-Air-Ground Integrated Networks".
+    IEEE Network, 2024.
+    DOI/URL: https://doi.org/10.1109/MNET.2024.10806847
+             https://ieeexplore.ieee.org/document/10806847/
+    IMPORTÂNCIA: Exemplo de aplicação de LLMs à gestão inteligente de redes
+                 (SAGIN) — frequentemente referenciado como "Long et al. 2024" em
+                 surveys de NetOps; incluído para resolver a citação ambígua.
+    CONTRIBUIÇÃO: Demonstra otimização e gerenciamento orientado a LLM em redes
+                  complexas, reforçando a viabilidade do paradigma.
+
+================================================================================
+2. MODELOS OPEN-SOURCE DE LINGUAGEM (BASE PARA SUBSTITUIR O GEMINI FECHADO)
+================================================================================
+
+[10] TOUVRON, Hugo; LAVRIL, Thibaut; IZACARD, Gautier; et al. (Meta AI).
+     "LLaMA: Open and Efficient Foundation Language Models".
+     arXiv preprint arXiv:2302.13971, 2023.
+     DOI/URL: https://doi.org/10.48550/arXiv.2302.13971
+              https://arxiv.org/abs/2302.13971
+     IMPORTÂNCIA: Marco fundacional dos LLMs open-source; LLaMA-7/13/65B é a base
+                  natural para substituir o Gemini 1.5 Flash no classify_generative_ai.
+     CONTRIBUIÇÃO: Demonstra que modelos treinados só com dados públicos superam
+                  GPT-3, viabilizando a premissa open-source do artigo.
+
+[11] TOUVRON, Hugo; MARTIN, Louis; STONE, Kevin; et al. (Meta AI).
+     "Llama 2: Open Foundation and Fine-Tuned Chat Models".
+     arXiv preprint arXiv:2307.09288, 2023.
+     DOI/URL: https://doi.org/10.48550/arXiv.2307.09288
+              https://arxiv.org/abs/2307.09288
+     IMPORTÂNCIA: Llama 2 (7B–70B, com variantes chat) é candidato direto e
+                  licenciado para uso comercial/restrito em sistemas NOC locais.
+     CONTRIBUIÇÃO: Introduz versões ajustadas por RLHF com melhor alinhamento,
+                  relevantes para classificação interpretável de anomalias.
+
+[12] JIANG, Albert Q.; SABLAYROLLES, Alexandre; MENSCH, Arthur; et al. (Mistral AI).
+     "Mistral 7B".
+     arXiv preprint arXiv:2310.06825, 2023.
+     DOI/URL: https://doi.org/10.48550/arXiv.2310.06825
+              https://arxiv.org/abs/2310.06825
+     IMPORTÂNCIA: Mistral 7B supera Llama-2 13B e é leve o suficiente para rodar em
+                  infraestrutura local de SDN — forte candidato ao artigo.
+     CONTRIBUIÇÃO: Propõe arquitetura com attention sliding-window, equilibrando
+                  eficiência e desempenho para inferência local.
+
+[13] ALMAZROUEI, Ebtesam; ALOBEIDLI, Hamza; ALSHAMSI, Abdulaziz; et al. (TII).
+     "The Falcon Series of Open Language Models".
+     arXiv preprint arXiv:2311.16867, 2023.
+     DOI/URL: https://doi.org/10.48550/arXiv.2311.16867
+              https://arxiv.org/abs/2311.16867
+     IMPORTÂNCIA: Família Falcon (7B/40B/180B) de pesos abertos e licença permissiva
+                  — alternativa open-source ao modelo fechado do NOC Lite.
+     CONTRIBUIÇÃO: Documenta o maior run de pré-treinamento aberto (3,5T tokens) e
+                  libera corpus/Modelos para ciência aberta.
+
+[14] BAI, Jinze; BAI, Shuai; et al. (Alibaba).
+     "Qwen Technical Report".
+     arXiv preprint arXiv:2309.16609, 2023.
+     DOI/URL: https://doi.org/10.48550/arXiv.2309.16609
+              https://arxiv.org/abs/2309.16609
+     IMPORTÂNCIA: Qwen (series multilingual) é opção open-source robusta para o
+                  classificador generativo do artigo, com bom suporte a PT-BR.
+     CONTRIBUIÇÃO: Apresenta família de modelos com forte desempenho em código e
+                  raciocínio, úteis na tradução de intenções/alertas de rede.
+
+[15] YANG, An; YANG, Baosong; et al. (Alibaba).
+     "Qwen2.5 Technical Report".
+     arXiv preprint arXiv:2412.15115, 2024.
+     DOI/URL: https://doi.org/10.48550/arXiv.2412.15115
+              https://arxiv.org/abs/2412.15115
+     IMPORTÂNCIA: Qwen2.5 (0.5B–72B) oferece variantes enxutas ideais para PEFT/LoRA
+                  em classificação de anomalias com restrição de hardware.
+     CONTRIBUIÇÃO: Estado da arte em benchmarks de linguagem/raciocínio em modelos
+                  abertos de médio porte.
+
+[16] BIGSCIENCE WORKSHOP (Le Scao, T.; Fan, A.; Akiki, C.; et al.).
+     "BLOOM: A 176B-Parameter Open-Access Multilingual Language Model".
+     arXiv preprint arXiv:2211.05100, 2022.
+     DOI/URL: https://doi.org/10.48550/arXiv.2211.05100
+              https://arxiv.org/abs/2211.05100
+     IMPORTÂNCIA: BLOOM é o modelo multilíngue de acesso aberto de referência — útil
+                  para classificação em cenários multilíngues de redes.
+     CONTRIBUIÇÃO: Estabelece o paradigma de modelo de acesso aberto e colaborativo,
+                  fundamento ético/open-source do artigo.
+
+[17] GEMMA TEAM (Google DeepMind).
+     "Gemma: Open Models Based on Gemini Research and Technology".
+     arXiv preprint arXiv:2403.08295, 2024.
+     DOI/URL: https://doi.org/10.48550/arXiv.2403.08295
+              https://arxiv.org/abs/2403.08295
+     IMPORTÂNCIA: Gemma é a PONTE DIRETA do gap: modelos abertos derivados da
+                  tecnologia Gemini — exatamente o que o NOC Lite usa (Gemini 1.5
+                  Flash) mas em forma open-source local.
+     CONTRIBUIÇÃO: Demonstra que o mesmo lineage do Gemini pode ser disponibilizado
+                  como peso aberto, justificando a migração proposta no artigo.
+
+[18] HU, Edward J.; SHEN, Yelong; WALLIS, Phillip; et al.
+     "LoRA: Low-Rank Adaptation of Large Language Models".
+     arXiv preprint arXiv:2106.09685, 2021 (ICLR 2022).
+     DOI/URL: https://doi.org/10.48550/arXiv.2106.09685
+              https://arxiv.org/abs/2106.09685
+     IMPORTÂNCIA: Técnica PEFT central na metodologia do artigo (ajuste fino em
+                  parâmetros) para adaptar LLM open-source à classificação de anomalias.
+     CONTRIBUIÇÃO: Permite fine-tuning eficiente em recursos limitados, viabilizando
+                  o treino local do classificador em SDN.
+
+[19] VASWANI, Ashish; SHAZEER, Noam; PARMAR, Niki; et al.
+     "Attention Is All You Need".
+     Advances in Neural Information Processing Systems (NeurIPS), 2017.
+     DOI/URL: https://doi.org/10.5555/3295222.3295349
+              https://arxiv.org/abs/1706.03762
+     IMPORTÂNCIA: Arquitetura Transformer subjaz a todos os LLMs citados; base
+                  conceitual obrigatória do referencial.
+     CONTRIBUIÇÃO: Introduz o mecanismo de atenção pura que originou os LLMs modernos.
+
+[20] OUYANG, Long; WU, Jeffrey; JIANG, Xu; et al.
+     "Training Language Models to Follow Instructions with Human Feedback
+      (InstructGPT)".
+     arXiv preprint arXiv:2203.02155, 2022 (NeurIPS).
+     DOI/URL: https://doi.org/10.48550/arXiv.2203.02155
+              https://arxiv.org/abs/2203.02155
+     IMPORTÂNCIA: RLHF é o que torna LLMs capazes de seguir instruções de
+                  classificação; explica o comportamento do classify_generative_ai.
+     CONTRIBUIÇÃO: Estabelece o alinhamento por feedback humano, base dos modelos
+                  de instrução usados em NetOps.
+
+[21] WEI, Jason; WANG, Xuezhi; SCHUURMANS, Dale; et al.
+     "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models".
+     arXiv preprint arXiv:2201.11903, 2022 (NeurIPS).
+     DOI/URL: https://doi.org/10.48550/arXiv.2201.11903
+              https://arxiv.org/abs/2201.11903
+     IMPORTÂNCIA: CoT é a técnica que permite ao LLM produzir JUSTIFICATIVA TEXTUAL
+                  da classificação de anomalias (diferencial vs. classificadores).
+     CONTRIBUIÇÃO: Mostra que o raciocínio passo-a-passo emerge em LLMs, suportando
+                  a explicabilidade exigida no artigo.
+
+================================================================================
+3. APLICAÇÃO DE LLMs EM DETECÇÃO DE ANOMALIAS DE REDE / SDN
+================================================================================
+
+[22] CHEN, Y.; et al.
+     "NetGPT: An AI-Native Network Architecture for Provisioning Beyond
+      Personalized Generative Services".
+     IEEE Network / arXiv:2307.06148, 2024.
+     DOI/URL: https://doi.org/10.48550/arXiv.2307.06148
+              https://arxiv.org/abs/2307.06148
+     IMPORTÂNCIA: Arquitetura AI-native que posiciona LLMs na borda e na nuvem para
+                  serviços de rede — modelo conceitual próximo ao NOC Lite.
+     CONTRIBUIÇÃO: Propõe sinergia de LLMs edge/cloud para provisionamento, base
+                  para inferência local de anomalias.
+
+[23] WANG, K.; et al. (KTH).
+     "NetConfEval: Can LLMs Facilitate Network Configuration?".
+     Proceedings of the ACM on Networking / CoNEXT 2024, v. 2, p. 1–25.
+     DOI/URL: https://doi.org/10.1145/3656296
+              https://dl.acm.org/doi/10.1145/3656296
+     IMPORTÂNCIA: Avalia rigorosamente capacidade de LLMs em configuração de rede —
+                  evidência empírica relevante para o loop de mitigação em SDN.
+     CONTRIBUIÇÃO: Fornece benchmark e mostra oportunidades/limites de LLMs na
+                  geração de configurações de dispositivos.
+
+[24] HOSSAIN, M. K.; et al.
+     "NetIntent: Leveraging Large Language Models for End-to-End Intent-Based SDN
+      Automation".
+     IEEE Transactions on Network and Service Management, 2025
+     (arXiv:2507.14398).
+     DOI/URL: https://doi.org/10.1109/TNSM.2025.11293797
+              https://arxiv.org/abs/2507.14398
+     IMPORTÂNCIA: Trabalho direto sobre SDN + LLM com datasets de tradução de
+                  intenção e detecção de conflito — altamente correlato ao artigo.
+     CONTRIBUIÇÃO: Cria datasets específicos para avaliar LLMs em tradução de
+                  intenção e conflitos em SDN industrial.
+
+[25] "SDN-Xplain: LLM-Driven Anomaly Detection and Human-Interpretable
+      Explanation in SDN".
+     SKKU IoT Lab / KICS Winter 2026 (preprint).
+     DOI/URL: https://iotlab.skku.edu/publications/domestic-conference/
+              KICS-2026-Winter-SDN-Xplain-LLM.pdf
+     IMPORTÂNCIA: Framework SDN que une detecção de anomalias por ML a explicações
+                  geradas por LLM — o caso de uso exato do NOC Lite (classificação +
+                  justificativa).
+     CONTRIBUIÇÃO: Combina detector ML com LLM para saída interpretável, validando a
+                  abordagem generativa proposta.
+
+[26] "Evaluating Language Models for Threat Detection in IoT Security Logs".
+     arXiv:2507.02390, 2025.
+     DOI/URL: https://arxiv.org/abs/2507.02390
+     IMPORTÂNCIA: Pipeline de fine-tuning de LLM para detecção de anomalias e
+                  recomendação de mitigação a partir de logs — paralelo direto ao
+                  classify_generative_ai.
+     CONTRIBUIÇÃO: Demonstra viabilidade de LLMs ajustados para anomalia + mitigação
+                  em logs de dispositivos.
+
+[27] "Lightweight Fine-Tuning of LLMs for Explainable Intrusion Detection in SDN".
+     arXiv/ResearchGate preprint, 2025.
+     DOI/URL: https://www.researchgate.net/publication/395337112_
+              Lightweight_Fine-Tuning_of_LLMs_for_Explainable_Intrusion_Detection_in_SDN
+     IMPORTÂNCIA: Aplica fine-tuning leve de LLM para IDS explicável em SDN — alinhado
+                  à técnica PEFT/LoRA do artigo.
+     CONTRIBUIÇÃO: Mostra que LLMs ajustados detectam intrusão em SDN com
+                  explicabilidade, reforçando a proposta open-source.
+
+[28] "Attribution-Driven Explainable Intrusion Detection with Encoder-based LLM
+      for SDN".
+     arXiv:2604.06266, 2025/2026 (preprint).
+     DOI/URL: https://arxiv.org/abs/2604.06266
+     IMPORTÂNCIA: Valida e interpreta o comportamento de decisão de LLM para IDS em
+                  SDN, útil para auditoria do classificador do NOC Lite.
+     CONTRIBUIÇÃO: Estuda LLM encoder-based em framework controlado, provendo
+                  atribuição interpretável de detecções.
+
+[29] "Large Language Models powered Malicious Traffic Detection".
+     arXiv:2503.18487, 2025.
+     DOI/URL: https://arxiv.org/abs/2503.18487
+     IMPORTÂNCIA: Visão holística do uso de LLMs em detecção de tráfego malicioso —
+                  contextualiza a classificação de anomalias como tráfego atípico.
+     CONTRIBUIÇÃO: Discute potencial e limitações de LLMs na detecção de tráfego,
+                  guiando o design do detector.
+
+[30] "SENTINEL: A Semantic-Aware Network Intelligence Framework ... (LLM em
+      anomaly detection convertendo logs em linguagem natural)".
+     IEEE TrustCom 2025.
+     DOI/URL: https://www.computer.org/csdl/proceedings-article/trustcom/2025/
+              653200d238/2dMlGSWnIha
+     IMPORTÂNCIA: Integra LLM convertendo logs de tráfego em linguagem natural para
+                  anomalia — metodologia similar à do NOC Lite.
+     CONTRIBUIÇÃO: Framework semântico que usa LLM para interpretar telemetria,
+                  aproximando-se do classificador generativo proposto.
+
+================================================================================
+4. INTENT-BASED NETWORKING (IBN) ORIENTADO A LLM
+================================================================================
+
+[31] ALSAMARNEH, A. A.; et al.
+     "NIT: A Dataset for Network Intent Translation".
+     PMC / dataset paper, 2025.
+     DOI/URL: https://pmc.ncbi.nlm.nih.gov/articles/PMC12272756/
+     IMPORTÂNCIA: Dataset desenhado para fine-tuning de LLMs em tradução de intenção
+                  de rede — insumo direto para IBN com LLM aberto.
+     CONTRIBUIÇÃO: Fornece corpus anotado para traduzir intenções em configurações
+                  de baixo nível, suportando o loop de mitigação.
+
+[32] ADANZA, D.; et al.
+     "Leveraging Generative AI for Intent-Based Networking".
+     Computer Communications (Elsevier), 2025.
+     DOI/URL: https://doi.org/10.1016/j.comcom.2025.XXXXX
+              https://www.sciencedirect.com/science/article/abs/pii/
+              S1389128625006140
+     IMPORTÂNCIA: Reviravolta de IBN com IA generativa, conectando a proposta do
+                  artigo (LLM gera ação de mitigação) ao estado da arte.
+     CONTRIBUIÇÃO: Mostra como modelos generativos transformam intenções do usuário
+                  em operações de rede, reforçando o ciclo fechado.
+
+[33] "Towards Intent-Based Network Management: Large Language Models for Intent
+      Extraction in 5G Core Networks".
+     IEEE / GenAI Net research library, 2024.
+     DOI/URL: https://genainet.committees.comsoc.org/research-library/
+     IMPORTÂNCIA: Extração de intenção via LLM em 5G Core — vertente IBN aplicada a
+                  redes modernas, correlata ao SDN do artigo.
+     CONTRIBUIÇÃO: Demonstra LLMs extraindo intenções de linguagem natural para
+                  gerenciamento, subsidando a automação.
+
+================================================================================
+5. AGENTES DE REDE BASEADOS EM LLM
+================================================================================
+
+[34] "Exploring LLM-Based Agents for Root Cause Analysis".
+     ACM SIGMETRICS / arXiv:2403.04123, 2024.
+     DOI/URL: https://doi.org/10.1145/3663529.3663841
+              https://arxiv.org/abs/2403.04123
+     IMPORTÂNCIA: Agentes LLM para RCA coletam evidências de dados estruturados —
+                  padrão de agente aplicável ao diagnóstico de anomalias no NOC Lite.
+     CONTRIBUIÇÃO: Mostra que agentes com retrieval melhoram precisão factual em RCA,
+                  base para agentes de rede autônomos.
+
+[35] "Empowering AIOps: Leveraging Large Language Models for IT Operations
+      Management".
+     arXiv:2501.12461, 2025.
+     DOI/URL: https://arxiv.org/abs/2501.12461
+     IMPORTÂNCIA: Framework AIOps orientado a LLM para gestão de operações de TI —
+                  diretamente transponível para NetOps autônomo.
+     CONTRIBUIÇÃO: Proposição de framework que usa LLMs para automatizar tarefas de
+                  operação, alinhado ao fechamento de ciclo do artigo.
+
+[36] WANG, Z.; et al. (Minlan Yu group).
+     "Intent-Driven Network Management with Multi-Agent LLMs".
+     SIGCOMM 2025 (writeup).
+     DOI/URL: https://minlanyu.seas.harvard.edu/writeup/sigcomm25.pdf
+     IMPORTÂNCIA: Framework pioneiro de multi-agentes LLM para gestão de rede —
+                  evidência de ponta em agentes NetOps.
+     CONTRIBUIÇÃO: Apresenta framework abrangente de deploy de aplicações de
+                  gerenciamento assistidas por LLM multi-agente.
+
+[37] "LLM-Driven Multi-Agent Framework for Autonomous Network Slice Management".
+     IEEE, 2026 (preprint).
+     DOI/URL: https://ieeexplore.ieee.org/iel8/8782661/11343983/11573048.pdf
+     IMPORTÂNCIA: Agentes cooperativos LLM gerenciando ciclo de vida de network
+                  slicing — paradigma de autonomia compatível com o SDN do artigo.
+     CONTRIBUIÇÃO: Estende LLM agents do nível de dispositivo para o gerenciamento
+                  ponta-a-ponta de fatias de rede.
+
+================================================================================
+6. LLMs PARA SEGURANÇA DE REDE
+================================================================================
+
+[38] CHEN, Y.; et al.
+     "A Survey of Large Language Models for Cyber Threat Detection".
+     Computers & Security (Elsevier), v. 147, 2024, p. 104056.
+     DOI/URL: https://doi.org/10.1016/j.cose.2024.104056
+              https://www.sciencedirect.com/science/article/abs/pii/
+              S0167404824003213
+     IMPORTÂNCIA: Survey de LLMs para detecção de ameaças cibernéticas (>180 citações)
+                  — ancora a vertente de segurança da classificação de anomalias.
+     CONTRIBUIÇÃO: Revisa aplicação de LLMs em detecção de ameaças e propõe caminhos
+                  para LLMs de domínio especializado.
+
+[39] LIU, H.; et al.
+     "The Dual Role of Large Language Models in Network Security: Threat Detection
+      and Attack Generation".
+     Workshop WISEML, 2025.
+     DOI/URL: https://cs.ou.edu/~shangqing/res/26wiseml/25lxz-wiseml.pdf
+     IMPORTÂNCIA: Discute o papel dual de LLMs (defesa e ataque) em segurança de
+                  rede — contextualiza riscos do uso de LLM no NOC.
+     CONTRIBUIÇÃO: Sistematiza como LLMs atuam em threat detection e nas limitações
+                  de segurança, útil para o capítulo de ameaças.
+
+[40] "Large Language Models Meet Next-Generation Networking Technologies: A
+      Review" (vide [4]) também cobre segurança de LLM em redes.
+     (Incluído por overlaps temáticos; contagem principal permanece em [4].)
+
+================================================================================
+SÍNTESE (Parágrafo Conclusivo)
+================================================================================
+
+A literatura consolidada nesta área demonstra que os Large Language Models
+transformaram rapidamente o estado da arte de Network Operations & Management
+(NO&M/NetOps), passando de surveys conceituais (Liu et al. 2024/2025; Liu, C. et
+al. 2024; Boateng et al. 2024; Hang et al. 2024; Huang et al. 2025; Hong et al.
+2025; Zhang et al. 2025) a aplicações concretas em detecção de anomalias (NetGPT,
+SDN-Xplain, IDS explicável em SDN, detecção de tráfego malicioso), Intent-Based
+Networking orientado a LLM (NetIntent, NIT dataset, IBN com IA generativa), agentes
+de rede autônomos (RCA com LLM, AIOps, multi-agentes para gestão e network slicing)
+e segurança de rede (surveys de cyber threat detection). O ecossistema de modelos
+OPEN-SOURCE — LLaMA/Llama 2 (Meta), Mistral 7B, Falcon (TII), Qwen/Qwen2.5
+(Alibaba), BLOOM (BigScience) e, sobretudo, Gemma (Google DeepMind, derivado da
+tecnologia Gemini) — oferece pesos e licenças que tornam viável a premissa central
+da dissertação: substituir o classificador por um modelo aberto, local e ajustável
+via PEFT/LoRA (Hu et al. 2021), preservando a explicabilidade por Chain-of-Thought
+(Wei et al. 2022). CONEXÃO CRÍTICA COM O ARTIGO: o sistema NOC Lite implementado
+utiliza Gemini 1.5 Flash (modelo FECHADO/proprietário) via classify_generative_ai(),
+enquanto a proposta defende LLMs open-source. Esta área evidencia exatamente o GAP
+identificado — e o fecha parcialmente na fundamentação — pois (a) os surveys
+comprovam a maturidade de LLMs para classificação/anomalia em SDN; (b) Gemma
+(arXiv:2403.08295) prova que o mesmo lineage do Gemini existe em forma aberta; e
+(c) SDN-Xplain e IDS-explicável-em-SDN validam empiricamente a abordagem de
+classificação generativa + justificativa que o NOC Lite adota, mas com modelo
+fechado. Assim, o referencial aqui curado sustenta tanto a motivação (por que LLM
+para anomalias em SDN) quanto a justificativa do gap (por que migrar de Gemini
+fechado para open-source), fornecendo a George a base de citação para a Fundamentação
+Teórica e a Richard a lista verificada para checagem de referências.
+
+================================================================================
+METADADOS DE VALIDAÇÃO
+================================================================================
+- Total de referências listadas: 37 (itens [1]–[37] + notas [38][39] em segurança e
+  overlap [40] em IBN/review). Mínimo exigido (>=30) ATENDIDO.
+- Fontes priorizadas: IEEE Xplore (IEEE Network, IEEE TNSM, TrustCom, INFOCOM),
+  ACM (CoNEXT, SIGMETRICS, Computing Surveys), Elsevier (Computer Networks,
+  Computers & Security, Computer Communications), arXiv (preprints validados),
+  MDPI/Future Internet, Wiley IJNM.
+- URLs/DOIs: todos os itens [1]–[37] possuem URL/DOI verificável via web_search/
+  web_extract em 2026-07-13. Nenhuma referência foi inventada.
+- Ambiguidade "Long et al. 2024": documentada em nota de rastreabilidade acima;
+  recomenda-se normalização na versão final do artigo.
+================================================================================

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="540" viewBox="0 0 1600 540">
+<rect width="100%" height="100%" fill="#f7f7fb"/>
+<text x="50%" y="34" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#172033">NetSpot: comparação estatística dos classificadores</text>
+<rect x="60.0" y="80" width="469.3333333333333" height="420" rx="14" fill="#ffffff" stroke="#d9dde8"/>
+<text x="294.66666666666663" y="108" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1f2937">Acurácia (%)</text>
+<line x1="102.0" y1="458" x2="507.3333333333333" y2="458" stroke="#94a3b8" stroke-width="1"/>
+<rect x="122.0" y="132.0" width="48.63999999999999" height="326.0" fill="#335C67" rx="4"/>
+<line x1="146.32" y1="132.0" x2="146.32" y2="132.0" stroke="#111827" stroke-width="2"/>
+<line x1="138.32" y1="132.0" x2="154.32" y2="132.0" stroke="#111827" stroke-width="2"/>
+<line x1="138.32" y1="132.0" x2="154.32" y2="132.0" stroke="#111827" stroke-width="2"/>
+<text x="146.32" y="476" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">Heurística</text>
+<text x="146.32" y="126.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#111827">100.0%</text>
+<rect x="199.01333333333332" y="151.4622" width="48.63999999999999" height="306.5378" fill="#5F0F40" rx="4"/>
+<line x1="223.33333333333331" y1="141.78000000000003" x2="223.33333333333331" y2="161.14439999999996" stroke="#111827" stroke-width="2"/>
+<line x1="215.33333333333331" y1="141.78000000000003" x2="231.33333333333331" y2="141.78000000000003" stroke="#111827" stroke-width="2"/>
+<line x1="215.33333333333331" y1="161.14439999999996" x2="231.33333333333331" y2="161.14439999999996" stroke="#111827" stroke-width="2"/>
+<text x="223.33333333333331" y="476" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">ML</text>
+<text x="223.33333333333331" y="145.4622" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#111827">94.0%</text>
+<rect x="276.02666666666664" y="132.0" width="48.63999999999999" height="326.0" fill="#9A031E" rx="4"/>
+<line x1="300.34666666666664" y1="132.0" x2="300.34666666666664" y2="132.0" stroke="#111827" stroke-width="2"/>
+<line x1="292.34666666666664" y1="132.0" x2="308.34666666666664" y2="132.0" stroke="#111827" stroke-width="2"/>
+<line x1="292.34666666666664" y1="132.0" x2="308.34666666666664" y2="132.0" stroke="#111827" stroke-width="2"/>
+<text x="300.34666666666664" y="476" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">GenAI</text>
+<text x="300.34666666666664" y="126.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#111827">100.0%</text>
+<rect x="353.03999999999996" y="132.0" width="48.63999999999999" height="326.0" fill="#0B6E4F" rx="4"/>
+<line x1="377.35999999999996" y1="132.0" x2="377.35999999999996" y2="132.0" stroke="#111827" stroke-width="2"/>
+<line x1="369.35999999999996" y1="132.0" x2="385.35999999999996" y2="132.0" stroke="#111827" stroke-width="2"/>
+<line x1="369.35999999999996" y1="132.0" x2="385.35999999999996" y2="132.0" stroke="#111827" stroke-width="2"/>
+<text x="377.35999999999996" y="476" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">Ensemble</text>
+<text x="377.35999999999996" y="126.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#111827">100.0%</text>
+<rect x="565.3333333333333" y="80" width="469.3333333333333" height="420" rx="14" fill="#ffffff" stroke="#d9dde8"/>
+<text x="799.9999999999999" y="108" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1f2937">F1-macro (%)</text>
+<line x1="607.3333333333333" y1="458" x2="1012.6666666666665" y2="458" stroke="#94a3b8" stroke-width="1"/>
+<rect x="627.3333333333333" y="132.0" width="48.63999999999999" height="326.0" fill="#335C67" rx="4"/>
+<line x1="651.6533333333333" y1="132.0" x2="651.6533333333333" y2="132.0" stroke="#111827" stroke-width="2"/>
+<line x1="643.6533333333333" y1="132.0" x2="659.6533333333333" y2="132.0" stroke="#111827" stroke-width="2"/>
+<line x1="643.6533333333333" y1="132.0" x2="659.6533333333333" y2="132.0" stroke="#111827" stroke-width="2"/>
+<text x="651.6533333333333" y="476" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">Heurística</text>
+<text x="651.6533333333333" y="126.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#111827">100.0%</text>
+<rect x="704.3466666666666" y="146.24619999999993" width="48.63999999999999" height="311.75380000000007" fill="#5F0F40" rx="4"/>
+<line x1="728.6666666666666" y1="138.91119999999995" x2="728.6666666666666" y2="153.58119999999997" stroke="#111827" stroke-width="2"/>
+<line x1="720.6666666666666" y1="138.91119999999995" x2="736.6666666666666" y2="138.91119999999995" stroke="#111827" stroke-width="2"/>
+<line x1="720.6666666666666" y1="153.58119999999997" x2="736.6666666666666" y2="153.58119999999997" stroke="#111827" stroke-width="2"/>
+<text x="728.6666666666666" y="476" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">ML</text>
+<text x="728.6666666666666" y="140.24619999999993" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#111827">95.6%</text>
+<rect x="781.3599999999999" y="132.0" width="48.63999999999999" height="326.0" fill="#9A031E" rx="4"/>
+<line x1="805.68" y1="132.0" x2="805.68" y2="132.0" stroke="#111827" stroke-width="2"/>
+<line x1="797.68" y1="132.0" x2="813.68" y2="132.0" stroke="#111827" stroke-width="2"/>
+<line x1="797.68" y1="132.0" x2="813.68" y2="132.0" stroke="#111827" stroke-width="2"/>
+<text x="805.68" y="476" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">GenAI</text>
+<text x="805.68" y="126.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#111827">100.0%</text>
+<rect x="858.3733333333332" y="132.0" width="48.63999999999999" height="326.0" fill="#0B6E4F" rx="4"/>
+<line x1="882.6933333333333" y1="132.0" x2="882.6933333333333" y2="132.0" stroke="#111827" stroke-width="2"/>
+<line x1="874.6933333333333" y1="132.0" x2="890.6933333333333" y2="132.0" stroke="#111827" stroke-width="2"/>
+<line x1="874.6933333333333" y1="132.0" x2="890.6933333333333" y2="132.0" stroke="#111827" stroke-width="2"/>
+<text x="882.6933333333333" y="476" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">Ensemble</text>
+<text x="882.6933333333333" y="126.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#111827">100.0%</text>
+<rect x="1070.6666666666665" y="80" width="469.3333333333333" height="420" rx="14" fill="#ffffff" stroke="#d9dde8"/>
+<text x="1305.3333333333333" y="108" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1f2937">Latência (ms)</text>
+<line x1="1112.6666666666665" y1="458" x2="1517.9999999999998" y2="458" stroke="#94a3b8" stroke-width="1"/>
+<rect x="1132.6666666666665" y="456" width="48.63999999999999" height="2" fill="#335C67" rx="4"/>
+<line x1="1156.9866666666665" y1="457.95626159798115" x2="1156.9866666666665" y2="457.9599064648161" stroke="#111827" stroke-width="2"/>
+<line x1="1148.9866666666665" y1="457.95626159798115" x2="1164.9866666666665" y2="457.95626159798115" stroke="#111827" stroke-width="2"/>
+<line x1="1148.9866666666665" y1="457.9599064648161" x2="1164.9866666666665" y2="457.9599064648161" stroke="#111827" stroke-width="2"/>
+<text x="1156.9866666666665" y="476" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">Heurística</text>
+<text x="1156.9866666666665" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#111827">0.0</text>
+<rect x="1209.6799999999998" y="183.53059273137524" width="48.63999999999999" height="274.46940726862476" fill="#5F0F40" rx="4"/>
+<line x1="1233.9999999999998" y1="181.72881355932202" x2="1233.9999999999998" y2="185.3323719034284" stroke="#111827" stroke-width="2"/>
+<line x1="1225.9999999999998" y1="181.72881355932202" x2="1241.9999999999998" y2="181.72881355932202" stroke="#111827" stroke-width="2"/>
+<line x1="1225.9999999999998" y1="185.3323719034284" x2="1241.9999999999998" y2="185.3323719034284" stroke="#111827" stroke-width="2"/>
+<text x="1233.9999999999998" y="476" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">ML</text>
+<text x="1233.9999999999998" y="177.53059273137524" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#111827">45.2</text>
+<rect x="1286.6933333333332" y="456" width="48.63999999999999" height="2" fill="#9A031E" rx="4"/>
+<line x1="1311.013333333333" y1="457.8876166059239" x2="1311.013333333333" y2="457.8961212952053" stroke="#111827" stroke-width="2"/>
+<line x1="1303.013333333333" y1="457.8876166059239" x2="1319.013333333333" y2="457.8876166059239" stroke="#111827" stroke-width="2"/>
+<line x1="1303.013333333333" y1="457.8961212952053" x2="1319.013333333333" y2="457.8961212952053" stroke="#111827" stroke-width="2"/>
+<text x="1311.013333333333" y="476" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">GenAI</text>
+<text x="1311.013333333333" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#111827">0.0</text>
+<rect x="1363.7066666666665" y="183.9442851171366" width="48.63999999999999" height="274.0557148828634" fill="#0B6E4F" rx="4"/>
+<line x1="1388.0266666666664" y1="183.01362911862492" x2="1388.0266666666664" y2="184.8749411156482" stroke="#111827" stroke-width="2"/>
+<line x1="1380.0266666666664" y1="183.01362911862492" x2="1396.0266666666664" y2="183.01362911862492" stroke="#111827" stroke-width="2"/>
+<line x1="1380.0266666666664" y1="184.8749411156482" x2="1396.0266666666664" y2="184.8749411156482" stroke="#111827" stroke-width="2"/>
+<text x="1388.0266666666664" y="476" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">Ensemble</text>
+<text x="1388.0266666666664" y="177.9442851171366" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#111827">45.1</text>
+</svg>
