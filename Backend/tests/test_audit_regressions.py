@@ -354,8 +354,20 @@ def test_validate_private_subnet_supports_slash_20(monkeypatch):
     assert "Subnet muito grande" in exc_info.value.detail
 
     # 4. _detect_local_network rejeita faixas de bridge Docker (172.20.0.0/16) e adota 192.168.1.0/24
+    import socket, psutil
+    class DummyAddr:
+        def __init__(self, addr, netmask):
+            self.family = socket.AF_INET
+            self.address = addr
+            self.netmask = netmask
+
     monkeypatch.delenv("NETSPOT_DEFAULT_SUBNET", raising=False)
     monkeypatch.delenv("DEFAULT_DISCOVERY_SUBNET", raising=False)
+    monkeypatch.setattr(psutil, "net_if_addrs", lambda: {"eth0": [DummyAddr("172.20.0.5", "255.255.0.0")]})
+    assert _detect_local_network() == "192.168.1.0/24"
+
+    # Fallback quando sem interfaces de rede
+    monkeypatch.setattr(psutil, "net_if_addrs", lambda: {})
     assert _detect_local_network() == "192.168.1.0/24"
 
     # 5. _detect_local_network respeita NETSPOT_DEFAULT_SUBNET configurada
