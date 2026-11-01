@@ -1,0 +1,83 @@
+name: Sincronizacao Continua com NetSpot Core
+
+on:
+  schedule:
+    # Executa diariamente as 03:00 UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      upstream_branch:
+        description: 'Branch de origem no NetSpot upstream'
+        required: true
+        default: 'dev'
+      target_branch:
+        description: 'Branch de destino no detector-de-anomalias'
+        required: true
+        default: 'dev'
+
+jobs:
+  sync:
+    name: Sincronizar com NetSpot Upstream
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout detector-de-anomalias
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.target_branch || 'dev' }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configurar Git Identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Adicionar Remoto Upstream NetSpot
+        run: |
+          git remote add upstream https://github.com/ronaldocrispimsg/netspot.git || git remote set-url upstream https://github.com/ronaldocrispimsg/netspot.git
+          git fetch upstream ${{ github.event.inputs.upstream_branch || 'dev' }}
+
+      - name: Verificar Diferenças
+        id: check_diff
+        run: |
+          UPSTREAM_REF="upstream/${{ github.event.inputs.upstream_branch || 'dev' }}"
+          LOCAL_REF="${{ github.event.inputs.target_branch || 'dev' }}"
+          
+          echo "Comparando $LOCAL_REF com $UPSTREAM_REF..."
+          
+          # Verifica se ha novos commits no upstream
+          NEW_COMMITS=$(git rev-list --count $LOCAL_REF..$UPSTREAM_REF 2>/dev/null || echo "0")
+          echo "Novos commits detectados: $NEW_COMMITS"
+          echo "has_changes=$NEW_COMMITS" >> $GITHUB_OUTPUT
+
+      - name: Executar Integracao com Upstream
+        if: steps.check_diff.outputs.has_changes != '0'
+        run: |
+          UPSTREAM_REF="upstream/${{ github.event.inputs.upstream_branch || 'dev' }}"
+          TARGET_BRANCH="${{ github.event.inputs.target_branch || 'dev' }}"
+          
+          echo "Tentando merge automatico de $UPSTREAM_REF em $TARGET_BRANCH..."
+          
+          # Tenta o merge preservando os modulos de IA
+          if git merge $UPSTREAM_REF -m "chore(sync): sincronizar atualizacoes do netspot core ($UPSTREAM_REF)"; then
+            echo "Merge concluido com sucesso sem conflitos."
+            git push origin $TARGET_BRANCH
+          else
+            echo "Conflito detectado durante a sincronizacao automatica."
+            git merge --abort || true
+            
+            # Cria branch de sincronizacao para analise
+            SYNC_BRANCH="sync/netspot-$(date +%Y%m%d-%H%M%S)"
+            git checkout -b $SYNC_BRANCH
+            echo "Branch $SYNC_BRANCH criada para resolucao de conflitos."
+            # Notifica ou permite resolucao via PR se gh cli estiver disponivel
+            if command -v gh &> /dev/null; then
+              gh pr create --base $TARGET_BRANCH --head $SYNC_BRANCH \
+                --title "chore(sync): sincronizar atualizações do netspot upstream" \
+                --body "Foram detectadas atualizações no repositório upstream NetSpot que necessitam de mesclagem ou revisão." || true
+            fi
+          fi
