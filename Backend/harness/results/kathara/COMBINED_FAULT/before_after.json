@@ -1,0 +1,15 @@
+{
+  "scenario": "COMBINED_FAULT",
+  "metric": null,
+  "before": null,
+  "after": null,
+  "verdict": "unverified",
+  "outcome": "mitigated",
+  "trajectory_hash": "b8ddad48cf320aa7256a4c9f8c9dd7024f3b338eb62f6cf9f2629bc1c6817688",
+  "operational_metrics": {
+    "steps_planned": 1.0,
+    "actions_applied": 1.0,
+    "mitigation_success_rate": 1.0,
+    "rollback_rate": 0.0
+  }
+}

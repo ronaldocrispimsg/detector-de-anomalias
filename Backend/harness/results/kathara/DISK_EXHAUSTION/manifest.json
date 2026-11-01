@@ -1,0 +1,11 @@
+{
+  "scenario": "DISK_EXHAUSTION",
+  "seed": 1,
+  "trajectory_hash": "2f2e60c6481bea9e3ed429fa8eec83bfe616bd7923fd64e760c358c099d17e99",
+  "reproducible": true,
+  "generated_at": "2026-10-18T13:12:30.995556+00:00",
+  "versions": {
+    "kathara": "unknown",
+    "kathara_base_image": "sha256:8a2e7"
+  }
+}

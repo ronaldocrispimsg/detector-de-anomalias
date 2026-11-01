@@ -1,0 +1,11 @@
+{
+  "scenario": "DATA_EXFILTRATION",
+  "seed": 1,
+  "trajectory_hash": "a55952e413a7aea8bcb7402fb62f8f0adba1293ca29c26edbda43fc2f390f661",
+  "reproducible": true,
+  "generated_at": "2026-10-18T13:12:18.297004+00:00",
+  "versions": {
+    "kathara": "unknown",
+    "kathara_base_image": "sha256:8a2e7"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "scenario": "DDOS_ATTACK",
+  "metric": "network_in_bps",
+  "before": 4140000.0,
+  "after": 1001952.0,
+  "verdict": "mitigated",
+  "outcome": "mitigated",
+  "trajectory_hash": "5dec6883b79f9b4f2fd6d477b2a68df5f96cdb46b6749566f00a05c74bc1dcb3",
+  "operational_metrics": {
+    "steps_planned": 1.0,
+    "actions_applied": 1.0,
+    "mitigation_success_rate": 1.0,
+    "rollback_rate": 0.0
+  }
+}

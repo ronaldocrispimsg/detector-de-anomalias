@@ -1,0 +1,17 @@
+{
+  "name": "qlora_qwen",
+  "base_model": "Qwen/Qwen2.5-7B-Instruct",
+  "adapter_version": "qlora-v1",
+  "r": 16,
+  "alpha": 32,
+  "dropout": 0.05,
+  "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj"],
+  "quant_4bit": true,
+  "lr": 0.0002,
+  "epochs": 3,
+  "batch_size": 1,
+  "grad_accum": 16,
+  "max_seq_len": 512,
+  "early_stopping_patience": 2,
+  "requires": "linux+cuda+bitsandbytes"
+}

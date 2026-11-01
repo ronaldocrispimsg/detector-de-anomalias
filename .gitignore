@@ -55,4 +55,6 @@ N8N/data/
 *.joblib
 *.pkl
 
-
+# ===== Andamento do trabalho do agente (interno, fora do produto) =====
+docs/agent/
+docs/Projeto.pdf

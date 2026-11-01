@@ -1,0 +1,15 @@
+{
+  "scenario": "DATA_EXFILTRATION",
+  "metric": "network_in_bps",
+  "before": 137701808.0,
+  "after": 0.0,
+  "verdict": "mitigated",
+  "outcome": "mitigated",
+  "trajectory_hash": "a55952e413a7aea8bcb7402fb62f8f0adba1293ca29c26edbda43fc2f390f661",
+  "operational_metrics": {
+    "steps_planned": 1.0,
+    "actions_applied": 1.0,
+    "mitigation_success_rate": 1.0,
+    "rollback_rate": 0.0
+  }
+}

@@ -93,111 +93,172 @@ class AnomalySimulator:
     def _clamp(value: float, min_val: float, max_val: float) -> float:
         return max(min_val, min(max_val, value))
 
+    def _scenario_overrides(self, scenario: str, r: random.Random):
+        """Valores anômalos do cenário (severidade 1.0) e categóricos.
+
+        Separa o "quanto" (valores anômalos) do "grau" (severidade), permitindo
+        gerar regimes distintos sem alterar a semântica do fenômeno. Em
+        severidade 1.0 o resultado coincide com a geração original.
+        """
+        numeric: Dict[str, float] = {}
+        categorical: Dict[str, Any] = {}
+
+        if scenario == "DDOS_ATTACK":
+            numeric.update(
+                latency_ms=r.gauss(280.0, 40.0),
+                packet_loss_pct=r.gauss(38.0, 8.0),
+                jitter_ms=r.gauss(85.0, 20.0),
+                cpu_usage_pct=r.gauss(92.0, 5.0),
+                network_in_bps=r.gauss(500_000_000, 50_000_000),
+                network_out_bps=r.gauss(15_000_000, 3_000_000),
+                http_response_time_ms=r.gauss(4500.0, 800.0),
+                active_connections=int(r.gauss(3800, 400)),
+            )
+            categorical["http_status_code"] = r.choice([503, 504, 200])
+            if r.random() > 0.4:
+                categorical["tcp_port_open"] = False
+
+        elif scenario == "PORT_SCAN":
+            numeric.update(
+                latency_ms=r.gauss(35.0, 10.0),
+                packet_loss_pct=r.gauss(4.0, 2.0),
+                jitter_ms=r.gauss(12.0, 4.0),
+                cpu_usage_pct=r.gauss(55.0, 10.0),
+                active_connections=int(r.gauss(1200, 250)),
+                network_in_bps=r.gauss(12_000_000, 2_000_000),
+            )
+
+        elif scenario == "HOST_DOWN":
+            numeric.update(
+                latency_ms=0.0,
+                packet_loss_pct=100.0,
+                jitter_ms=0.0,
+                cpu_usage_pct=0.0,
+                ram_usage_pct=0.0,
+                disk_usage_pct=0.0,
+                network_in_bps=0.0,
+                network_out_bps=0.0,
+                http_response_time_ms=0.0,
+                active_connections=0,
+            )
+            categorical.update(http_status_code=0, tcp_port_open=False)
+
+        elif scenario == "MEMORY_LEAK":
+            numeric.update(
+                ram_usage_pct=r.gauss(97.5, 1.5),
+                cpu_usage_pct=r.gauss(78.0, 8.0),
+                latency_ms=r.gauss(45.0, 10.0),
+                disk_usage_pct=r.gauss(65.0, 5.0),
+                http_response_time_ms=r.gauss(1800.0, 300.0),
+            )
+
+        elif scenario == "DATA_EXFILTRATION":
+            numeric.update(
+                network_in_bps=r.gauss(2_000_000, 400_000),
+                network_out_bps=r.gauss(350_000_000, 40_000_000),
+                active_connections=int(r.gauss(450, 80)),
+                cpu_usage_pct=r.gauss(68.0, 7.0),
+            )
+
+        elif scenario == "DISK_EXHAUSTION":
+            numeric.update(
+                disk_usage_pct=r.gauss(98.8, 0.8),
+                cpu_usage_pct=r.gauss(65.0, 12.0),
+                http_response_time_ms=r.gauss(2200.0, 500.0),
+            )
+            categorical["http_status_code"] = r.choice([500, 200])
+
+        elif scenario == "SERVICE_OUTAGE":
+            numeric.update(
+                http_response_time_ms=r.gauss(3500.0, 600.0),
+                latency_ms=r.gauss(18.0, 4.0),
+            )
+            categorical["http_status_code"] = r.choice([500, 502, 503])
+            categorical["tcp_port_open"] = r.choice([True, False])
+
+        elif scenario == "COMBINED_FAULT":
+            numeric.update(
+                cpu_usage_pct=r.gauss(96.0, 1.5),
+                ram_usage_pct=r.gauss(95.0, 1.5),
+                disk_usage_pct=r.gauss(94.0, 1.5),
+                latency_ms=r.gauss(320.0, 40.0),
+                packet_loss_pct=r.gauss(25.0, 4.0),
+                jitter_ms=r.gauss(75.0, 10.0),
+                http_response_time_ms=r.gauss(5000.0, 500.0),
+            )
+            categorical.update(http_status_code=503, tcp_port_open=False)
+
+        elif scenario == "NETWORK_CONGESTION":
+            numeric.update(
+                latency_ms=r.gauss(210.0, 35.0),
+                packet_loss_pct=r.gauss(16.0, 4.0),
+                jitter_ms=r.gauss(65.0, 12.0),
+                http_response_time_ms=r.gauss(1400.0, 250.0),
+            )
+
+        return numeric, categorical
+
     def generate_sample(
         self,
         scenario: str = "NORMAL",
         timestamp: Optional[float] = None,
-        custom_params: Optional[Dict[str, Any]] = None
+        custom_params: Optional[Dict[str, Any]] = None,
+        *,
+        severity: float = 1.0,
+        rng: Optional[Any] = None,
     ) -> SystemMetricsSample:
+        """Gera uma amostra do cenário.
+
+        `severity` interpola linearmente entre o estado saudável (0.0) e o
+        fenômeno pleno (1.0) para as métricas numéricas do cenário. O padrão
+        (1.0) reproduz a geração original. `rng` permite uma fonte de
+        aleatoriedade semeada para reprodutibilidade; por padrão usa o módulo
+        global `random`.
+        """
         scenario = scenario.upper()
         if scenario not in SCENARIOS_META:
             scenario = "NORMAL"
 
+        r = rng if rng is not None else random
+        severity = float(severity)
         import time
         ts = timestamp if timestamp is not None else time.time()
         c_params = custom_params or {}
 
-        # Valores base normais
-        latency = random.gauss(15.0, 3.0)
-        packet_loss = max(0.0, random.gauss(0.2, 0.1)) if random.random() > 0.85 else 0.0
-        jitter = random.gauss(2.0, 0.5)
-        cpu = random.gauss(28.0, 8.0)
-        ram = random.gauss(45.0, 5.0)
-        disk = random.gauss(40.0, 2.0)
-        net_in = random.gauss(5_000_000, 1_000_000)   # 5 MB/s
-        net_out = random.gauss(2_000_000, 500_000)   # 2 MB/s
-        http_code = 200
-        http_resp = random.gauss(120.0, 20.0)
-        tcp_open = True
-        active_conn = int(random.gauss(45, 10))
+        # Valores base saudáveis
+        values: Dict[str, float] = {
+            "latency_ms": r.gauss(15.0, 3.0),
+            "packet_loss_pct": max(0.0, r.gauss(0.2, 0.1)) if r.random() > 0.85 else 0.0,
+            "jitter_ms": r.gauss(2.0, 0.5),
+            "cpu_usage_pct": r.gauss(28.0, 8.0),
+            "ram_usage_pct": r.gauss(45.0, 5.0),
+            "disk_usage_pct": r.gauss(40.0, 2.0),
+            "network_in_bps": r.gauss(5_000_000, 1_000_000),
+            "network_out_bps": r.gauss(2_000_000, 500_000),
+            "http_response_time_ms": r.gauss(120.0, 20.0),
+            "active_connections": int(r.gauss(45, 10)),
+        }
+        final_cat: Dict[str, Any] = {"http_status_code": 200, "tcp_port_open": True}
 
-        # Modificadores por cenário
-        if scenario == "DDOS_ATTACK":
-            latency = random.gauss(280.0, 40.0)
-            packet_loss = random.gauss(38.0, 8.0)
-            jitter = random.gauss(85.0, 20.0)
-            cpu = random.gauss(92.0, 5.0)
-            net_in = random.gauss(500_000_000, 50_000_000)  # 500 MB/s
-            net_out = random.gauss(15_000_000, 3_000_000)
-            http_code = random.choice([503, 504, 200])
-            http_resp = random.gauss(4500.0, 800.0)
-            active_conn = int(random.gauss(3800, 400))
-            if random.random() > 0.4:
-                tcp_open = False
+        numeric, categorical = self._scenario_overrides(scenario, r)
+        if severity > 0.0:
+            for key, anomalous in numeric.items():
+                values[key] = values[key] + severity * (anomalous - values[key])
+            for key, anomalous in categorical.items():
+                final_cat[key] = anomalous
 
-        elif scenario == "PORT_SCAN":
-            latency = random.gauss(35.0, 10.0)
-            packet_loss = random.gauss(4.0, 2.0)
-            jitter = random.gauss(12.0, 4.0)
-            cpu = random.gauss(55.0, 10.0)
-            active_conn = int(random.gauss(1200, 250))
-            net_in = random.gauss(12_000_000, 2_000_000)
-
-        elif scenario == "HOST_DOWN":
-            latency = 0.0
-            packet_loss = 100.0
-            jitter = 0.0
-            cpu = 0.0
-            ram = 0.0
-            disk = 0.0
-            net_in = 0.0
-            net_out = 0.0
-            http_code = 0
-            http_resp = 0.0
-            tcp_open = False
-            active_conn = 0
-
-        elif scenario == "MEMORY_LEAK":
-            ram = random.gauss(97.5, 1.5)
-            cpu = random.gauss(78.0, 8.0)
-            latency = random.gauss(45.0, 10.0)
-            disk = random.gauss(65.0, 5.0)  # Swap thrashing
-            http_resp = random.gauss(1800.0, 300.0)
-
-        elif scenario == "DATA_EXFILTRATION":
-            net_in = random.gauss(2_000_000, 400_000)
-            net_out = random.gauss(350_000_000, 40_000_000)  # 350 MB/s outbound
-            active_conn = int(random.gauss(450, 80))
-            cpu = random.gauss(68.0, 7.0)
-
-        elif scenario == "DISK_EXHAUSTION":
-            disk = random.gauss(98.8, 0.8)
-            cpu = random.gauss(65.0, 12.0)
-            http_code = random.choice([500, 200])
-            http_resp = random.gauss(2200.0, 500.0)
-
-        elif scenario == "SERVICE_OUTAGE":
-            http_code = random.choice([500, 502, 503])
-            tcp_open = random.choice([True, False])
-            http_resp = random.gauss(3500.0, 600.0)
-            latency = random.gauss(18.0, 4.0)
-
-        elif scenario == "COMBINED_FAULT":
-            cpu = random.gauss(96.0, 1.5)
-            ram = random.gauss(95.0, 1.5)
-            disk = random.gauss(94.0, 1.5)
-            latency = random.gauss(320.0, 40.0)
-            packet_loss = random.gauss(25.0, 4.0)
-            jitter = random.gauss(75.0, 10.0)
-            http_code = 503
-            http_resp = random.gauss(5000.0, 500.0)
-            tcp_open = False
-
-        elif scenario == "NETWORK_CONGESTION":
-            latency = random.gauss(210.0, 35.0)
-            packet_loss = random.gauss(16.0, 4.0)
-            jitter = random.gauss(65.0, 12.0)
-            http_resp = random.gauss(1400.0, 250.0)
+        latency = values["latency_ms"]
+        packet_loss = values["packet_loss_pct"]
+        jitter = values["jitter_ms"]
+        cpu = values["cpu_usage_pct"]
+        ram = values["ram_usage_pct"]
+        disk = values["disk_usage_pct"]
+        net_in = values["network_in_bps"]
+        net_out = values["network_out_bps"]
+        http_resp = values["http_response_time_ms"]
+        active_conn = values["active_connections"]
+        http_code = final_cat["http_status_code"]
+        tcp_open = final_cat["tcp_port_open"]
 
         # Aplicar parâmetros customizados se informados
         if "latency_ms" in c_params:
@@ -239,15 +300,29 @@ class AnomalySimulator:
             http_status_code=http_code,
             http_response_time_ms=round(max(0.0, http_resp), 2),
             tcp_port_open=tcp_open,
-            active_connections=max(0, active_conn)
+            active_connections=max(0, int(active_conn))
         )
 
-    def generate_batch(self, scenario: str = "NORMAL", count: int = 50) -> List[SystemMetricsSample]:
+    def generate_batch(
+        self,
+        scenario: str = "NORMAL",
+        count: int = 50,
+        *,
+        severity: float = 1.0,
+        rng: Optional[Any] = None,
+    ) -> List[SystemMetricsSample]:
         samples = []
         import time
         base_ts = time.time() - (count * 10)
         for i in range(count):
-            samples.append(self.generate_sample(scenario=scenario, timestamp=base_ts + (i * 10)))
+            samples.append(
+                self.generate_sample(
+                    scenario=scenario,
+                    timestamp=base_ts + (i * 10),
+                    severity=severity,
+                    rng=rng,
+                )
+            )
         return samples
 
 

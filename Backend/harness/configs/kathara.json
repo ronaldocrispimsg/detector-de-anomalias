@@ -1,0 +1,54 @@
+{
+  "lab_name": "noc",
+  "server_host": "h1",
+  "server_ip": "10.0.0.1",
+  "attacker_host": "h2",
+  "dst_host": "h3",
+  "bridge_host": "bridge",
+  "bridge_iface": "br0",
+  "image": "kathara/base",
+  "machines": {
+    "bridge": {
+      "image": "kathara/base",
+      "startup": [
+        "brctl addbr br0",
+        "brctl stp br0 off",
+        "brctl setageing br0 10",
+        "ip link set br0 up",
+        "brctl addif br0 eth0",
+        "brctl addif br0 eth1",
+        "brctl addif br0 eth2",
+        "echo bridge-ready"
+      ]
+    },
+    "h1": {
+      "image": "kathara/base",
+      "startup": [
+        "ip addr add 10.0.0.1/24 dev eth0",
+        "ip link set eth0 up",
+        "echo h1-ready"
+      ]
+    },
+    "h2": {
+      "image": "kathara/base",
+      "startup": [
+        "ip addr add 10.0.0.2/24 dev eth0",
+        "ip link set eth0 up",
+        "echo h2-ready"
+      ]
+    },
+    "h3": {
+      "image": "kathara/base",
+      "startup": [
+        "ip addr add 10.0.0.3/24 dev eth0",
+        "ip link set eth0 up",
+        "echo h3-ready"
+      ]
+    }
+  },
+  "links": {
+    "l1": [["bridge", 0], ["h1", 0]],
+    "l2": [["bridge", 1], ["h2", 0]],
+    "l3": [["bridge", 2], ["h3", 0]]
+  }
+}

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NetSpot: classificação de anomalias de rede com modelos clássicos e LLMs open source</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 2rem;
+       line-height: 1.5; max-width: 1100px; margin-inline: auto; }
+h1 { font-size: 1.6rem; } h2 { margin-top: 2.2rem; font-size: 1.25rem; }
+h3 { margin-top: 1.6rem; font-size: 1.05rem; }
+table { border-collapse: collapse; width: 100%; margin: .6rem 0 1.2rem; font-size: .92rem; }
+th, td { border: 1px solid #8884; padding: .4rem .6rem; text-align: left; }
+th { background: #8881; }
+.muted { opacity: .65; } .mono { font-family: ui-monospace, monospace; font-size: .85rem; }
+.figure { margin: 1rem 0 1.4rem; }
+.figure img { max-width: 100%; height: auto; border: 1px solid #8884; border-radius: 6px; }
+.figure figcaption { font-size: .85rem; opacity: .65; margin-top: .3rem; }
+.ok { color: #15803d; font-weight: 600; } .warn { color: #b45309; font-weight: 600; }
+</style></head><body>
+<h1>NetSpot: classificação de anomalias de rede com modelos clássicos e LLMs open source</h1>
+<p>O NetSpot monitora hosts por ICMP, TCP, HTTP/DNS e SNMP e classifica uma amostra
+de telemetria em dez cenários de operação e falha, com justificativa e plano de
+mitigação. O protótipo original media a si mesmo: treino e teste saíam do mesmo
+simulador, o motor generativo lia o rótulo e o índice de recuperação guardava o
+nome do cenário. Esta avaliação reconstrói o pipeline para medir generalização
+sobre dados não vistos. Os artefatos brutos ficam em
+<code>Backend/harness/results/</code>.</p>
+
+<h2>Objetivos</h2>
+<p>Quatro perguntas guiam o trabalho.</p>
+<ol><li>Um modelo de linguagem open source é competitivo com métodos clássicos em dados que ele não viu no treino?</li><li>O ajuste fino com LoRA e QLoRA melhora sobre a versão sem treino, e em quanto?</li><li>A memória de casos agrega robustez sem vazar o rótulo do cenário?</li><li>As saídas são calibradas, auditáveis e as justificativas fiéis à telemetria?</li></ol>
+
+<h2>Metodologia</h2>
+<p>O simulador gera telemetria para os dez cenários com faixas de severidade
+separadas entre treino, validação e teste. O treino usa anomalias claras e o
+teste usa anomalias sutis, o que mede generalização em vez de memorização. O CSV
+real entra por divisão temporal, UNSW-NB15 e CSE-CIC-IDS2018 entram como holdout
+externo e os cenários do laboratório Kathará servem de execução em rede emulada.
+Um teste automático falha se o rótulo aparecer na entrada, na consulta de
+recuperação ou no índice.</p>
+<p>No mesmo conjunto de teste rodam heurística de NOC, Random Forest, gradient
+boosting, regressão logística, Isolation Forest, agente de linguagem sem e com
+exemplos, memória de casos, ajuste fino LoRA/QLoRA e combinação calibrada com
+abstenção. Nenhum resultado de modelo de linguagem é reportado sem o baseline
+clássico no mesmo split. As métricas são macro-F1, acurácia balanceada, precisão e
+recall por classe, matriz de confusão, PR-AUC, erro de calibração esperado, curvas
+de cobertura e risco, latência e taxa de JSON inválido. Toda métrica vem com
+intervalo de confiança bootstrap de 95%, e a comparação entre motores usa McNemar
+com correção de Holm-Bonferroni. A mitigação roda em ciclo fechado: o agente
+escolhe ações de um catálogo fechado, simula antes de aplicar, mede o efeito na
+vítima, reverte quando não há melhora e registra a trajetória com hash.</p>
+
+<h3>O que foi construído</h3>
+<table><thead><tr><th>Frente de trabalho</th><th>O que cobre</th></tr></thead><tbody><tr><td>Infraestrutura de experimentos</td><td>Configurações versionadas, sementes fixas, métricas com intervalo de confiança e reprodução determinística em um comando.</td></tr><tr><td>Dados e divisões sem vazamento</td><td>Treino, validação e teste em faixas de severidade separadas, com teste automático contra vazamento.</td></tr><tr><td>Baselines com incerteza</td><td>Heurística, Random Forest, gradient boosting, regressão logística e Isolation Forest no mesmo conjunto de teste.</td></tr><tr><td>Agente de linguagem estruturado</td><td>Saída em JSON validada por schema, prompt versionado e abstenção; medição com modelo local e alvo maior em GPU.</td></tr><tr><td>Memória RAG sem vazamento</td><td>Busca por similaridade em perfis anonimizados; ablação com e sem a memória e teste de McNemar.</td></tr><tr><td>Ajuste fino LoRA e QLoRA</td><td>Pares de treino supervisionado, configuração com guarda e comparativo entre modelos; treino real pendente de GPU.</td></tr><tr><td>Decisão calibrada e mitigação</td><td>Calibração de temperatura, combinação ponderada dos motores, abstenção por cobertura e ciclo fechado com reversão.</td></tr><tr><td>Explicabilidade das justificativas</td><td>Importância de atributos, conferência das evidências contra a telemetria e rubrica de qualidade.</td></tr><tr><td>Reprodução e relatório</td><td>Execução determinística, manifesto com hashes e relatório com figuras.</td></tr><tr><td>Agente autônomo</td><td>Catálogo de ações, planejamento e ciclo de aplicar, medir e manter ou reverter.</td></tr><tr><td>Laboratório Kathará</td><td>Ataques e falhas injetados em containers reais, coleta na vítima e mitigação de ponta a ponta.</td></tr><tr><td>Antialucinação e verificação</td><td>Schema estrito com retentativa, verificação de evidências, veredito independente e catálogo fechado de ações.</td></tr><tr><td>Reprodução por anomalia</td><td>Dez anomalias com semente fixa, artefatos por anomalia e este relatório.</td></tr><tr><td>Conjuntos externos</td><td>Transferência para UNSW-NB15 e CSE-CIC-IDS2018, com mapa de rótulos e preenchimento documentado de valores ausentes.</td></tr></tbody></table>
+
+<h2>Resultados e discussão</h2>
+
+<h3>Baselines com incerteza</h3>
+<p>Motores clássicos e heurística no mesmo conjunto de teste, com intervalo de
+confiança bootstrap de 95%.</p>
+<table><thead><tr><th>Motor</th><th>macro-F1</th><th>IC 95%</th><th>Acurácia</th></tr></thead><tbody><tr><td>Random Forest</td><td>0.706</td><td>0.694–0.718</td><td>0.730</td></tr><tr><td>Regressão logística</td><td>0.681</td><td>0.669–0.692</td><td>0.660</td></tr><tr><td>Gradient boosting</td><td>0.519</td><td>0.509–0.528</td><td>0.623</td></tr><tr><td>Isolation Forest</td><td>0.376</td><td>0.364–0.389</td><td>0.402</td></tr><tr><td>Heurística</td><td>0.260</td><td>0.254–0.266</td><td>0.366</td></tr><tr><td>Classe majoritária</td><td>0.018</td><td>0.017–0.020</td><td>0.100</td></tr></tbody></table>
+<figure class='figure'><img src='baselines.png' alt='macro-F1 por motor, com intervalo de confiança de 95%.'><figcaption>macro-F1 por motor, com intervalo de confiança de 95%.</figcaption></figure>
+
+<h3>Memória de casos (ablação)</h3>
+<p>Precisão da recuperação: 0.68. Amostras: 50.</p><table><thead><tr><th>Condição</th><th>macro-F1</th></tr></thead><tbody><tr><td>sem a memória</td><td>0.167</td></tr><tr><td>com a memória</td><td>0.087</td></tr></tbody></table><p class='muted'>Teste de McNemar pareado: p = 0.016.</p>
+
+<h3>Calibração da confiança</h3>
+<p>Erro de calibração esperado antes e depois do ajuste de temperatura.</p>
+<table><thead><tr><th>Motor</th><th>ECE antes</th><th>ECE depois</th><th>Temperatura</th></tr></thead><tbody><tr><td>Random Forest</td><td>0.122</td><td>0.002</td><td>0.113</td></tr><tr><td>Gradient boosting</td><td>0.039</td><td>0.035</td><td>1.385</td></tr><tr><td>Regressão logística</td><td>0.088</td><td>0.088</td><td>1.064</td></tr></tbody></table>
+<figure class='figure'><img src='coverage_risk.png' alt='Cobertura e risco com abstenção no conjunto de teste.'><figcaption>Cobertura e risco com abstenção no conjunto de teste.</figcaption></figure>
+
+<h3>Qualidade das justificativas</h3>
+<p>Rubrica de 0 a 3 e fração de evidências que conferem com a telemetria, por
+cenário.</p>
+<table><thead><tr><th>Cenário</th><th>n</th><th>Rubrica (0 a 3)</th><th>Evidências conferidas</th></tr></thead><tbody><tr><td>Falha combinada</td><td>15</td><td>1.47</td><td>7%</td></tr><tr><td>Exfiltração de dados</td><td>15</td><td>2.40</td><td>100%</td></tr><tr><td>Ataque DDoS</td><td>15</td><td>2.00</td><td>0%</td></tr><tr><td>Disco esgotado</td><td>15</td><td>2.27</td><td>100%</td></tr><tr><td>Host inacessível</td><td>15</td><td>1.87</td><td>7%</td></tr><tr><td>Vazamento de memória</td><td>15</td><td>2.67</td><td>100%</td></tr><tr><td>Congestionamento de rede</td><td>15</td><td>2.00</td><td>0%</td></tr><tr><td>Operação normal</td><td>15</td><td>2.53</td><td>100%</td></tr><tr><td>Varredura de portas</td><td>15</td><td>2.13</td><td>27%</td></tr><tr><td>Falha de aplicação</td><td>15</td><td>1.93</td><td>73%</td></tr></tbody></table>
+
+<h3>Mitigação em laboratório (Kathar&aacute;)</h3>
+<p>Cada anomalia é injetada no laboratório, mitigada pelo agente e medida antes e
+depois. A trajetória identifica a execução.</p>
+<table><thead><tr><th>Anomalia</th><th>Métrica</th><th>Antes</th><th>Depois</th><th>Veredito</th><th>Trajetória</th></tr></thead><tbody><tr><td>Falha combinada</td><td>—</td><td>—</td><td>—</td><td class='warn'>não verificada</td><td class='mono'>b8ddad48cf32</td></tr><tr><td>Exfiltração de dados</td><td>network_in_bps</td><td>137,701,808</td><td>0</td><td class='ok'>mitigada</td><td class='mono'>a55952e413a7</td></tr><tr><td>Ataque DDoS</td><td>network_in_bps</td><td>4,140,000</td><td>1,001,952</td><td class='ok'>mitigada</td><td class='mono'>5dec6883b79f</td></tr><tr><td>Disco esgotado</td><td>disk_usage_pct</td><td>14</td><td>14</td><td class='warn'>revertida</td><td class='mono'>2f2e60c6481b</td></tr><tr><td>Host inacessível</td><td>—</td><td>—</td><td>—</td><td class='warn'>não verificada</td><td class='mono'>82fba117941a</td></tr><tr><td>Vazamento de memória</td><td>http_response_time_ms</td><td>2</td><td>1</td><td class='warn'>revertida</td><td class='mono'>7b45a4f6fbba</td></tr><tr><td>Congestionamento de rede</td><td>latency_ms</td><td>0</td><td>0</td><td class='warn'>não verificada</td><td class='mono'>9c2d6e4f48eb</td></tr><tr><td>Operação normal</td><td>—</td><td>—</td><td>—</td><td class='warn'>sem ação</td><td class='mono'>71d237830e86</td></tr><tr><td>Varredura de portas</td><td>network_in_bps</td><td>0</td><td>0</td><td class='warn'>revertida</td><td class='mono'>7e2ef152e1be</td></tr><tr><td>Falha de aplicação</td><td>http_response_time_ms</td><td>0</td><td>0</td><td class='warn'>revertida</td><td class='mono'>c2c1fe28fdfd</td></tr></tbody></table>
+
+<h2>Conclusão</h2>
+<p>O ciclo fechado é o resultado mais sólido. O agente escolhe uma ação, aplica,
+mede o efeito e reverte quando não há ganho, e isso foi comprovado em laboratório
+real. A detecção clássica ainda ganha do modelo de linguagem pequeno, que erra por
+falta de variedade nas respostas e é lento. O sistema está implementado e coberto
+por testes, mas falta a evidência com o modelo de 7 bilhões de parâmetros e com os
+adaptadores LoRA/QLoRA treinados, o que depende de uma máquina Linux com GPU. Até
+lá, os números do agente são os do modelo local pequeno.</p>
+
+<h2>Trabalhos futuros</h2>
+<p>Rodar o modelo de 7 bilhões no Linux com GPU e repetir as medições para saber
+se a memória de casos passa a ajudar. Treinar os adaptadores LoRA/QLoRA e comparar
+com a versão sem treino. Executar por inteiro os conjuntos externos UNSW-NB15 e
+CSE-CIC-IDS2018, cujo carregador já está pronto. Ampliar os cenários do
+laboratório, que hoje cobrem congestionamento, host inacessível e exfiltração mas
+não falhas de enlace. Também está em aberto trocar a ponte Ethernet por um
+controlador SDN com OpenFlow.</p>
+</body></html>

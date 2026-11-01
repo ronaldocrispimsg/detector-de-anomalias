@@ -1,0 +1,1 @@
+{"applied": true, "command": "true", "gate_allowed": true, "index": 0, "metric_after": null, "metric_before": 0.0, "params": {}, "reason": "ação informativa (sem métrica de verificação)", "rollback_command": "true", "rolled_back": false, "scenario": "NORMAL", "source": "deterministic", "tool_id": "noop", "verdict": "noop", "verified": true}

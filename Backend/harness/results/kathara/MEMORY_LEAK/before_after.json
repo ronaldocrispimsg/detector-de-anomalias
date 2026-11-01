@@ -1,0 +1,15 @@
+{
+  "scenario": "MEMORY_LEAK",
+  "metric": "http_response_time_ms",
+  "before": 1.8,
+  "after": 1.1,
+  "verdict": "reverted",
+  "outcome": "reverted",
+  "trajectory_hash": "7b45a4f6fbba19047af5ff06ded3b5abb3f484eb99cb864c632619fdcd0787df",
+  "operational_metrics": {
+    "steps_planned": 1.0,
+    "actions_applied": 0.0,
+    "mitigation_success_rate": 0.0,
+    "rollback_rate": 0.0
+  }
+}
