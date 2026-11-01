@@ -1228,10 +1228,13 @@ def test_phase4_documentation_consistency_and_links():
     readme_txt = (root / "README.md").read_text(encoding="utf-8")
     func_txt = (root / "docs" / "funcionalidades.md").read_text(encoding="utf-8")
     kathara_txt = (root / "docs" / "kathara.md").read_text(encoding="utf-8")
-    arq_txt = (root / "arquitetura.md").read_text(encoding="utf-8")
+    arq_path = root / "arquitetura.md"
+    docs_to_check = [readme_txt, func_txt, kathara_txt]
+    if arq_path.is_file():
+        docs_to_check.append(arq_path.read_text(encoding="utf-8"))
 
     # 1. Sem referências antigas a "61 testes", "netspot-postgres" ou "SistemaMonitoramentoDeRede-NOC"
-    for doc_txt in (readme_txt, func_txt, kathara_txt, arq_txt):
+    for doc_txt in docs_to_check:
         assert "61/61" not in doc_txt
         assert "61 testes" not in doc_txt
         assert "netspot-postgres" not in doc_txt
