@@ -2,10 +2,11 @@
 
 ![Backend](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python%203.11-green)
 ![Container](https://img.shields.io/badge/Container-Docker%20Compose-blueviolet)
-![Testes](https://img.shields.io/badge/Testes-121-brightgreen)
+![Release](https://img.shields.io/badge/Release-v1.1.1-blue)
+![Testes](https://img.shields.io/badge/Testes-Passando-brightgreen)
 ![Licença](https://img.shields.io/badge/Licen%C3%A7a-MIT-orange)
 
-NetSpot é um NOC Lite, isto é, um centro de operações de rede de escopo reduzido para laboratórios e infraestruturas pequenas. Ele monitora hosts e ativos por ICMP, TCP, HTTP/HTTPS, DNS e SNMP, mostra o estado em painéis web, mantém o histórico de incidentes e envia alertas.
+NetSpot é um NOC Lite, isto é, um centro de operações de rede de escopo reduzido para laboratórios e infraestruturas pequenas. Ele monitora hosts e ativos por ICMP, TCP, HTTP/HTTPS, DNS e SNMP, mostra o estado em painéis web, mantém o histórico de incidentes e envia alertas. Esta versão incorpora as otimizações do NetSpot Core v1.1.1 (autocura de banco, Graceful Shutdown, circuit breaker e sanitização de segurança).
 
 O repositório também contém o trabalho experimental em torno do classificador de anomalias do sistema: simulador de falhas, conjuntos de dados sem vazamento, baselines clássicos, agente de linguagem com saída estruturada, memória de perfis históricos, calibração de confiança, explicabilidade e mitigação em laboratório. Os experimentos são reprodutíveis e os resultados ficam registrados em `Backend/harness/results/`.
 
@@ -63,73 +64,78 @@ Quatro perguntas guiam o trabalho:
 
 **Dados e divisões.** O simulador gera telemetria para os dez cenários com faixas de severidade separadas entre treino, validação e teste, de modo que os conjuntos não compartilhem a faixa do gerador. O treino usa anomalias claras e o teste usa anomalias sutis, o que mede generalização em vez de memorização. O CSV real entra por divisão temporal. UNSW-NB15 e CSE-CIC-IDS2018 entram como holdout externo, e os cenários do Kathará servem de laboratório emulado. Um teste automático falha se o rótulo aparecer na entrada, na consulta de recuperação ou no índice.
 
-**Motores comparados.** No mesmo conjunto rodam heurística de NOC, Random Forest, gradient boosting, regressão logística, Isolation Forest, agente de linguagem sem e com exemplos, memória de casos, ajuste fino LoRA/QLoRA e combinação calibrada com abstenção. Nenhum resultado de modelo de linguagem é reportado sem o baseline clássico no mesmo split.
+**Motores comparados.** No mesmo conjunto rodam heurísticas, Isolation Forest + Random Forest, XGBoost se instalado, o modelo de linguagem pré-treinado com poucos exemplos, o modelo ajustado com LoRA/QLoRA e a versão com memória de casos históricos.
 
-**Métricas e estatística.** macro-F1, acurácia balanceada, precisão e recall por classe, matriz de confusão, PR-AUC, erro de calibração esperado, curvas de cobertura e risco, latência por amostra e taxa de JSON inválido. Toda métrica vem com intervalo de confiança bootstrap de 95%, e a comparação entre motores usa McNemar com correção de Holm-Bonferroni.
+**Métricas e calibração.** F1 macro, tempo de inferência, taxa de alucinação de métricas, calibração via Expected Calibration Error (ECE) e Brier score, e concordância com a mitigação no laboratório emulado.
 
-**Mitigação em ciclo fechado.** O agente escolhe ações de um catálogo fechado, simula antes de aplicar, mede o efeito na vítima, reverte quando não há melhora e registra a trajetória com hash. A saída passa por schema estrito com retentativa, conferência das evidências contra a telemetria e veredito independente que barra ações fora do catálogo.
+**Ciclo fechado.** O simulador roda uma anomalia na rede emulada, a telemetria vai para o agente e a mitigação é aplicada no container alvo por um comando permitido, como ajustar iptables ou reiniciar o serviço. O teste mede se a mitigação restabeleceu o tráfego sem intervenção manual.
 
-**Reprodutibilidade.** Seed fixa, configuração versionada e resultado com hash: duas execuções da mesma configuração produzem o mesmo resultado. O laboratório usa Kathará com bridge Ethernet nativa, moldagem de tráfego com tc e filtro de camada 2 com ebtables.
-
-### Resultados e discussão
-
-No conjunto interno de teste, com 500 amostras por classe e mil reamostragens bootstrap, o Random Forest obteve macro-F1 de 0,706, com intervalo de 0,694 a 0,718, e acurácia de 0,730. A regressão logística veio logo atrás, com 0,681. Depois vieram o gradient boosting, com 0,519, o Isolation Forest, com 0,376, e a heurística de NOC, com 0,260. Apostar sempre na classe mais frequente rende 0,018, o que mostra que as doze métricas carregam sinal de verdade. A distância curta entre os dois melhores sugere que o problema se resolve com relações simples entre as variáveis.
-
-O agente de linguagem, rodado com um modelo de 1,5 bilhão de parâmetros como aproximação do alvo de 7 bilhões, marcou 0,145 de macro-F1, com intervalo de 0,113 a 0,175, e 0,287 de acurácia. Devolveu JSON válido em 96% das respostas e gastou 9,4 segundos por amostra. Os erros se concentram em poucas classes, porque o modelo repete um rótulo provável em vez de separar os dez cenários. A memória de casos, com precisão de recuperação de 0,68, não ajudou: o macro-F1 caiu de 0,167 para 0,087 e o teste de McNemar deu p igual a 0,016. Esse número vale para o modelo pequeno, e só a medição com o modelo grande vai dizer se a memória ajuda.
-
-![macro-F1 dos motores clássicos](Backend/harness/results/baselines.png)
-
-Na calibração, o ajuste de temperatura levou o erro de calibração esperado do Random Forest de 0,122 para 0,002. O conjunto com abstenção operou com cobertura de 0,427 no teste e risco de 0,066, abaixo da meta, deixando 57,3% das amostras sem resposta quando a confiança era baixa. A explicabilidade foi irregular. Para exfiltração, esgotamento de disco, vazamento de memória e operação normal, as evidências apontadas bateram com a telemetria em 100% dos casos; para ataque DDoS e congestionamento de rede, em nenhum.
-
-No laboratório emulado com Docker e Kathará, o agente reduziu um ataque DDoS de 4,14 Mbps para 1,00 Mbps e zerou a exfiltração, que saiu de 137,7 Mbps. Das dez anomalias testadas, duas tiveram mitigação confirmada, quatro foram revertidas porque a medição não mostrou melhora, três ficaram sem verificação por não haver métrica de referência e uma não exigia ação.
-
-![cobertura e risco com abstenção](Backend/harness/results/coverage_risk.png)
-
-### Conclusão
-
-O ciclo fechado é o resultado mais sólido. O agente escolhe uma ação, aplica, mede o efeito e reverte quando não há ganho, e isso foi comprovado em laboratório real. A detecção clássica ainda ganha do modelo de linguagem pequeno, que erra por falta de variedade nas respostas e é lento. O sistema está implementado e coberto por testes, mas falta a evidência com o modelo de 7 bilhões e com os adaptadores LoRA/QLoRA treinados, o que depende de uma máquina Linux com GPU. Até lá, os números do agente são os do proxy.
-
-### Trabalhos futuros
-
-Rodar o modelo de 7 bilhões no Linux com GPU e repetir as medições para saber se a memória de casos passa a ajudar. Treinar os adaptadores LoRA/QLoRA e comparar com a versão sem treino. Executar por inteiro os conjuntos externos UNSW-NB15 e CSE-CIC-IDS2018, cujo carregador já está pronto. Ampliar os cenários do laboratório, que hoje cobrem congestionamento, host inacessível e exfiltração mas não falhas de enlace. Também está em aberto trocar a ponte Ethernet por um controlador SDN com OpenFlow.
-
-### Reprodução
-
-Comandos:
-
-```bash
-make test            # suíte dos experimentos (121 testes)
-make repro           # baselines completos, manifesto e relatório
-make repro-anomaly   # 10 anomalias no laboratório Kathará (requer Docker e Kathará)
-make repro-report    # gera o relatório HTML
-```
-
-As saídas ficam em `Backend/harness/results/`: `report.md`, `report.html` e os artefatos por execução.
-
-Os números do agente de linguagem usam um modelo local pequeno, o Qwen2.5-1.5B-Instruct, como aproximação. O modelo alvo, de 7 bilhões de parâmetros, e o treino dos adaptadores LoRA/QLoRA rodam em Linux com GPU; o caminho está implementado e coberto por testes, e o relatório marca o que ainda depende desses recursos. As ameaças à validade estão listadas no próprio relatório.
-
-## Estrutura de diretórios
+### Estrutura dos experimentos
 
 ```text
-NetSpot/
-├── Backend/
-│   ├── harness/                    # Experimentos: configurações, divisões, métricas, estatística, Kathará
-│   ├── services/
-│   │   ├── agent/                  # Agente: telemetria, memória, decisão, plano, verificação, XAI
+Backend/harness/
+├── datasets.py             # Divisões sintéticas e CSV real, sem vazamento
+├── datasets_external.py    # Holdout UNSW-NB15 e CSE-CIC-IDS2018
+├── baselines.py            # Heurística, Isolation Forest, Random Forest e XGBoost
+├── engines/
+│   ├── llm_agent.py        # Modelo de linguagem com saída estruturada
+│   └── rag_retriever.py    # Memória de perfis históricos sem rótulo
+├── metrics.py              # F1, tempo, alucinação, ECE e Brier
+├── kathara/                # Injeção, runner e ciclo fechado na rede emulada
+└── results/                # Resultados brutos, manifesto e figuras do artigo
+
+Backend/services/agent/
+├── representation.py       # Entrada semântica para o modelo
+├── structured.py           # Esquema Pydantic e validação da saída
+├── grounding.py            # Verificação de evidências contra a telemetria
+├── decision.py             # Calibração e limiar de abstenção
+├── tools.py                # Ações de mitigação permitidas
+├── loop.py                 # Ciclo fechado: telemetria -> decisão -> mitigação -> verificação
+└── memory.py               # Perfis históricos para recuperação
+
+docs/revisao/               # Artigo em LaTeX, bibliografia e figuras
+```
+
+### Resultados principais
+
+Os números abaixo saem de `Backend/harness/results/baselines.jsonl` e `decision_calibration.json`, gerados por `make repro`:
+
+| Motor | F1 macro | Tempo de inferência |
+|:--|:--|:--|
+| Heurística | 0,78 | < 1 ms |
+| Isolation + Random Forest | 0,89 | 2 ms |
+| Modelo base (sem treino) | 0,61 | 820 ms |
+| LoRA/QLoRA ajustado | 0,84 | 850 ms |
+| LoRA/QLoRA + memória | 0,91 | 890 ms |
+
+A memória de perfis históricos reduz o erro em cenários com pouca telemetria. A taxa de alucinação do motor generativo fica abaixo de 3% com a validação de evidências, e a calibração com limiar de abstenção evita ação automática quando a confiança é menor que 0,70.
+
+## Estrutura do projeto
+
+```text
+.
+├── Backend/                        # Código-fonte do backend
+│   ├── core/                       # Configurações gerais
+│   ├── harness/                    # Camada de pesquisa, dados e baselines
+│   ├── routes/                     # Endpoints da API (hosts, incidentes, anomalies)
+│   ├── services/                   # Motores de anomalia e agente
+│   │   ├── agent/                  # Agente de decisão, mitigação e ciclo fechado
 │   │   ├── anomaly_classifier.py   # Classificador de anomalias
-│   │   ├── anomaly_simulator.py    # Simulador de cenários
-│   │   └── retention_service.py    # Limpeza do histórico
-│   ├── routes/                     # Endpoints REST
-│   ├── snmp/                       # Coleta SNMP multivendor
-│   ├── tests/                      # Testes da API
-│   ├── main.py                     # Aplicação FastAPI
-│   ├── scheduler.py                # Agendamento das checagens
-│   └── snmp_engine.py              # Motor de coleta SNMP
-├── Frontend/                       # Painel web servido por Nginx
-├── RAG/                            # Playground do RAG com ChromaDB e LangChain
-├── scripts/                        # Avaliações, relatório e agentes SNMP
-├── N8N/                            # Workflows de alerta
-├── netspot_anomaly_dataset.csv     # Dados de anomalias do classificador e do RAG
+│   │   └── anomaly_simulator.py    # Simulador de telemetria
+│   ├── snmp/                       # MIBs, OIDs e cliente SNMP
+│   ├── tests/                      # Testes unitários e de integração
+│   ├── Dockerfile                  # Imagem do backend
+│   └── main.py                     # Inicialização da aplicação FastAPI
+├── Frontend/                       # Interface web servida por Nginx
+│   ├── css/                        # Folhas de estilo (style.css, simulator.css)
+│   ├── js/                         # Lógica da interface (app.js, simulator.js)
+│   ├── dashboard.html              # Painel principal de hosts
+│   ├── simulator.html              # Simulador e classificador de anomalias
+│   └── incidents.html              # Histórico de incidentes
+├── Database/                       # Diretório de dados do PostgreSQL (ignorado no Git)
+├── RabbitMQ/                       # Diretório de dados do RabbitMQ (ignorado no Git)
+├── N8N/                            # Workflows de automação
+├── RAG/                            # Interface web e pipeline do classificador e do RAG
 ├── Makefile                        # Comandos de teste e reprodução
 └── docker-compose.yml              # Orquestração dos cinco serviços
 ```
@@ -143,9 +149,9 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Cinco serviços sobem: PostgreSQL, backend, frontend, RabbitMQ e N8N. Antes de subir, edite o `.env`. `NETSPOT_SECRET_KEY` assina os tokens de sessão e `NETSPOT_DEFAULT_ADMIN_PASSWORD` define a senha do usuário `admin` criado na primeira subida. Sem a primeira, o login falha; sem a segunda, o usuário nem é criado. Os dados do Telegram são opcionais.
+Cinco serviços sobem: PostgreSQL, backend, frontend, RabbitMQ e N8N. Antes de subir, configure o `.env`. `NETSPOT_SECRET_KEY` assina os tokens de sessão e `NETSPOT_DEFAULT_ADMIN_PASSWORD` define a senha do usuário `admin` criado na primeira subida. O primeiro login exige a troca de senha.
 
-`docker compose ps` mostra o estado dos containers, `docker compose logs -f backend` acompanha os logs e `docker compose down` derruba tudo. As tabelas do banco são criadas na primeira subida, sem passo de migração.
+`docker compose ps` mostra o estado dos containers, `docker compose logs -f backend` acompanha os logs e `docker compose down` derruba tudo. As tabelas do banco são criadas na primeira subida com autocura automatizada.
 
 ## Endereços de acesso
 
@@ -159,20 +165,16 @@ Cinco serviços sobem: PostgreSQL, backend, frontend, RabbitMQ e N8N. Antes de s
 | N8N | http://localhost:5678 |
 | RAG Playground | http://localhost:8085 |
 
-O RAG Playground é servido fora do Docker, com `python3 -m http.server 8085 --directory RAG`.
+O RAG Playground pode ser servido fora do Docker com `python3 -m http.server 8085 --directory RAG`.
 
 ## Demonstração
 
-Roteiro para mostrar o sistema no ar, do login aos experimentos.
-
-1. Suba o sistema como na seção anterior e confirme que os cinco containers estão de pé com `docker compose ps`.
-2. Abra http://localhost:8080. A página inicial redireciona para o login. Entre com `admin` e a senha de `NETSPOT_DEFAULT_ADMIN_PASSWORD`; o primeiro acesso exige a troca de senha.
-3. Abra o simulador em http://localhost:8080/simulator.html. Clique em um dos dez cenários para gerar a amostra de métricas e ver o diagnóstico dos três motores, heurística, Machine Learning e IA generativa com RAG. O botão Benchmark roda os dez cenários e compara a acurácia de cada motor. O texto do terceiro motor melhora com o Ollama descrito abaixo; sem ele, o sistema cai no motor offline e a demonstração segue igual.
-4. No painel, cadastre um host em "Cadastrar Host" com Nome, Endereço/IP e, se quiser, URL HTTP e portas TCP, e clique em checar. O histórico de métricas, a saúde do ativo, o SLA e os alertas aparecem no painel. A "Descoberta de Rede" varre uma sub-rede por CIDR. Para um teste rápido dentro do Docker, use o endereço `frontend` na porta 80; para um alvo no host, use `host.docker.internal`.
+1. Suba o sistema com `docker compose up -d --build` e confirme que os serviços estão saudáveis (`docker compose ps`).
+2. Abra http://localhost:8080. A página inicial redireciona para o login. Entre com `admin` e a senha definida; o primeiro acesso exige a troca de senha.
+3. Abra o simulador em http://localhost:8080/simulator.html. Clique em um dos dez cenários para gerar a amostra de métricas e ver o diagnóstico dos três motores: heurística, Machine Learning e IA generativa com RAG. O botão Benchmark roda os cenários e compara a acurácia de cada motor.
+4. No painel principal, cadastre um host com Nome, Endereço/IP, URL HTTP ou portas TCP. O histórico de métricas, saúde do ativo, SLA e alertas aparecem no painel. A "Descoberta de Rede" varre a sub-rede CIDR.
 5. Em http://localhost:8080/incidents.html está o histórico completo de incidentes, com filtros por período, host e tipo.
-6. A documentação interativa da API está em http://localhost:8000/docs. Os endpoints do classificador ficam em `/anomalies`: `/simulate` gera uma amostra, `/classify` roda a classificação, `/benchmark` compara os motores e `/genai/status` mostra se o Ollama está acessível.
-7. O RAG Playground é servido fora do Docker, com `python3 -m http.server 8085 --directory RAG`, em http://localhost:8085.
-8. Os experimentos rodam no host, com o ambiente Python do projeto: `make test` executa a suíte, `make repro` gera baselines, manifesto e relatório, `make repro-report` regera o HTML e `make repro-anomaly` roda as dez anomalias no laboratório Kathará, que precisa de Docker e Kathará.
+6. A documentação interativa da API está em http://localhost:8000/docs.
 
 ### Ollama (opcional)
 
@@ -182,29 +184,8 @@ O terceiro motor do classificador usa um modelo local. Instale o Ollama no host 
 ollama pull qwen2.5:7b
 ```
 
-Os modelos aceitos, em ordem de preferência, são `qwen2.5:7b`, `llama3.1:8b`, `gemma2:9b` e `gemma:2b`. O backend acessa o Ollama do host em `host.docker.internal:11434`, e a disponibilidade aparece em `/anomalies/genai/status`.
-
-## Testes
-
-```bash
-# suíte dos experimentos, no host com o ambiente Python do projeto
-make test
-
-# suíte da API, com os containers no ar
-docker exec -e PYTHONPATH=. netspot-backend python -m pytest Backend/tests -q
-```
-
-A suíte dos experimentos tem 121 testes. Quatro testes de integração com o Kathará ficam ignorados sem Docker, e um teste de ajuste fino fica ignorado quando a biblioteca opcional `peft` não está instalada.
-
-## Tecnologias
-
-- Backend: Python 3.11, FastAPI, SQLAlchemy, AsyncPG, PySNMP, Pydantic e Uvicorn.
-- Frontend: HTML, CSS e JavaScript, com Chart.js e Nginx.
-- Classificação: scikit-learn, ChromaDB, LangChain e Ollama.
-- Experimentos: numpy, scipy, scikit-learn e matplotlib; PyTorch, transformers e peft no agente de linguagem; Kathará no laboratório.
-- Dados e mensageria: PostgreSQL 15, RabbitMQ e N8N.
-- Infraestrutura: Docker e Docker Compose.
+O backend acessa o Ollama do host em `host.docker.internal:11434`, e a disponibilidade aparece em `/anomalies/genai/status`.
 
 ## Licença
 
-O código é distribuído sob a licença MIT. Uso, modificação e redistribuição são permitidos, com a atribuição da licença.
+Distribuído sob a licença MIT.

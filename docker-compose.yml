@@ -1,18 +1,21 @@
+name: netspot
+
 services:
   db:
     image: postgres:15-alpine
     container_name: netspot-db
     restart: always
+    command: postgres -c max_connections=200
     environment:
-      POSTGRES_USER: netspot
-      POSTGRES_PASSWORD: netspot_password
-      POSTGRES_DB: netspot
+      POSTGRES_USER: ${POSTGRES_USER:-netspot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-netspot}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - ./Database/postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U netspot -d netspot"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-netspot} -d ${POSTGRES_DB:-netspot}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,7 +26,7 @@ services:
       dockerfile: Backend/Dockerfile
     container_name: netspot-backend
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     cap_add:
@@ -35,12 +38,25 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql://netspot:netspot_password@db:5432/netspot
-      - RABBITMQ_HOST=rabbitmq
-      - OLLAMA_URL=http://host.docker.internal:11434
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-netspot}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-netspot}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - KATHARA_ROUTER_IP=${KATHARA_ROUTER_IP:-172.17.0.2}
+      - KATHARA_SUBNETS=${KATHARA_SUBNETS:-10.0.0.0/16,100.0.0.0/16}
+      - NETSPOT_DEFAULT_SUBNET=${NETSPOT_DEFAULT_SUBNET:-192.168.1.0/24}
+      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     restart: always
 
   frontend:
@@ -49,7 +65,7 @@ services:
       dockerfile: Dockerfile
     container_name: netspot-frontend
     ports:
-      - "8080:80"
+      - "${NETSPOT_PORT:-8080}:80"
     volumes:
       - ./Frontend:/usr/share/nginx/html
     depends_on:
@@ -60,11 +76,19 @@ services:
     image: rabbitmq:3-management
     container_name: netspot-rabbitmq
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-guest}
     volumes:
       - ./RabbitMQ/data:/var/lib/rabbitmq
       - ./RabbitMQ/log:/var/log/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: always
 
   n8n:
@@ -72,21 +96,35 @@ services:
     container_name: netspot-n8n
     user: root
     ports:
-      - "5678:5678"
+      - "127.0.0.1:5678:5678"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     env_file:
       - .env
     volumes:
       - ./N8N/data:/root/.n8n
     environment:
       - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=admin
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=db
       - DB_POSTGRESDB_PORT=5432
-      - DB_POSTGRESDB_DATABASE=netspot
-      - DB_POSTGRESDB_USER=netspot
-      - DB_POSTGRESDB_PASSWORD=netspot_password
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB:-netspot}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER:-netspot}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5678/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     restart: always
+
+
+

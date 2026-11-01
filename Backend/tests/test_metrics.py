@@ -34,6 +34,42 @@ def test_compute_health_failure():
     assert status in ["CRITICAL", "DEGRADED", "DOWN"]
 
 
+def test_compute_health_pure_ping():
+    """Testa score de saude para host monitorando exclusivamente Ping."""
+    ping_res = {"success": True, "latency": 12.0}
+    score, status = compute_health(ping_res, None, None)
+    assert score == 100
+    assert status == "HEALTHY"
+
+
+def test_compute_health_ping_and_tcp():
+    """Testa score de saude para host monitorando Ping e TCP."""
+    ping_res = {"success": True, "latency": 20.0}
+    tcp_res = {"success": True, "latency": 15.0}
+    score, status = compute_health(ping_res, tcp_res, None)
+    assert score == 100
+    assert status == "HEALTHY"
+
+
+def test_compute_health_icmp_blocked():
+    """Testa compensacao de saude quando ICMP esta bloqueado mas servico TCP/HTTP esta UP."""
+    ping_res = {"success": False, "latency": None}
+    tcp_res = {"success": True, "latency": 10.0}
+    score, status = compute_health(ping_res, tcp_res, None)
+    assert score >= 85
+    assert status == "HEALTHY"
+
+
+def test_compute_health_total_down():
+    """Testa score zero quando todas as sondas falham."""
+    ping_res = {"success": False, "latency": None}
+    tcp_res = {"success": False, "latency": None}
+    http_res = {"success": False, "latency": None, "status_code": 0}
+    score, status = compute_health(ping_res, tcp_res, http_res)
+    assert score == 0
+    assert status == "CRITICAL"
+
+
 def test_classify_trend():
     """Testa classificacao de tendencia de latencia por inclinacao (slope)."""
     assert classify_trend(0.0) == "STABLE"
@@ -47,3 +83,4 @@ def test_max_severity():
     assert max_severity("HEALTHY", "CRITICAL") == "CRITICAL"
     assert max_severity("WARNING", "HEALTHY") == "WARNING"
     assert max_severity("CRITICAL", "WARNING") == "CRITICAL"
+

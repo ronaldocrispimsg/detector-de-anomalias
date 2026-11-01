@@ -1,0 +1,68 @@
+name: NetSpot CI
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+      - agent/**
+  pull_request:
+    branches:
+      - master
+      - dev
+
+jobs:
+  test:
+    name: Backend Test Suite (Pytest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends snmp iputils-ping
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Pytest Test Suite
+        # Nao definir DATABASE_URL com SQLite: Backend/database.py usa
+        # max_overflow/pool_timeout, invalidos para SQLite (quebra o import).
+        # Os testes atuais nao abrem conexao com o PostgreSQL (engine e preguicoso).
+        env:
+          PYTHONPATH: .
+          NETSPOT_SECRET_KEY: test_secret_key_ci_environment_only_12345
+          RABBITMQ_HOST: localhost
+        run: |
+          pytest Backend/tests -v --durations=10
+
+      - name: Run Standalone Incident Smoke Test
+        env:
+          PYTHONPATH: .
+        run: |
+          python Backend/tests/alert_logic_checklist.py
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Validate Frontend JavaScript Syntax & Chart Theme
+        run: |
+          node --check Frontend/js/app.js
+          node --check Frontend/js/incidents.js
+          node --check Frontend/js/simulator.js
+          node --check Frontend/js/chart-theme.js
+          node scripts/test_chart_theme.js
+

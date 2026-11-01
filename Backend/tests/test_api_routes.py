@@ -46,3 +46,31 @@ async def test_get_host_history_debian(api_client):
     if response.status_code == 200:
         data = response.json()
         assert isinstance(data, (dict, list))
+
+
+def test_get_current_admin_authorization():
+    """Testa a regra de autorizacao de administrador na camada de dependencias."""
+    from fastapi import HTTPException
+    from Backend.dependencies import get_current_admin
+    from unittest.mock import MagicMock
+
+    # 1. Usuario comum sem flag is_admin
+    user_regular = MagicMock()
+    user_regular.username = "operador"
+    user_regular.is_admin = False
+
+    with pytest.raises(HTTPException) as exc_info:
+        get_current_admin(user_regular)
+    assert exc_info.value.status_code == 403
+
+    # 2. Superusuario admin oficial
+    user_admin = MagicMock()
+    user_admin.username = "admin"
+    user_admin.is_admin = False
+    assert get_current_admin(user_admin) == user_admin
+
+    # 3. Usuario com flag is_admin explicita
+    user_with_flag = MagicMock()
+    user_with_flag.username = "auditor"
+    user_with_flag.is_admin = True
+    assert get_current_admin(user_with_flag) == user_with_flag

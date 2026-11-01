@@ -1,6 +1,8 @@
 import socket
 import ipaddress
-from datetime import datetime
+import dns.resolver
+import dns.reversename
+from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from Backend.models import CheckResult, Incident, Host
@@ -129,12 +131,18 @@ def calculate_availability_points(
 
     return points
 
-def reverse_dns(ip: str) -> str | None:
+def reverse_dns(ip: str, timeout: float = 0.8) -> str | None:
     try:
-        hostname, _, _ = socket.gethostbyaddr(ip)
-        return hostname
+        rev_name = dns.reversename.from_address(ip)
+        resolver = dns.resolver.Resolver()
+        resolver.lifetime = timeout
+        resolver.timeout = timeout
+        answers = resolver.resolve(rev_name, "PTR")
+        if answers:
+            return str(answers[0]).rstrip(".")
     except Exception:
-        return None
+        pass
+    return None
 
 def is_ip(address: str) -> bool:
     try:
@@ -172,7 +180,7 @@ def open_incident(db, host, reason, incident_type=None, check_used=None, auto_co
         "incident_type": incident_type,
         "check_used": check_used or "N/A",
         "reason": formatted_reason,
-        "started_time": (incident.started_time or datetime.utcnow()).isoformat()
+        "started_time": (incident.started_time or datetime.now(timezone.utc).replace(tzinfo=None)).isoformat()
     }
     send_telegram_alert(payload)
     return incident
@@ -206,7 +214,7 @@ def close_incident(db, host_name, incident_type=None, auto_commit=True):
     closed = []
     for incident in targets:
         incident.status = "CLOSED"
-        incident.ended_time = datetime.utcnow()
+        incident.ended_time = datetime.now(timezone.utc).replace(tzinfo=None)
 
         duration = incident.ended_time - incident.started_time
         incident.duration_seconds = int(duration.total_seconds())
@@ -289,7 +297,7 @@ async def open_incident_async(db, host, reason, incident_type=None, check_used=N
         "incident_type": incident_type,
         "check_used": check_used or "N/A",
         "reason": formatted_reason,
-        "started_time": (incident.started_time or datetime.utcnow()).isoformat()
+        "started_time": (incident.started_time or datetime.now(timezone.utc).replace(tzinfo=None)).isoformat()
     }
     await send_telegram_alert_async(payload)
     return incident
@@ -328,7 +336,7 @@ async def close_incident_async(db, host_name, incident_type=None, auto_commit=Tr
     closed = []
     for incident in targets:
         incident.status = "CLOSED"
-        incident.ended_time = datetime.utcnow()
+        incident.ended_time = datetime.now(timezone.utc).replace(tzinfo=None)
 
         duration = incident.ended_time - incident.started_time
         incident.duration_seconds = int(duration.total_seconds())

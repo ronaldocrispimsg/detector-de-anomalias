@@ -1,49 +1,67 @@
-# ===== Python =====
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# ===== Virtual env =====
-.venv/
-venv/
-env/
+# C extensions
+*.so
 
-# ===== Build / dist =====
+# Distribution / packaging
+.Python
 build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
 *.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# ===== IDE / Editor =====
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Editor and OS
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# ===== OS =====
+*~
 .DS_Store
-Thumbs.db
 
-# ===== Logs =====
-*.log
-
-# ===== Banco de dados =====
-*.db
-*.sqlite
-*.sqlite3
-
-# ===== Env files =====
-.env
-.env.*
-!.env.example
-
-# ===== UV / Poetry / Lock files (se não quiser versionar) =====
-uv.lock
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
 poetry.lock
-
-# ===== Cache =====
-.cache/
 .pytest_cache/
 .mypy_cache/
+
+# ===== Agentes e Arquivos Internos =====
+.agents/
+arquitetura.md
 
 # ===== Docker volumes data =====
 Database/postgres_data/
@@ -57,4 +75,15 @@ N8N/data/
 
 # ===== Andamento do trabalho do agente (interno, fora do produto) =====
 docs/agent/
-docs/Projeto.pdf
+
+# ===== Documentação / TCC & Scripts Auxiliares =====
+*.pdf
+!docs/revisao/figures/*.pdf
+Escrita_TCC/
+RELATORIO-UIUX.md
+docs/RELATORIO-UIUX.md
+scripts/script_para_gerar_diagramas.py
+script_para_gerar_diagramas.py
+scripts/audit_latex.py
+estrutura.txt
+*Zone.Identifier

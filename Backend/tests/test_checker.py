@@ -14,19 +14,21 @@ from Backend.checker import (
 )
 
 
-def test_resolve_dns_real_sync_google():
-    """Testa a resolucao sincrona de DNS para um dominio publico."""
-    ips, ttl = resolve_dns_real_sync("google.com")
+def test_resolve_dns_real_sync_google(monkeypatch):
+    """Testa a resolucao sincrona de DNS (com fallback deterministico sem depender de rede externa)."""
+    ips, ttl = resolve_dns_real_sync("127.0.0.1")
     assert isinstance(ips, list)
-    assert len(ips) > 0
+    assert "127.0.0.1" in ips
+    assert ttl == 0
 
 
 @pytest.mark.asyncio
 async def test_resolve_dns_real_async_google():
-    """Testa a resolucao assincrona de DNS para um dominio publico."""
-    ips, ttl = await resolve_dns_real("google.com")
+    """Testa a resolucao assincrona de DNS (com fallback deterministico sem depender de rede externa)."""
+    ips, ttl = await resolve_dns_real("127.0.0.1")
     assert isinstance(ips, list)
-    assert len(ips) > 0
+    assert "127.0.0.1" in ips
+    assert ttl == 0
 
 
 @pytest.mark.asyncio
@@ -48,10 +50,31 @@ async def test_tcp_check_invalid_port():
 
 
 @pytest.mark.asyncio
-async def test_http_check_public_url():
-    """Testa a checagem HTTP assincrona para uma URL publica."""
+async def test_http_check_public_url(monkeypatch):
+    """Testa a checagem HTTP assincrona de forma deterministica (mock de httpx.AsyncClient)."""
+    import httpx
+
+    class FakeResponse:
+        status_code = 200
+
+    class FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+        async def get(self, url, **kwargs):
+            return FakeResponse()
+
+    monkeypatch.setattr(httpx, "AsyncClient", FakeAsyncClient)
     res = await http_check("https://www.google.com", timeout=5, retries=1)
     assert isinstance(res, dict)
     assert res["success"] is True
     assert res["status_code"] == 200
+    assert res["protocol"] == "https"
     assert isinstance(res["latency"], float)
+    assert isinstance(res["https_latency"], float)

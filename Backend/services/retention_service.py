@@ -9,7 +9,7 @@ Definir NETSPOT_RETENTION_DAYS=0 desativa completamente a limpeza.
 
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -49,7 +49,7 @@ async def purge_old_data(db: AsyncSession) -> dict:
             "incidents": 0
         }
 
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
 
     purged = {
         "status": "enabled",
@@ -64,7 +64,7 @@ async def purge_old_data(db: AsyncSession) -> dict:
     try:
         # 1. Purgar CheckResult antigos
         res_checks = await db.execute(
-            delete(CheckResult).where(CheckResult.created_at < cutoff)
+            delete(CheckResult).where(CheckResult.timestamp < cutoff)
         )
         purged["check_results"] = res_checks.rowcount or 0
 
@@ -83,8 +83,8 @@ async def purge_old_data(db: AsyncSession) -> dict:
         # 4. Purgar Incidentes encerrados antigos
         res_incidents = await db.execute(
             delete(Incident).where(
-                Incident.opened_at < cutoff,
-                Incident.closed_at.isnot(None)
+                Incident.started_time < cutoff,
+                Incident.ended_time.isnot(None)
             )
         )
         purged["incidents"] = res_incidents.rowcount or 0
@@ -99,5 +99,7 @@ async def purge_old_data(db: AsyncSession) -> dict:
     except Exception as e:
         await db.rollback()
         logger.error(f"[RETENCAO] Erro ao purgar dados antigos: {e}")
+        purged["status"] = "error"
+        purged["error"] = str(e)
 
     return purged

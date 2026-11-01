@@ -10,7 +10,6 @@ from typing import Optional, List, Tuple, Any
 from pathlib import Path
 
 from pysnmp.hlapi.v3arch.asyncio import (
-    SnmpEngine,
     CommunityData,
     UdpTransportTarget,
     ContextData,
@@ -19,11 +18,12 @@ from pysnmp.hlapi.v3arch.asyncio import (
     get_cmd,
     next_cmd,
 )
+from Backend.snmp_engine import _get_shared_snmp_engine
 
 logger = logging.getLogger("netspot.snmp.client")
 
-SNMP_TIMEOUT_SECONDS = 2
-SNMP_RETRIES = 2
+SNMP_TIMEOUT_SECONDS = 1
+SNMP_RETRIES = 1
 DEFAULT_SNMP_COMMUNITY = "netspot"
 
 
@@ -33,7 +33,7 @@ async def get_snmp_value(ip: str, community: Optional[str], oid: str) -> Optiona
     Se a community for None ou vazia, assume 'netspot'.
     """
     comm_str = (community or DEFAULT_SNMP_COMMUNITY).strip() or DEFAULT_SNMP_COMMUNITY
-    snmp_engine = SnmpEngine()
+    snmp_engine = _get_shared_snmp_engine()
     try:
         error_indication, error_status, error_index, var_binds = await get_cmd(
             snmp_engine,
@@ -72,8 +72,6 @@ async def get_snmp_value(ip: str, community: Optional[str], oid: str) -> Optiona
     except Exception as e:
         logger.debug("SNMP GET exception | ip=%s | oid=%s | err=%s", ip, oid, e)
         return None
-    finally:
-        snmp_engine.close_dispatcher()
 
 
 async def walk_snmp(ip: str, community: Optional[str], root_oid: str) -> List[Tuple[str, str]]:
@@ -82,12 +80,16 @@ async def walk_snmp(ip: str, community: Optional[str], root_oid: str) -> List[Tu
     Retorna uma lista de tuplas (oid_name, oid_value).
     """
     comm_str = (community or DEFAULT_SNMP_COMMUNITY).strip() or DEFAULT_SNMP_COMMUNITY
-    snmp_engine = SnmpEngine()
+    snmp_engine = _get_shared_snmp_engine()
     results: List[Tuple[str, str]] = []
     current_oid = root_oid
 
+    MAX_WALK_ITERATIONS = 500
+    iterations = 0
+
     try:
-        while True:
+        while iterations < MAX_WALK_ITERATIONS:
+            iterations += 1
             error_indication, error_status, error_index, var_binds = await next_cmd(
                 snmp_engine,
                 CommunityData(comm_str, mpModel=1),
@@ -123,8 +125,6 @@ async def walk_snmp(ip: str, community: Optional[str], root_oid: str) -> List[Tu
                 break
     except Exception as e:
         logger.debug("SNMP WALK exception | ip=%s | root_oid=%s | err=%s", ip, root_oid, e)
-    finally:
-        snmp_engine.close_dispatcher()
 
     return results
 

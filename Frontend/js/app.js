@@ -9,8 +9,8 @@ let lastUserInteractionAt = 0;
 //
 
 const POLLING_INTERVALS = {
-    visible: { lightMs: 10000, heavyMs: 10000 },
-    hidden: { lightMs: 30000, heavyMs: 120000 }
+    visible: { lightMs: 10000, heavyMs: 30000 },
+    hidden: { lightMs: 30000, heavyMs: 60000 }
 };
 
 const pollingState = {
@@ -75,8 +75,15 @@ function rememberSeenAlert(alertKey) {
     }
 }
 
-if (Notification.permission !== "granted") {
-    Notification.requestPermission();
+if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+    try {
+        const permPromise = Notification.requestPermission();
+        if (permPromise && typeof permPromise.catch === "function") {
+            permPromise.catch(() => {});
+        }
+    } catch (_) {
+        // Ignora bloqueio de Notification API em contextos sem suporte (ex.: Safari iOS / WebViews)
+    }
 }
 
 const token = localStorage.getItem("token");
@@ -93,7 +100,14 @@ function ensureToastContainer() {
     return container;
 }
 
+const VALID_TOAST_TYPES = new Set(["success", "error", "warning", "info"]);
+
 function showToast(type, message, duration = 3200) {
+    if (!VALID_TOAST_TYPES.has(type) && VALID_TOAST_TYPES.has(message)) {
+        const tmp = type;
+        type = message;
+        message = tmp;
+    }
     const container = ensureToastContainer();
     const toast = document.createElement("div");
     toast.className = `toast toast-${type || "info"}`;
@@ -107,6 +121,22 @@ function showToast(type, message, duration = 3200) {
         toast.classList.add("hide");
         setTimeout(() => toast.remove(), 240);
     }, duration);
+}
+
+function getButtonLabel(btn, fallback = "") {
+    if (!btn) return fallback;
+    const span = btn.querySelector("span");
+    return span ? span.textContent : btn.textContent;
+}
+
+function setButtonLabel(btn, text) {
+    if (!btn) return;
+    const span = btn.querySelector("span");
+    if (span) {
+        span.textContent = text;
+    } else {
+        btn.textContent = text;
+    }
 }
 
 function setInlineState(element, message, type = "info") {
@@ -144,7 +174,7 @@ async function runTaskOnce(taskName, taskFn) {
 
 async function runLightRefresh() {
     await Promise.all([
-        runTaskOnce("hosts-quick", loadHostsQuick),
+        runTaskOnce("hosts", loadHosts),
         runTaskOnce("alerts", checkAlerts),
         runTaskOnce("summary", loadDashboardSummary)
     ]);
@@ -152,10 +182,10 @@ async function runLightRefresh() {
 
 async function runHeavyRefresh() {
     if (shouldDeferHeavyRefresh()) return;
-    await Promise.all([
-        runTaskOnce("hosts-full", loadHosts),
-        runTaskOnce("trash", loadTrashHosts)
-    ]);
+    const trashModal = document.getElementById("trashModal");
+    if (trashModal && !trashModal.classList.contains("hidden")) {
+        await runTaskOnce("trash", loadTrashHosts);
+    }
 }
 
 function clearDashboardPolling() {
@@ -254,11 +284,11 @@ if (loginForm) {
         const userVal = document.getElementById("username").value;
         const passVal = document.getElementById("password").value;
         const submitBtn = loginForm.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn ? submitBtn.textContent : "Entrar";
+        const originalBtnText = getButtonLabel(submitBtn, "Entrar");
 
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.textContent = "Entrando...";
+            setButtonLabel(submitBtn, "Entrando...");
             submitBtn.classList.add("is-loading");
         }
 
@@ -278,7 +308,8 @@ if (loginForm) {
                 // VERIFICA SE PRECISA TROCAR SENHA
                 if (data.must_change_password) {
                     showToast("info", "Troca de senha obrigatória para continuar.");
-                    document.getElementById("pwdModal").classList.remove("hidden");
+                    const pwdModal = document.getElementById("pwdModal");
+                    if (pwdModal) openAppModal(pwdModal);
                 } else {
                     showToast("success", "Login realizado com sucesso.");
                     setTimeout(() => {
@@ -298,19 +329,28 @@ if (loginForm) {
         } finally {
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.textContent = originalBtnText;
+                setButtonLabel(submitBtn, originalBtnText);
                 submitBtn.classList.remove("is-loading");
             }
         }
     };
 }
 
-async function submitChangePassword(){
+async function submitChangePassword() {
+    const newPwd = (document.getElementById("new-pwd")?.value || "").trim();
+    const confirmPwd = (document.getElementById("confirm-pwd")?.value || "").trim();
 
-    const newPwd = document.getElementById("new-pwd").value;
-    const confirmPwd = document.getElementById("confirm-pwd").value;
+    if (!newPwd) {
+        showToast("warning", "Informe a nova senha.");
+        return;
+    }
 
-    if(newPwd !== confirmPwd) {
+    if (newPwd.length < 4) {
+        showToast("warning", "A nova senha deve possuir no mínimo 4 caracteres.");
+        return;
+    }
+
+    if (newPwd !== confirmPwd) {
         showToast("warning", "As senhas não coincidem.");
         return;
     }
@@ -318,72 +358,88 @@ async function submitChangePassword(){
     const token = localStorage.getItem("token");
 
     try {
-        const res = await fetch(`${API}/auth/first-password`,{
-            method:"POST",
-            headers:{ 
-                "Content-Type":"application/json",
+        const res = await fetch(`${API}/auth/first-password`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
                 "Authorization": "Bearer " + token
             },
-            body:JSON.stringify({
-                new_password:newPwd
+            body: JSON.stringify({
+                new_password: newPwd
             })
         });
 
-        if(res.ok){
+        if (res.ok) {
             showToast("success", "Senha alterada com sucesso.");
             setTimeout(() => {
                 window.location.href = "dashboard.html";
             }, 700);
-        }else{
-            showToast("error", "Erro ao alterar senha.");
+        } else {
+            const errData = await res.json().catch(() => null);
+            const detailMsg = (errData && errData.detail) ? errData.detail : "Erro ao alterar senha.";
+            showToast("error", detailMsg);
         }
     } catch (error) {
         showToast("error", "Não foi possível conectar ao servidor.");
     }
 }
 
-async function changePassword(){
-    const currentPwd = document.getElementById("current-pwd").value;
-    const newPwd = document.getElementById("new-pwd").value;
-    const confirmPwd = document.getElementById("confirm-pwd").value;
+async function changePassword() {
+    const currentPwd = (document.getElementById("current-pwd")?.value || "").trim();
+    const newPwd = (document.getElementById("new-pwd")?.value || "").trim();
+    const confirmPwd = (document.getElementById("confirm-pwd")?.value || "").trim();
+
+    if (!currentPwd) {
+        showToast("warning", "Informe a senha atual.");
+        return;
+    }
+
+    if (!newPwd) {
+        showToast("warning", "Informe a nova senha.");
+        return;
+    }
+
+    if (newPwd.length < 4) {
+        showToast("warning", "A nova senha deve possuir no mínimo 4 caracteres.");
+        return;
+    }
 
     if (newPwd !== confirmPwd) {
         showToast("warning", "As senhas não coincidem.");
-        return;
-    }
-    if (newPwd.length < 6) {
-        showToast("warning", "Senha muito curta.");
         return;
     }
 
     const token = localStorage.getItem("token");
 
     try {
-        const res = await fetch(`${API}/auth/change-password`,{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json",
-                "Authorization":"Bearer "+token
+        const res = await fetch(`${API}/auth/change-password`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
             },
             body: JSON.stringify({
-                current_password:currentPwd,
-                new_password:newPwd
+                current_password: currentPwd,
+                new_password: newPwd
             })
         });
 
-        if(res.status === 403){
-            showToast("error", "Conta bloqueada. Contate o administrador.");
+        if (res.status === 403) {
+            const errData = await res.json().catch(() => null);
+            showToast("error", (errData && errData.detail) || "Conta bloqueada por excesso de tentativas.");
             return;
         }
 
-        if(res.ok){
-            showToast("success", "Senha alterada com sucesso.");
+        if (res.ok) {
+            showToast("success", "Senha alterada com sucesso. Faça login novamente.");
             localStorage.removeItem("token");
             setTimeout(() => {
                 window.location.href = "login.html";
             }, 700);
-        }else{
-            showToast("error", "Erro ao alterar senha.");
+        } else {
+            const errData = await res.json().catch(() => null);
+            const detailMsg = (errData && errData.detail) ? errData.detail : "Erro ao alterar senha.";
+            showToast("error", detailMsg);
         }
     } catch (error) {
         showToast("error", "Não foi possível conectar ao servidor.");
@@ -393,11 +449,14 @@ async function changePassword(){
 // ======================
 // Cadastrar Host (POST)
 // ======================
+const currentHostsMap = new Map();
+const pendingDeletedHostNames = new Set();
+let hostsListRequestId = 0;
 const hostForm = document.getElementById("hostForm");
 const portsContainer = document.getElementById("portsContainer");
 const addPortBtn = document.getElementById("addPortBtn");
 
-function addPortInput(container, value = "", removable = false, placeholder = "Porta") {
+function addPortInput(container, value = "", removable = true, placeholder = "Porta (ex: 80)") {
     if (!container) return;
     const row = document.createElement("div");
     row.className = "port-input-row";
@@ -408,6 +467,8 @@ function addPortInput(container, value = "", removable = false, placeholder = "P
     input.max = "65535";
     input.placeholder = placeholder;
     input.className = "port-input";
+    input.title = "Porta TCP (1 a 65535)";
+    input.setAttribute("aria-label", "Porta TCP (1 a 65535)");
     input.value = value === null || value === undefined ? "" : String(value);
     row.appendChild(input);
 
@@ -416,7 +477,8 @@ function addPortInput(container, value = "", removable = false, placeholder = "P
         removeBtn.type = "button";
         removeBtn.className = "remove-port-btn";
         removeBtn.title = "Remover porta";
-        removeBtn.textContent = "−";
+        removeBtn.setAttribute("aria-label", "Remover porta");
+        removeBtn.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
         removeBtn.addEventListener("click", () => row.remove());
         row.appendChild(removeBtn);
     }
@@ -427,9 +489,7 @@ function addPortInput(container, value = "", removable = false, placeholder = "P
 function resetCreatePorts() {
     if (!portsContainer) return;
     portsContainer.innerHTML = "";
-    addPortInput(portsContainer, "", false, "Porta");
-    addPortInput(portsContainer, "", false, "Porta");
-    addPortInput(portsContainer, "", false, "Porta");
+    addPortInput(portsContainer, "", true, "Porta (opcional)");
 }
 
 function setModalPorts(ports) {
@@ -444,14 +504,11 @@ function setModalPorts(ports) {
         : [];
 
     if (normalized.length === 0) {
-        addPortInput(container, "", false, "Porta");
-        addPortInput(container, "", false, "Porta");
-        addPortInput(container, "", false, "Porta");
+        addPortInput(container, "", true, "Porta (opcional)");
         return;
     }
 
-    while (normalized.length < 3) normalized.push("");
-    normalized.forEach((value, index) => addPortInput(container, value, index >= 3, "Porta"));
+    normalized.forEach((value) => addPortInput(container, value, true, "Porta"));
 }
 
 function collectPorts(container) {
@@ -536,6 +593,12 @@ if (hostForm) {
             snmp_community: (snmpCommunityInput?.value || "").trim() || "netspot"
         };
 
+        const submitBtn = hostForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add("is-loading");
+        }
+
         try {
             const response = await fetchWithAuth(`${API}/host/create`, {
                 method: "POST",
@@ -562,38 +625,63 @@ if (hostForm) {
         } catch (err) {
             console.error("Erro na requisição:", err);
             showToast("error", "Não foi possível conectar ao servidor.");
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove("is-loading");
+            }
         }
     });
 }
 
 let discoveredLanHosts = [];
 
+function updateDiscoverySelectAllUI(allChecked) {
+    const selectAllBtn = document.getElementById("selectAllDiscoveryBtn");
+    if (!selectAllBtn) return;
+    const iconSvg = allChecked
+        ? `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>`
+        : `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="9 11 12 14 22 4"></polyline></svg>`;
+    selectAllBtn.innerHTML = `${iconSvg}<span>${allChecked ? "Desmarcar todos" : "Selecionar todos"}</span>`;
+}
+
 function renderDiscoveredLanHosts() {
     const listBox = document.getElementById("networkDiscoveryList");
     const infoBox = document.getElementById("networkDiscoveryInfo");
+    const selectAllBtn = document.getElementById("selectAllDiscoveryBtn");
     if (!listBox || !infoBox) return;
 
     if (!Array.isArray(discoveredLanHosts) || discoveredLanHosts.length === 0) {
         infoBox.textContent = "";
         listBox.innerHTML = "<small>Nenhum host encontrado.</small>";
+        if (selectAllBtn) selectAllBtn.style.display = "none";
         return;
     }
 
     const selectableCount = discoveredLanHosts.filter((h) => !h.already_exists).length;
     infoBox.textContent = `${discoveredLanHosts.length} host(s) encontrado(s) • ${selectableCount} disponível(is) para importação`;
+    if (selectAllBtn) {
+        selectAllBtn.style.display = selectableCount > 0 ? "inline-flex" : "none";
+        updateDiscoverySelectAllUI(selectableCount > 0);
+    }
     listBox.innerHTML = discoveredLanHosts.map((host) => {
         const disabled = host.already_exists ? "disabled" : "";
         const checked = host.already_exists ? "" : "checked";
-        const hostnameText = host.hostname ? ` • ${host.hostname}` : "";
+        const hostnameText = host.hostname ? ` • ${escapeHtml(host.hostname)}` : "";
+        const portsList = Array.isArray(host.ports) && host.ports.length ? host.ports.join(", ") : "";
+        const portsText = portsList ? ` • Portas: ${escapeHtml(portsList)}` : "";
+        const safeName = escapeHtml(host.name);
+        const safeAddr = escapeHtml(host.address);
+        const safeId = escapeHtml(host.id);
         return `
             <label class="network-discovery-item">
                 <div class="network-discovery-meta">
-                    <strong>${host.name}</strong>
-                    <small>${host.address}${hostnameText}</small>
+                    <strong>${safeName}</strong>
+                    <small>${safeAddr}${hostnameText}${portsText}</small>
                 </div>
                 <div>
                     ${host.already_exists ? '<span class="network-exists-badge">já cadastrado</span>' : ""}
-                    <input type="checkbox" class="discover-host-check" data-id="${host.id}" ${disabled} ${checked}>
+                    <input type="checkbox" class="discover-host-check" data-id="${safeId}" ${disabled} ${checked}>
                 </div>
             </label>
         `;
@@ -613,8 +701,9 @@ async function discoverNetworkHosts() {
         return;
     }
 
+    const originalDiscoverText = getButtonLabel(discoverBtn, "Descobrir rede");
     discoverBtn.disabled = true;
-    discoverBtn.textContent = "Descobrindo...";
+    setButtonLabel(discoverBtn, "Descobrindo...");
     if (resultBox) setInlineState(resultBox, "Executando descoberta...", "info");
 
     try {
@@ -642,7 +731,7 @@ async function discoverNetworkHosts() {
         showToast("error", "Falha ao executar descoberta de rede.");
     } finally {
         discoverBtn.disabled = false;
-        discoverBtn.textContent = "Descobrir rede";
+        setButtonLabel(discoverBtn, originalDiscoverText);
     }
 }
 
@@ -670,19 +759,39 @@ async function preloadDiscoverySubnet() {
         const res = await fetchWithAuth(`${API}/network/default-subnet`);
         if (!res || !res.ok) {
             console.warn("Não foi possível detectar subnet automática.");
+            if (!String(subnetInput.value || "").trim()) {
+                subnetInput.value = "192.168.1.0/24";
+            }
             return;
         }
         const data = await res.json();
         const subnet = String(data?.subnet || "").trim();
-        if (isValidIpv4Cidr(subnet) && !String(subnetInput.value || "").trim()) {
+        const isOversizedOrDocker = (s) => {
+            const parts = s.split("/");
+            if (parts.length !== 2) return false;
+            const prefix = Number(parts[1]);
+            if (prefix < 20) return true;
+            if (s.startsWith("172.") && prefix <= 16) return true;
+            return false;
+        };
+
+        if (isValidIpv4Cidr(subnet) && !isOversizedOrDocker(subnet) && !String(subnetInput.value || "").trim()) {
             subnetInput.value = subnet;
+        } else if (!String(subnetInput.value || "").trim()) {
+            subnetInput.value = "192.168.1.0/24";
         }
     } catch (err) {
         console.warn("Falha no preload da subnet automática:", err);
+        if (!String(subnetInput.value || "").trim()) {
+            subnetInput.value = "192.168.1.0/24";
+        }
     }
 }
 
 async function importSelectedLanHosts() {
+    const communityInput = document.getElementById("snmp_community") || document.getElementById("modal-snmp-community");
+    const communityVal = communityInput ? communityInput.value.trim() : "netspot";
+
     const checks = Array.from(document.querySelectorAll(".discover-host-check:checked"));
     const selected = checks
         .map((check) => {
@@ -692,7 +801,12 @@ async function importSelectedLanHosts() {
         .filter(Boolean)
         .map((host) => ({
             name: host.name,
-            address: host.address
+            address: host.address,
+            ports: Array.isArray(host.ports) ? host.ports : null,
+            http_enabled: typeof host.http_enabled === "boolean" ? host.http_enabled : null,
+            http_url: host.http_url || null,
+            snmp_enabled: true,
+            snmp_community: communityVal || "netspot"
         }));
 
     if (!selected.length) {
@@ -701,17 +815,22 @@ async function importSelectedLanHosts() {
     }
 
     const importBtn = document.getElementById("importSelectedBtn");
+    const originalImportText = getButtonLabel(importBtn, "Adicionar selecionados");
     const resultBox = document.getElementById("networkImportResult");
     if (importBtn) {
         importBtn.disabled = true;
-        importBtn.textContent = "Importando...";
+        setButtonLabel(importBtn, "Importando...");
     }
 
     try {
         const res = await fetchWithAuth(`${API}/network/import`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ hosts: selected })
+            body: JSON.stringify({
+                hosts: selected,
+                snmp_enabled: true,
+                snmp_community: communityVal || "netspot"
+            })
         });
         if (!res) return;
 
@@ -746,7 +865,7 @@ async function importSelectedLanHosts() {
     } finally {
         if (importBtn) {
             importBtn.disabled = false;
-            importBtn.textContent = "Adicionar selecionados";
+            setButtonLabel(importBtn, originalImportText);
         }
     }
 }
@@ -754,48 +873,27 @@ async function importSelectedLanHosts() {
 // ======================
 // Listar e Atualizar Hosts
 // ======================
-function buildHostCardHTML(h) {
-    const hostPorts = parseHostPorts(h);
-    const hostAddressLabel = `${h.address}`;
-    const tcpPortsLabel = hostPorts.length ? hostPorts.join(", ") : "Nenhuma";
-    const httpEnabled = !!h.http_enabled;
-    const webCheckBadge = httpEnabled
-        ? `<span class="web-check-badge web-check-on">Ativo</span>`
-        : `<span class="web-check-badge web-check-off">Inativo</span>`;
-    const httpProtocolLabel = httpEnabled
-        ? (h.http_protocol ? String(h.http_protocol).toUpperCase() : "Aguardando")
-        : "-";
-    const monitorFlag = hostMonitorFlag(h);
-    const causeClass = probableCauseClass(h);
-    const incidentBadgeHtml = h.has_open_incident
-        ? `<span class="incident-badge" title="Existe incidente aberto para este host">INCIDENTE ABERTO</span>`
-        : "";
+function formatHostAddressLabel(h) {
+    const addr = String(h?.address || "").trim();
+    const resolvedIp = String(h?.last_resolved_ip || "").trim();
+    if (resolvedIp && resolvedIp !== addr) {
+        return `${addr} → ${resolvedIp}`;
+    }
+    return addr;
+}
 
-    let statusColor = "bg-secondary";
-    if (h.status === "UP") statusColor = "bg-success";
-    else if (h.status === "DOWN") statusColor = "bg-danger";
-    else if (h.status === "DEGRADED") statusColor = "bg-warning";
-    
-    let sevClass = "sev-unknown";
-    if (h.severity === "HEALTHY") sevClass = "sev-healthy";
-    else if (h.severity === "WARNING") sevClass = "sev-warning";
-    else if (h.severity === "DEGRADED") sevClass = "sev-degraded";
-    else if (h.severity === "CRITICAL") sevClass = "sev-critical";
-    const severityIndicatorHtml = h.icmp_blocked_but_service_up
-        ? ""
-        : `<span class="severity-indicator ${sevClass}">✚</span>`;
+function buildResolvedIpSummaryLine(h) {
+    const addr = String(h?.address || "").trim();
+    const resolvedIp = String(h?.last_resolved_ip || "").trim();
+    if (!resolvedIp || resolvedIp === addr) {
+        return "";
+    }
+    const ttlSuffix = h?.dns_ttl != null ? ` (TTL ${h.dns_ttl}s)` : "";
+    return `<small><b>IP resolvido (DNS):</b> ${escapeHtml(resolvedIp)}${escapeHtml(ttlSuffix)}</small>`;
+}
 
-    const availability10m = h.availability_10m != null
-        ? h.availability_10m.toFixed(2)
-        : "N/A";
-    const totalTrafficBps = Number(h.network_traffic) || 0;
-    const downloadTrafficBps = Number(h.network_in_bps) || 0;
-    const uploadTrafficBps = Number(h.network_out_bps) || 0;
-    const maxTrafficBps = Math.max(totalTrafficBps, downloadTrafficBps, uploadTrafficBps, 1);
-    const totalTrafficBar = calcRelativeBarWidth(totalTrafficBps, maxTrafficBps);
-    const downloadTrafficBar = calcRelativeBarWidth(downloadTrafficBps, maxTrafficBps);
-    const uploadTrafficBar = calcRelativeBarWidth(uploadTrafficBps, maxTrafficBps);
-    const snmpConfigured = [
+function isSnmpConfigured(h) {
+    return [
         h.cpu_usage,
         h.ram_usage,
         h.disk_usage,
@@ -803,10 +901,18 @@ function buildHostCardHTML(h) {
         h.network_in_bps,
         h.network_out_bps
     ].some((value) => value !== null && value !== undefined);
-    const snmpStatusHtml = !snmpConfigured
-        ? `<small class="snmp-tag snmp-tag-off snmp-empty-message">SNMP: não configurado</small>`
-        : "";
-    const snmpSectionHtml = snmpConfigured ? `
+}
+
+function buildSnmpSectionMarkup(h) {
+    const totalTrafficBps = Number(h.network_traffic) || 0;
+    const downloadTrafficBps = Number(h.network_in_bps) || 0;
+    const uploadTrafficBps = Number(h.network_out_bps) || 0;
+    const maxTrafficBps = Math.max(totalTrafficBps, downloadTrafficBps, uploadTrafficBps, 1);
+    const totalTrafficBar = calcRelativeBarWidth(totalTrafficBps, maxTrafficBps);
+    const downloadTrafficBar = calcRelativeBarWidth(downloadTrafficBps, maxTrafficBps);
+    const uploadTrafficBar = calcRelativeBarWidth(uploadTrafficBps, maxTrafficBps);
+
+    return `
                 <div class="metrics-section snmp-section">
                     <div class="snmp-header">
                         <div class="snmp-title">SNMP</div>
@@ -853,11 +959,53 @@ function buildHostCardHTML(h) {
                         </div>
                     </div>
                 </div>
-    ` : "";
+    `;
+}
+
+function buildHostCardHTML(h) {
+    const hostPorts = parseHostPorts(h);
+    const hostAddressLabel = formatHostAddressLabel(h);
+    const resolvedIpLineHtml = buildResolvedIpSummaryLine(h);
+    const tcpPortsLabel = hostPorts.length ? hostPorts.join(", ") : "Nenhuma";
+    const httpEnabled = !!h.http_enabled;
+    const webCheckBadge = httpEnabled
+        ? `<span class="web-check-badge web-check-on">Ativo</span>`
+        : `<span class="web-check-badge web-check-off">Inativo</span>`;
+    const httpProtocolLabel = httpEnabled
+        ? (h.http_protocol ? String(h.http_protocol).toUpperCase() : "Aguardando")
+        : "-";
+    const monitorFlag = hostMonitorFlag(h);
+    const causeClass = probableCauseClass(h);
+    const incidentBadgeHtml = h.has_open_incident
+        ? `<span class="incident-badge" title="Existe incidente aberto para este host">INCIDENTE ABERTO</span>`
+        : "";
+
+    let statusColor = "bg-secondary";
+    if (h.status === "UP") statusColor = "bg-success";
+    else if (h.status === "DOWN") statusColor = "bg-danger";
+    else if (h.status === "DEGRADED") statusColor = "bg-warning";
+    
+    let sevClass = "sev-unknown";
+    if (h.severity === "HEALTHY") sevClass = "sev-healthy";
+    else if (h.severity === "WARNING") sevClass = "sev-warning";
+    else if (h.severity === "DEGRADED") sevClass = "sev-degraded";
+    else if (h.severity === "CRITICAL") sevClass = "sev-critical";
+    const severityIndicatorHtml = h.icmp_blocked_but_service_up
+        ? ""
+        : `<span class="severity-indicator ${sevClass}" aria-hidden="true">✚</span>`;
+
+    const availability10m = h.availability_10m != null
+        ? h.availability_10m.toFixed(2)
+        : "N/A";
+    const snmpConfigured = isSnmpConfigured(h);
+    const snmpStatusHtml = !snmpConfigured
+        ? `<small class="snmp-tag snmp-tag-off snmp-empty-message">SNMP: não configurado</small>`
+        : "";
+    const snmpSectionHtml = snmpConfigured ? buildSnmpSectionMarkup(h) : "";
     const snmpChartBoxHtml = snmpConfigured ? `
-        <div id="snmp-chart-box-${h.name}" class="chart-box hidden" style="margin-top: 10px;">
+        <div id="snmp-chart-box-${escapeHtml(h.name)}" class="chart-box hidden" style="margin-top: 10px;">
             <div class="chart-title">Histórico SNMP</div>
-            <canvas id="snmp-chart-${h.name}" height="120"></canvas>
+            <canvas id="snmp-chart-${escapeHtml(h.name)}" height="120" role="img" aria-label="Histórico de métricas SNMP do host ${escapeHtml(h.name)}">Gráfico de métricas SNMP indisponível em modo texto.</canvas>
         </div>
     ` : "";
 
@@ -868,8 +1016,20 @@ function buildHostCardHTML(h) {
                 <div class="host-title-wrap">
                     <span class="status-indicator ${statusColor}"></span>
                     <strong class="host-title">
-                        ${h.name}
-                        <small class="host-addr">(${hostAddressLabel})</small>
+                        ${escapeHtml(h.name)}
+                        <small class="host-addr">(${escapeHtml(hostAddressLabel)})</small>
+                        <button
+                            class="copy-addr-btn"
+                            type="button"
+                            title="Copiar endereço (${escapeHtml(h.address)})"
+                            aria-label="Copiar endereço (${escapeHtml(h.address)})"
+                            onclick='copyHostAddress(${escapeJsSingleQuotedAttr(h.address)}, this, event)'
+                        >
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+                            </svg>
+                        </button>
                     </strong>
                 </div>
                 <div class="host-top-actions">
@@ -880,13 +1040,13 @@ function buildHostCardHTML(h) {
                         type="button"
                         title="Excluir host"
                         aria-label="Excluir host"
-                        onclick='softDeleteHost(${h.id}, ${JSON.stringify(h.name)})'
-                    >✕</button>
+                        onclick='softDeleteHost(${Number(h.id)}, ${escapeJsSingleQuotedAttr(h.name)})'
+                    ><span aria-hidden="true">✕</span></button>
                 </div>
             </div>
 
             <div class="host-meta-grid">
-                <div class="host-meta-item"><small>Saúde</small><strong>${h.health_score ?? "N/A"}% ${severityIndicatorHtml}</strong></div>
+                <div class="host-meta-item"><small>Saúde</small><strong>${healthMeterHtml(h, severityIndicatorHtml)}</strong></div>
                 <div class="host-meta-item"><small>Disponibilidade</small><strong>${availability10m}%</strong></div>
                 <div class="host-meta-item"><small>Último check</small><strong>${formatCheckTime(h.last_check)}</strong></div>
                 <div class="host-meta-item"><small>Último SNMP</small><strong>${formatCheckTime(h.last_snmp_check)}</strong></div>
@@ -894,16 +1054,19 @@ function buildHostCardHTML(h) {
         </div>
 
         <div class="face-nav">
-            <button class="face-nav-btn face-prev-btn hidden" type="button" title="Face anterior" aria-label="Face anterior" onclick="prevHostFace('${h.name}')">${iconSvg("arrow_left")}</button>
-            <div class="icon-actions">
-                <button class="icon-btn" type="button" title="Histórico" aria-label="Histórico" onclick="toggleHistory('${h.name}')">${iconSvg("history")}</button>
-                <button class="icon-btn" type="button" title="Gráfico de latência" aria-label="Gráfico de latência" onclick="toggleLatencyChart('${h.name}')">${iconSvg("latency")}</button>
-                ${snmpConfigured ? `<button class="icon-btn" type="button" title="Gráfico SNMP" aria-label="Gráfico SNMP" onclick="toggleSnmpChart('${h.name}')">${iconSvg("snmp")}</button>` : ""}
-                <button class="icon-btn" type="button" title="Disponibilidade por tipo" aria-label="Disponibilidade por tipo" onclick="toggleAvailabilityChartType('${h.name}')">${iconSvg("availability_type")}</button>
-                <button class="icon-btn" type="button" title="Disponibilidade geral" aria-label="Disponibilidade geral" onclick="toggleAvailabilityChart('${h.name}')">${iconSvg("availability")}</button>
-                <button class="icon-btn" type="button" title="Editar host" aria-label="Editar host" onclick='openEditModal(${JSON.stringify(h.name)}, ${JSON.stringify(h.address)}, ${JSON.stringify(hostPorts)}, ${JSON.stringify(h.http_url || "")}, ${h.http_enabled ? "true" : "false"}, ${h.snmp_enabled ? "true" : "false"}, ${JSON.stringify(h.snmp_community || "netspot")})'>${iconSvg("edit")}</button>
+            <div class="face-segmented-control" role="tablist" aria-label="Faces do card de monitoramento">
+                <button type="button" class="face-pill active" data-face-num="1" role="tab" aria-selected="true" title="Face 1: Resumo do host" onclick='setHostFace(${escapeJsSingleQuotedAttr(h.name)}, 1)'>Resumo</button>
+                <button type="button" class="face-pill" data-face-num="2" role="tab" aria-selected="false" title="Face 2: Métricas de rede e SLA" onclick='setHostFace(${escapeJsSingleQuotedAttr(h.name)}, 2)'>Rede</button>
+                <button type="button" class="face-pill" data-face-num="3" role="tab" aria-selected="false" title="Face 3: Hardware e telemetria SNMP" onclick='setHostFace(${escapeJsSingleQuotedAttr(h.name)}, 3)'>SNMP</button>
             </div>
-            <button class="face-nav-btn face-next-btn" type="button" title="Próxima face" aria-label="Próxima face" onclick="nextHostFace('${h.name}')">${iconSvg("arrow_right")}</button>
+            <div class="icon-actions">
+                <button class="icon-btn" type="button" title="Histórico recente" aria-label="Histórico recente" onclick='toggleHistory(${escapeJsSingleQuotedAttr(h.name)})'>${iconSvg("history")}</button>
+                <button class="icon-btn" type="button" title="Gráfico de latência" aria-label="Gráfico de latência" onclick='toggleLatencyChart(${escapeJsSingleQuotedAttr(h.name)})'>${iconSvg("latency")}</button>
+                ${snmpConfigured ? `<button class="icon-btn" type="button" title="Gráfico SNMP" aria-label="Gráfico SNMP" onclick='toggleSnmpChart(${escapeJsSingleQuotedAttr(h.name)})'>${iconSvg("snmp")}</button>` : ""}
+                <button class="icon-btn" type="button" title="Disponibilidade por tipo" aria-label="Disponibilidade por tipo" onclick='toggleAvailabilityChartType(${escapeJsSingleQuotedAttr(h.name)})'>${iconSvg("availability_type")}</button>
+                <button class="icon-btn" type="button" title="Disponibilidade geral" aria-label="Disponibilidade geral" onclick='toggleAvailabilityChart(${escapeJsSingleQuotedAttr(h.name)})'>${iconSvg("availability")}</button>
+                <button class="icon-btn" type="button" title="Editar host" aria-label="Editar host" onclick='openEditModal(${escapeJsSingleQuotedAttr(h.name)})'>${iconSvg("edit")}</button>
+            </div>
         </div>
 
         <!-- Body: três colunas (Resumo | Rede | SNMP) -->
@@ -912,6 +1075,7 @@ function buildHostCardHTML(h) {
                 <div class="host-section-card">
                     <div class="metrics-title">Resumo</div>
                     <div class="host-summary-list">
+                        ${resolvedIpLineHtml}
                         <small><b>Portas TCP monitoradas:</b> ${tcpPortsLabel}</small>
                         <small><b>Check Web:</b> ${webCheckBadge}</small>
                         <small><b>Protocolo resolvido:</b> ${httpProtocolLabel}</small>
@@ -919,7 +1083,7 @@ function buildHostCardHTML(h) {
                         <small><b>Disponibilidade:</b> ${availability10m}%</small>
                         <small><b>Tendência HTTP:</b> ${trendIcon(h.trend_http)} ${h.trend_http ?? "N/A"}</small>
                         <small><b>Causa provável:</b></small>
-                        <small class="cause-pill ${causeClass}">${h.probable_cause ?? "Operação normal"}</small>
+                        <small class="cause-pill ${causeClass}">${escapeHtml(h.probable_cause ?? "Operação normal")}</small>
                     </div>
                 </div>
             </div>
@@ -932,24 +1096,24 @@ function buildHostCardHTML(h) {
                             <small><b>Taxa de sucesso</b></small>
                             <small>Ping: ${h.sla_rolling_ping ?? "N/A"}%</small>
                             <small>TCP: ${h.sla_rolling_tcp ?? "N/A"}%</small>
-                            <small>HTTP: ${h.sla_rolling_http ?? "N/A"}%</small>
+                            <small>HTTP: ${h.http_enabled === false ? "Inativo" : (h.sla_rolling_http !== null && h.sla_rolling_http !== undefined ? `${h.sla_rolling_http}%` : "N/A")}</small>
                         </div>
                         <div class="network-col">
                             <small><b>Variação na latência</b></small>
                             <small>Ping: ${h.jitter_ms_ping ?? "N/A"} ms</small>
                             <small>TCP: ${h.jitter_ms_tcp ?? "N/A"} ms</small>
-                            <small>HTTP: ${h.jitter_ms_http ?? "N/A"} ms</small>
+                            <small>HTTP: ${h.http_enabled === false ? "Inativo" : (h.jitter_ms_http !== null && h.jitter_ms_http !== undefined ? `${h.jitter_ms_http} ms` : "N/A")}</small>
                         </div>
                     </div>
                     <div class="host-checks-section">
                         <div class="metrics-title">Últimos checks</div>
-                        <div id="result-${h.name}" class="host-last-checks">
+                        <div id="result-${escapeHtml(h.name)}" class="host-last-checks">
                             <i>Atualizando...</i>
                         </div>
                     </div>
                     <div class="tcp-ports-section">
                         <div class="metrics-title">Portas TCP monitoradas</div>
-                        <div id="tcp-ports-status-${h.name}" class="tcp-ports-status">
+                        <div id="tcp-ports-status-${escapeHtml(h.name)}" class="tcp-ports-status">
                             <small class="tcp-ports-empty">Atualizando...</small>
                         </div>
                     </div>
@@ -971,20 +1135,20 @@ function buildHostCardHTML(h) {
             </div>
         </div>
 
-        <div id="chart-container-${h.name}" class="chart-box hidden" style="margin-top: 10px;">
+        <div id="chart-container-${escapeHtml(h.name)}" class="chart-box hidden" style="margin-top: 10px;">
             <div class="chart-title">Latência dos checks</div>
-            <canvas id="chart-${h.name}" height="120"></canvas>
+            <canvas id="chart-${escapeHtml(h.name)}" height="120" role="img" aria-label="Histórico de latência e ping do host ${escapeHtml(h.name)}">Gráfico de latência indisponível em modo texto.</canvas>
         </div>
         ${snmpChartBoxHtml}
-        <div id="availability-chart-type-box-${h.name}" class="chart-box hidden">
+        <div id="availability-chart-type-box-${escapeHtml(h.name)}" class="chart-box hidden">
             <div class="chart-title">Disponibilidade por tipo</div>
-            <canvas id="availability-chart-type-${h.name}" height="120"></canvas>
+            <canvas id="availability-chart-type-${escapeHtml(h.name)}" height="120" role="img" aria-label="Disponibilidade por protocolo de ${escapeHtml(h.name)}">Gráfico de disponibilidade por protocolo indisponível em modo texto.</canvas>
         </div>
-        <div id="availability-chart-box-${h.name}" class="chart-box hidden">
+        <div id="availability-chart-box-${escapeHtml(h.name)}" class="chart-box hidden">
             <div class="chart-title">Disponibilidade geral</div>
-            <canvas id="availability-chart-${h.name}" height="120"></canvas>
+            <canvas id="availability-chart-${escapeHtml(h.name)}" height="120" role="img" aria-label="Disponibilidade geral dos últimos 10 minutos de ${escapeHtml(h.name)}">Gráfico de disponibilidade geral indisponível em modo texto.</canvas>
         </div>
-        <div id="history-${h.name}" class="history-box hidden"></div>
+        <div id="history-${escapeHtml(h.name)}" class="history-box hidden"></div>
     `;
 }
 
@@ -1019,17 +1183,21 @@ function updateHostCardInPlace(card, h) {
 
     const severityIndicatorHtml = h.icmp_blocked_but_service_up
         ? ""
-        : `<span class="severity-indicator ${sevClass}">✚</span>`;
+        : `<span class="severity-indicator ${sevClass}" aria-hidden="true">✚</span>`;
 
     // 1. Preservar o estado da face ativa e atualizar a classe visual do card
     const currentFace = card.dataset.face || "1";
     card.className = `card ${visualState.cardClass}`;
     card.dataset.face = currentFace;
 
-    // 2. Indicador de status (bolinha verde/vermelha/amarela)
+    // 2. Indicador de status (bolinha verde/vermelha/amarela) e endereço/IP resolvido
     const statusIndicator = card.querySelector(".status-indicator");
     if (statusIndicator) {
         statusIndicator.className = `status-indicator ${statusColor}`;
+    }
+    const addrEl = card.querySelector(".host-addr");
+    if (addrEl) {
+        addrEl.textContent = `(${formatHostAddressLabel(h)})`;
     }
 
     // 3. Flag de monitoramento (MONITORANDO / PAUSADO / OFFLINE)
@@ -1066,7 +1234,7 @@ function updateHostCardInPlace(card, h) {
     if (metaGrid) {
         const items = metaGrid.querySelectorAll(".host-meta-item strong");
         if (items.length >= 4) {
-            items[0].innerHTML = `${h.health_score ?? "N/A"}% ${severityIndicatorHtml}`;
+            items[0].innerHTML = healthMeterHtml(h, severityIndicatorHtml);
             items[1].textContent = `${availability10m}%`;
             items[2].textContent = formatCheckTime(h.last_check);
             items[3].textContent = formatCheckTime(h.last_snmp_check);
@@ -1076,7 +1244,9 @@ function updateHostCardInPlace(card, h) {
     // 6. Resumo na Face 1
     const summaryList = card.querySelector(".host-summary-list");
     if (summaryList) {
+        const resolvedIpLineHtml = buildResolvedIpSummaryLine(h);
         summaryList.innerHTML = `
+            ${resolvedIpLineHtml}
             <small><b>Portas TCP monitoradas:</b> ${tcpPortsLabel}</small>
             <small><b>Check Web:</b> ${webCheckBadge}</small>
             <small><b>Protocolo resolvido:</b> ${httpProtocolLabel}</small>
@@ -1084,7 +1254,7 @@ function updateHostCardInPlace(card, h) {
             <small><b>Disponibilidade:</b> ${availability10m}%</small>
             <small><b>Tendência HTTP:</b> ${trendIcon(h.trend_http)} ${h.trend_http ?? "N/A"}</small>
             <small><b>Causa provável:</b></small>
-            <small class="cause-pill ${causeClass}">${h.probable_cause ?? "Operação normal"}</small>
+            <small class="cause-pill ${causeClass}">${escapeHtml(h.probable_cause ?? "Operação normal")}</small>
         `;
     }
 
@@ -1097,18 +1267,61 @@ function updateHostCardInPlace(card, h) {
                 <small><b>Taxa de sucesso</b></small>
                 <small>Ping: ${h.sla_rolling_ping ?? "N/A"}%</small>
                 <small>TCP: ${h.sla_rolling_tcp ?? "N/A"}%</small>
-                <small>HTTP: ${h.sla_rolling_http ?? "N/A"}%</small>
+                <small>HTTP: ${h.http_enabled === false ? "Inativo" : (h.sla_rolling_http !== null && h.sla_rolling_http !== undefined ? `${h.sla_rolling_http}%` : "N/A")}</small>
             `;
             netCols[1].innerHTML = `
                 <small><b>Variação na latência</b></small>
                 <small>Ping: ${h.jitter_ms_ping ?? "N/A"} ms</small>
                 <small>TCP: ${h.jitter_ms_tcp ?? "N/A"} ms</small>
-                <small>HTTP: ${h.jitter_ms_http ?? "N/A"} ms</small>
+                <small>HTTP: ${h.http_enabled === false ? "Inativo" : (h.jitter_ms_http !== null && h.jitter_ms_http !== undefined ? `${h.jitter_ms_http} ms` : "N/A")}</small>
             `;
         }
     }
 
     // 8. Métricas SNMP na Face 3 (KPIs de CPU, RAM, Disco e Tráfego)
+    const snmpConfigured = isSnmpConfigured(h);
+    let snmpKpiGrid = card.querySelector(".snmp-kpi-grid");
+
+    if (snmpConfigured && !snmpKpiGrid) {
+        const snmpCol = card.querySelector(".host-col-snmp");
+        if (snmpCol) {
+            snmpCol.innerHTML = buildSnmpSectionMarkup(h);
+        }
+        const iconActions = card.querySelector(".icon-actions");
+        if (iconActions && !iconActions.querySelector('button[title="Gráfico SNMP"]')) {
+            const snmpBtn = document.createElement("button");
+            snmpBtn.className = "icon-btn";
+            snmpBtn.type = "button";
+            snmpBtn.title = "Gráfico SNMP";
+            snmpBtn.setAttribute("aria-label", "Gráfico SNMP");
+            snmpBtn.onclick = () => toggleSnmpChart(h.name);
+            snmpBtn.innerHTML = iconSvg("snmp");
+            const latBtn = iconActions.querySelector('button[title="Gráfico de latência"]');
+            if (latBtn && latBtn.nextSibling) {
+                iconActions.insertBefore(snmpBtn, latBtn.nextSibling);
+            } else {
+                iconActions.appendChild(snmpBtn);
+            }
+        }
+        if (!document.getElementById(`snmp-chart-box-${h.name}`)) {
+            const chartBox = document.createElement("div");
+            chartBox.id = `snmp-chart-box-${h.name}`;
+            chartBox.className = "chart-box hidden";
+            chartBox.style.marginTop = "10px";
+            chartBox.innerHTML = `
+                <div class="chart-title">Histórico SNMP</div>
+                <canvas id="snmp-chart-${escapeHtml(h.name)}" height="120" role="img" aria-label="Histórico de métricas SNMP do host ${escapeHtml(h.name)}">Gráfico de métricas SNMP indisponível em modo texto.</canvas>
+            `;
+            const latBox = document.getElementById(`chart-container-${h.name}`);
+            if (latBox && latBox.parentNode) {
+                latBox.parentNode.insertBefore(chartBox, latBox.nextSibling);
+            } else {
+                card.appendChild(chartBox);
+            }
+        }
+        return;
+    }
+
     const totalTrafficBps = Number(h.network_traffic) || 0;
     const downloadTrafficBps = Number(h.network_in_bps) || 0;
     const uploadTrafficBps = Number(h.network_out_bps) || 0;
@@ -1117,7 +1330,6 @@ function updateHostCardInPlace(card, h) {
     const downloadTrafficBar = calcRelativeBarWidth(downloadTrafficBps, maxTrafficBps);
     const uploadTrafficBar = calcRelativeBarWidth(uploadTrafficBps, maxTrafficBps);
 
-    const snmpKpiGrid = card.querySelector(".snmp-kpi-grid");
     if (snmpKpiGrid) {
         const kpiCards = snmpKpiGrid.querySelectorAll(".snmp-kpi-card");
         if (kpiCards.length >= 3) {
@@ -1159,6 +1371,11 @@ function updateTrafficRowInPlace(row, formattedValue, barWidth) {
 }
 
 function refreshVisibleChartsForHost(hostName) {
+    const historyBox = document.getElementById("history-" + hostName);
+    if (historyBox && !historyBox.classList.contains("hidden")) {
+        loadHistory(hostName, true);
+    }
+
     const availBox = document.getElementById("availability-chart-box-" + hostName);
     if (availBox && !availBox.classList.contains("hidden")) {
         loadAvailability(hostName);
@@ -1180,9 +1397,278 @@ function refreshVisibleChartsForHost(hostName) {
     }
 }
 
+// ============================================================================
+// VISUALIZAÇÃO EM ALTA DENSIDADE (FASE 3: CARDS 3D VS TABELA NOC)
+// ============================================================================
+
+let currentViewMode = "cards";
+try {
+    currentViewMode = localStorage.getItem("netspot_view_mode") || "cards";
+} catch (_) {
+    currentViewMode = "cards";
+}
+
+function setViewMode(mode) {
+    if (mode !== "cards" && mode !== "table") mode = "cards";
+    currentViewMode = mode;
+    try {
+        localStorage.setItem("netspot_view_mode", mode);
+    } catch (_) {}
+
+    const cardsContainer = document.getElementById("hosts");
+    const tableContainer = document.getElementById("hostsTableView");
+    const btnCards = document.getElementById("viewCardsBtn");
+    const btnTable = document.getElementById("viewTableBtn");
+
+    if (cardsContainer) {
+        cardsContainer.classList.toggle("hidden", mode !== "cards");
+    }
+    if (tableContainer) {
+        tableContainer.classList.toggle("hidden", mode !== "table");
+    }
+    if (btnCards) {
+        btnCards.classList.toggle("active", mode === "cards");
+        btnCards.setAttribute("aria-pressed", mode === "cards" ? "true" : "false");
+    }
+    if (btnTable) {
+        btnTable.classList.toggle("active", mode === "table");
+        btnTable.setAttribute("aria-pressed", mode === "table" ? "true" : "false");
+    }
+}
+
+function initViewMode() {
+    let saved = "cards";
+    try {
+        saved = localStorage.getItem("netspot_view_mode") || "cards";
+    } catch (_) {}
+    setViewMode(saved);
+
+    const btnCards = document.getElementById("viewCardsBtn");
+    const btnTable = document.getElementById("viewTableBtn");
+    if (btnCards && !btnCards.dataset.listenerBound) {
+        btnCards.addEventListener("click", () => setViewMode("cards"));
+        btnCards.dataset.listenerBound = "true";
+    }
+    if (btnTable && !btnTable.dataset.listenerBound) {
+        btnTable.addEventListener("click", () => setViewMode("table"));
+        btnTable.dataset.listenerBound = "true";
+    }
+}
+
+function focusHostCard(hostName) {
+    setViewMode("cards");
+    setTimeout(() => {
+        const card = document.getElementById(`card-${hostName}`);
+        if (!card) return;
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+        card.classList.add("card-highlight-pulse");
+        setTimeout(() => card.classList.remove("card-highlight-pulse"), 2200);
+    }, 60);
+}
+
+function buildNocTableRowHTML(h) {
+    const visualState = hostVisualState(h);
+    const causeClass = probableCauseClass(h);
+    const hostAddressLabel = formatHostAddressLabel(h);
+
+    let statusDot = "bg-secondary";
+    if (h.status === "UP") statusDot = "bg-success";
+    else if (h.status === "DOWN") statusDot = "bg-danger";
+    else if (h.status === "DEGRADED") statusDot = "bg-warning";
+
+    let sevClass = "sev-unknown";
+    if (h.severity === "HEALTHY") sevClass = "sev-healthy";
+    else if (h.severity === "WARNING") sevClass = "sev-warning";
+    else if (h.severity === "DEGRADED") sevClass = "sev-degraded";
+    else if (h.severity === "CRITICAL") sevClass = "sev-critical";
+    const severityIndicatorHtml = h.icmp_blocked_but_service_up
+        ? ""
+        : `<span class="severity-indicator ${sevClass}" aria-hidden="true">✚</span>`;
+
+    const availability10m = h.availability_10m != null
+        ? h.availability_10m.toFixed(2)
+        : "N/A";
+
+    const availNum = Number(h.availability_10m);
+    let availClass = "sla-high";
+    if (Number.isFinite(availNum)) {
+        if (availNum < 90) availClass = "sla-low";
+        else if (availNum < 98) availClass = "sla-mid";
+    }
+
+    // Ping check
+    let pingText = "sem dados";
+    let pingDot = "bg-secondary";
+    if (h.icmp_blocked_but_service_up) {
+        pingText = "ICMP Bloq.";
+        pingDot = "bg-secondary";
+    } else if (h.status_ping === "UP") {
+        pingText = h.latency_ping != null ? `${h.latency_ping} ms` : "OK";
+        pingDot = "bg-success";
+    } else if (h.status_ping === "DOWN") {
+        pingText = "Timeout";
+        pingDot = "bg-danger";
+    }
+
+    // Web check
+    let webHtml = `<span class="noc-badge-off">Inativo</span>`;
+    if (h.http_enabled) {
+        const proto = h.http_protocol ? String(h.http_protocol).toUpperCase() : "HTTP";
+        const lat = h.http_latency ?? h.https_latency;
+        const latText = lat != null ? `${lat} ms` : "Aguardando";
+        const isOk = lat != null;
+        webHtml = `<span class="noc-badge-proto ${isOk ? "proto-ok" : "proto-err"}">${escapeHtml(proto)} <small>(${escapeHtml(latText)})</small></span>`;
+    }
+
+    // Portas TCP
+    const ports = parseHostPorts(h);
+    let tcpHtml = `<span class="noc-empty-text">—</span>`;
+    if (ports.length > 0) {
+        tcpHtml = `<div class="noc-ports-wrap">${ports.map((p) => `<span class="noc-port-pill">${p}</span>`).join("")}</div>`;
+    }
+
+    const incidentHtml = h.has_open_incident
+        ? `<span class="noc-incident-dot" title="Existe incidente em aberto para este host" aria-label="Incidente em aberto"><span aria-hidden="true">!</span></span>`
+        : "";
+
+    return `
+      <tr id="row-${escapeHtml(h.name)}" class="noc-row ${visualState.cardClass}" data-host-name="${escapeHtml(h.name)}">
+        <td class="noc-col-status">
+          <div class="noc-status-cell">
+            <span class="status-indicator ${statusDot}"></span>
+            <span class="noc-status-label ${visualState.badgeClass}">${visualState.label}</span>
+            ${incidentHtml}
+          </div>
+        </td>
+        <td class="noc-col-device">
+          <div class="noc-device-cell">
+            <strong class="noc-device-name">${escapeHtml(h.name)}</strong>
+            <span class="noc-device-addr">
+              ${escapeHtml(hostAddressLabel)}
+              <button
+                class="copy-addr-btn"
+                type="button"
+                title="Copiar endereço (${escapeHtml(h.address)})"
+                aria-label="Copiar endereço (${escapeHtml(h.address)})"
+                onclick='copyHostAddress(${escapeJsSingleQuotedAttr(h.address)}, this, event)'
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+                </svg>
+              </button>
+            </span>
+          </div>
+        </td>
+        <td class="noc-col-health">
+          <div class="noc-health-cell">
+            ${healthMeterHtml(h, severityIndicatorHtml)}
+          </div>
+        </td>
+        <td class="noc-col-sla">
+          <span class="noc-sla-badge ${availClass}">${availability10m}%</span>
+        </td>
+        <td class="noc-col-ping">
+          <span class="noc-ping-cell">
+            <span class="status-indicator ${pingDot}"></span>
+            <span>${escapeHtml(pingText)}</span>
+          </span>
+        </td>
+        <td class="noc-col-web">
+          ${webHtml}
+        </td>
+        <td class="noc-col-tcp">
+          ${tcpHtml}
+        </td>
+        <td class="noc-col-cause">
+          <span class="cause-pill ${causeClass}">${escapeHtml(h.probable_cause ?? "Operação normal")}</span>
+        </td>
+        <td class="noc-col-actions">
+          <div class="noc-actions-cell">
+            <button class="noc-action-btn" type="button" title="Focar no Card 3D" aria-label="Focar no Card 3D" onclick='focusHostCard(${escapeJsSingleQuotedAttr(h.name)})'>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            </button>
+            <button class="noc-action-btn" type="button" title="Editar host" aria-label="Editar host" onclick='openEditModal(${escapeJsSingleQuotedAttr(h.name)})'>
+              ${iconSvg("edit")}
+            </button>
+            <button class="noc-action-btn noc-btn-danger" type="button" title="Mover para lixeira" aria-label="Mover para lixeira" onclick='softDeleteHost(${Number(h.id)}, ${escapeJsSingleQuotedAttr(h.name)})'>
+              ${iconSvg("trash")}
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+}
+
+function renderNocTable(hosts) {
+    const tbody = document.getElementById("nocTableBody");
+    if (!tbody) return;
+
+    if (!Array.isArray(hosts) || hosts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="noc-table-empty">Nenhum host monitorado no momento.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = hosts.map(buildNocTableRowHTML).join("");
+}
+
+function buildSkeletonCardsHTML() {
+    const card = `
+        <div class="skeleton-card" aria-hidden="true">
+            <div class="skeleton-header">
+                <div class="skeleton-line skeleton-title"></div>
+                <div class="skeleton-pill"></div>
+            </div>
+            <div class="skeleton-meta-grid">
+                <div class="skeleton-meta-box"></div>
+                <div class="skeleton-meta-box"></div>
+                <div class="skeleton-meta-box"></div>
+                <div class="skeleton-meta-box"></div>
+            </div>
+            <div class="skeleton-tabs">
+                <div class="skeleton-tab"></div>
+                <div class="skeleton-tab"></div>
+                <div class="skeleton-tab"></div>
+            </div>
+            <div class="skeleton-body">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-bar"></div>
+            </div>
+        </div>
+    `;
+    return `<div class="skeleton-wrap" aria-busy="true" aria-label="Carregando lista de hosts...">${card.repeat(6)}</div>`;
+}
+
+function buildSkeletonTableRowsHTML() {
+    return Array(6).fill(0).map(() => `
+        <tr class="skeleton-row" aria-hidden="true">
+            <td><div class="skeleton-dot"></div></td>
+            <td><div class="skeleton-line" style="width: 130px;"></div></td>
+            <td><div class="skeleton-bar" style="width: 85px;"></div></td>
+            <td><div class="skeleton-line" style="width: 55px;"></div></td>
+            <td><div class="skeleton-line" style="width: 50px;"></div></td>
+            <td><div class="skeleton-line" style="width: 65px;"></div></td>
+            <td><div class="skeleton-line" style="width: 75px;"></div></td>
+            <td><div class="skeleton-line" style="width: 120px;"></div></td>
+            <td><div class="skeleton-line" style="width: 65px; margin-left: auto;"></div></td>
+        </tr>
+    `).join("");
+}
+
 async function loadHosts() {
     const div = document.getElementById("hosts");
+    const tbody = document.getElementById("nocTableBody");
     if (!div) return;
+
+    if (!div.querySelector(".card") && !div.querySelector(".skeleton-wrap") && !div.querySelector(".ui-state")) {
+        div.innerHTML = buildSkeletonCardsHTML();
+    }
+    if (tbody && tbody.children.length === 0) {
+        tbody.innerHTML = buildSkeletonTableRowsHTML();
+    }
+
+    const thisRequestId = ++hostsListRequestId;
 
     try {
         const res = await fetchWithAuth(`${API}/hosts/list`);
@@ -1193,29 +1679,61 @@ async function loadHosts() {
             return;
         }
 
-        const hosts = await res.json();
-        if (!Array.isArray(hosts) || hosts.length === 0) {
-            div.innerHTML = "<div class='ui-state ui-state-empty'>Nenhum host cadastrado ainda.</div>";
+        const rawHosts = await res.json();
+        // Se uma requisição mais recente já foi iniciada, descarta a resposta obsoleta (previne race conditions)
+        if (thisRequestId !== hostsListRequestId) return;
+
+        if (!Array.isArray(rawHosts)) {
             return;
         }
 
-        if (div.querySelector(".ui-state")) {
+        // Blindagem contra race conditions: filtra imediatamente qualquer host com exclusão pendente
+        const hosts = rawHosts.filter((h) => !pendingDeletedHostNames.has(h.name));
+
+        if (hosts.length === 0) {
+            const existingCardNodes = Array.from(div.querySelectorAll(".card"));
+            for (const cardNode of existingCardNodes) {
+                const cardHostName = cardNode.id.replace("card-", "");
+                destroyChartsForHost(cardHostName);
+                cardNode.remove();
+            }
+            currentHostsMap.clear();
+            div.innerHTML = "<div class='ui-state ui-state-empty'>Nenhum host cadastrado ainda.</div>";
+            const tbody = document.getElementById("nocTableBody");
+            if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="noc-table-empty">Nenhum host monitorado no momento.</td></tr>';
+            const countBadge = document.getElementById("hostsCountBadge");
+            if (countBadge) {
+                countBadge.textContent = "0 hosts";
+                countBadge.classList.remove("is-filtered");
+            }
+            updateStatusChipCounts();
+            return;
+        }
+
+        if (div.querySelector(".ui-state") || div.querySelector(".skeleton-wrap")) {
             div.innerHTML = "";
         }
 
         const activeHostNames = new Set(hosts.map((h) => h.name));
+        currentHostsMap.clear();
+        for (const h of hosts) {
+            currentHostsMap.set(h.name, h);
+        }
 
-        // 1. Remover apenas cards de hosts que foram efetivamente excluídos
+        // 1. Remover apenas cards de hosts que foram efetivamente excluídos e liberar instâncias Chart.js
         const existingCardNodes = Array.from(div.querySelectorAll(".card"));
         for (const cardNode of existingCardNodes) {
             const cardHostName = cardNode.id.replace("card-", "");
-            if (!activeHostNames.has(cardHostName)) {
+            if (!activeHostNames.has(cardHostName) || pendingDeletedHostNames.has(cardHostName)) {
+                destroyChartsForHost(cardHostName);
                 cardNode.remove();
             }
         }
 
         // 2. Criar ou Atualizar cirurgicamente (in-place) cada card de host
         for (const h of hosts) {
+            if (pendingDeletedHostNames.has(h.name)) continue;
+
             let card = document.getElementById(`card-${h.name}`);
             const isNewCard = !card;
 
@@ -1237,25 +1755,37 @@ async function loadHosts() {
                 parseHostPorts(h),
                 !!h.http_enabled,
                 h.http_protocol,
-                h.http_latency,
+                h.http_latency ?? h.https_latency,
                 h.tcp_http_port_latency,
                 h.tcp_https_port_latency,
                 h.tcp_http_port_ok,
-                h.tcp_https_port_ok
+                h.tcp_https_port_ok,
+                h.status_ping,
+                h.latency_ping,
+                !!h.icmp_blocked_but_service_up,
+                h.status_tcp,
+                h.latency_tcp
             );
 
             // Atualiza gráficos ativos sem piscar
             refreshVisibleChartsForHost(h.name);
         }
 
-        // Reaplica o filtro de busca de forma transparente
-        const searchInput = document.getElementById("searchInput");
-        const statusFilter = document.getElementById("statusFilter");
-        if (searchInput?.value || (statusFilter && statusFilter.value !== "all")) {
-            filterHosts();
-        }
+        // 3. Renderiza tabela NOC em alta densidade (Fase 3)
+        renderNocTable(hosts);
+
+        // Sincroniza busca, filtros e badge de contagem
+        filterHosts();
+        updateStatusChipCounts();
     } catch (err) {
         console.error("Erro ao carregar lista de hosts:", err);
+        if (div.querySelector(".skeleton-wrap")) {
+            div.innerHTML = "<div class='ui-state ui-state-warning'>Não foi possível carregar os hosts.</div>";
+        }
+        const tbody = document.getElementById("nocTableBody");
+        if (tbody && tbody.querySelector(".skeleton-row")) {
+            tbody.innerHTML = '<tr><td colspan="9" class="noc-table-empty">Não foi possível carregar os dados da tabela.</td></tr>';
+        }
     }
 }
 
@@ -1318,25 +1848,90 @@ async function loadLastResult(
     tcpHttpPortLatency = null,
     tcpHttpsPortLatency = null,
     tcpHttpPortOk = null,
-    tcpHttpsPortOk = null
+    tcpHttpsPortOk = null,
+    statusPing = null,
+    latencyPing = null,
+    icmpBlocked = false,
+    statusTcp = null,
+    latencyTcp = null
 ) {
     const box = document.getElementById("result-" + name);
     if (!box) return;
 
-    const res = await fetchWithAuth(`${API}/host/history/${name}`);
-    
-    if (!res || !res.ok) return;
+    let lastPing = null;
+    let lastHttp = null;
 
-    const data = await res.json();
-    renderTcpPortsStatus(name, data.checks, expectedPorts);
+    if (statusPing === "UP" || statusPing === "DOWN") {
+        lastPing = {
+            success: statusPing === "UP",
+            latency: latencyPing,
+            error: statusPing === "DOWN" ? "timeout" : null,
+        };
+    }
+    if (httpEnabled) {
+        lastHttp = {
+            success: httpLatency !== null && httpLatency !== undefined,
+            latency: httpLatency,
+        };
+    }
 
-    const lastPing = data.checks.find(c => c.type === "ping");
-    const lastHttp = httpEnabled ? data.checks.find(c => c.type === "http") : null;
+    const normalizedPorts = Array.isArray(expectedPorts)
+        ? Array.from(new Set(expectedPorts.map((p) => Number(p)).filter((p) => Number.isInteger(p))))
+        : [];
+
+    if (normalizedPorts.length > 0) {
+        const canSynthesizeSingle =
+            normalizedPorts.length === 1 && (statusTcp === "UP" || statusTcp === "DOWN");
+        const canSynthesizeWebPorts =
+            normalizedPorts.every(
+                (p) =>
+                    (p === 80 && tcpHttpPortOk !== null && tcpHttpPortOk !== undefined) ||
+                    (p === 443 && tcpHttpsPortOk !== null && tcpHttpsPortOk !== undefined)
+            );
+
+        if (canSynthesizeSingle) {
+            const syntheticChecks = [{
+                type: "tcp",
+                tcp_port: normalizedPorts[0],
+                success: statusTcp === "UP",
+                latency: latencyTcp,
+                error: statusTcp === "DOWN" ? "timeout" : null,
+            }];
+            renderTcpPortsStatus(name, syntheticChecks, normalizedPorts);
+        } else if (canSynthesizeWebPorts) {
+            const syntheticChecks = normalizedPorts.map((p) => {
+                const ok = p === 80 ? !!tcpHttpPortOk : !!tcpHttpsPortOk;
+                const lat = p === 80 ? tcpHttpPortLatency : tcpHttpsPortLatency;
+                return {
+                    type: "tcp",
+                    tcp_port: p,
+                    success: ok,
+                    latency: lat,
+                    error: ok ? null : "timeout",
+                };
+            });
+            renderTcpPortsStatus(name, syntheticChecks, normalizedPorts);
+        } else {
+            const res = await fetchWithAuth(`${API}/host/history/${encodeURIComponent(name)}`);
+            if (!res || !res.ok) return;
+            const data = await res.json();
+            renderTcpPortsStatus(name, data.checks, normalizedPorts);
+            if (!lastPing) {
+                lastPing = data.checks.find(c => c.type === "ping");
+            }
+            if (httpEnabled && !lastHttp) {
+                lastHttp = data.checks.find(c => c.type === "http");
+            }
+        }
+    } else {
+        renderTcpPortsStatus(name, [], []);
+    }
 
     const pingLikelyFirewallBlocked =
-        !!lastPing &&
+        icmpBlocked ||
+        (!!lastPing &&
         !lastPing.success &&
-        (!!lastHttp && lastHttp.success);
+        (!!lastHttp && lastHttp.success));
 
     const pingDot = pingLikelyFirewallBlocked
         ? "bg-secondary"
@@ -1358,44 +1953,27 @@ async function loadLastResult(
             ? `${httpLatency} ms`
             : "Aguardando");
 
-    const formatAuxTcp = (enabled, latency, okFlag) => {
-        if (!enabled) return "-";
-        if (latency !== null && latency !== undefined) return `${latency} ms`;
-        if (okFlag === false) return "falha";
-        if (okFlag === true) return "sem dados";
-        return "Aguardando";
-    };
-
-    const portaHttpText = formatAuxTcp(httpEnabled, tcpHttpPortLatency, tcpHttpPortOk);
-    const portaHttpsText = formatAuxTcp(httpEnabled, tcpHttpsPortLatency, tcpHttpsPortOk);
-
     box.innerHTML = `
         <div>
             <span class="status-indicator ${pingDot}"></span>
-            Ping: ${pingLatencyText}
+            Ping: ${escapeHtml(pingLatencyText)}
         </div>
         <div>
             <span class="status-indicator ${webDot}"></span>
-            ${httpEnabled ? protocolLabel : "Web"}: ${httpEnabled ? protocolValue : "Inativo"}
-        </div>
-        <div>
-            <span class="status-indicator ${webDot}"></span>
-            HTTP (TCP 80): ${portaHttpText}
-        </div>
-        <div>
-            <span class="status-indicator ${webDot}"></span>
-            HTTPS (TCP 443): ${portaHttpsText}
+            ${escapeHtml(httpEnabled ? protocolLabel : "Web")}: ${escapeHtml(httpEnabled ? protocolValue : "Inativo")}
         </div>
     `;
 }
 
-async function loadHistory(name) {
+async function loadHistory(name, isRefresh = false) {
     const box = document.getElementById("history-" + name);
     if (!box) return;
-    box.innerHTML = "<div class='ui-state ui-state-info'>Carregando histórico...</div>";
+    if (!isRefresh && !box.querySelector(".history-line")) {
+        box.innerHTML = "<div class='ui-state ui-state-info'>Carregando histórico...</div>";
+    }
 
     try {
-        const res = await fetchWithAuth(`${API}/host/history/${name}`);
+        const res = await fetchWithAuth(`${API}/host/history/${encodeURIComponent(name)}`);
 
         if (!res || !res.ok) return;
 
@@ -1413,7 +1991,7 @@ async function loadHistory(name) {
             const statusText = c.success ? "OK" : "FAIL";
             const typeLabel = c.type === "tcp" && c.tcp_port
                 ? `TCP ${c.tcp_port}`
-                : c.type.toUpperCase();
+                : String(c.type || "").toUpperCase();
             const detailParts = [];
             if (c.status_code) detailParts.push(`HTTP ${c.status_code}`);
             if (c.error) detailParts.push(c.error);
@@ -1422,12 +2000,12 @@ async function loadHistory(name) {
             return `
                 <div class="history-line ${statusClass}">
                     <div class="history-line-top">
-                        <span class="type-badge">${typeLabel}</span>
+                        <span class="type-badge">${escapeHtml(typeLabel)}</span>
                         <span class="history-status">${statusText}</span>
                         <small class="history-time">${formatApiTime(c.timestamp)}</small>
                     </div>
                     <div class="history-line-bottom">
-                        <span class="history-detail">${detailText}</span>
+                        <span class="history-detail">${escapeHtml(detailText)}</span>
                     </div>
                 </div>
             `;
@@ -1436,7 +2014,9 @@ async function loadHistory(name) {
         box.innerHTML = `<div class="host-history-scroll">${linesHtml}</div>`;
 
     } catch {
-        box.innerHTML = "<div class='ui-state ui-state-error'>Erro ao carregar histórico</div>";
+        if (!isRefresh) {
+            box.innerHTML = "<div class='ui-state ui-state-error'>Erro ao carregar histórico</div>";
+        }
     }
 }
 
@@ -1497,32 +2077,67 @@ async function toggleAvailabilityChartType(name) {
 
 let currentEditHost = null;
 
+let lastFocusedElementBeforeModal = null;
+
+function openAppModal(modalEl) {
+    if (!modalEl) return;
+    lastFocusedElementBeforeModal = document.activeElement;
+    modalEl.classList.remove("hidden");
+    modalEl.setAttribute("aria-hidden", "false");
+
+    const focusable = modalEl.querySelector("input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex='-1'])");
+    if (focusable) {
+        setTimeout(() => {
+            try { focusable.focus(); } catch (e) {}
+        }, 50);
+    }
+}
+
+function closeAppModal(modalEl) {
+    if (!modalEl) return;
+    modalEl.classList.add("hidden");
+    modalEl.setAttribute("aria-hidden", "true");
+    if (lastFocusedElementBeforeModal && typeof lastFocusedElementBeforeModal.focus === "function") {
+        try { lastFocusedElementBeforeModal.focus(); } catch (e) {}
+    }
+}
+
 function openEditModal(name, ip, ports = [], httpUrl, httpEnabled = true, snmpEnabled = false, snmpCommunity = "netspot") {
     currentEditHost = name;
 
-    document.getElementById("modal-name").value = name;
-    document.getElementById("modal-ip").value = ip || "";
-    document.getElementById("modal-http-url").value = httpUrl || "";
+    const cached = currentHostsMap.get(name);
+    if (cached) {
+        ip = cached.address || ip;
+        ports = parseHostPorts(cached);
+        httpUrl = cached.http_url !== undefined ? (cached.http_url || "") : (httpUrl || "");
+        httpEnabled = cached.http_enabled !== false;
+        snmpEnabled = !!cached.snmp_enabled;
+        snmpCommunity = cached.snmp_community || "netspot";
+    }
+
+    const nameInput = document.getElementById("modal-name");
+    if (nameInput) nameInput.value = name;
+    const ipInput = document.getElementById("modal-ip");
+    if (ipInput) ipInput.value = ip || "";
+    const httpInput = document.getElementById("modal-http-url");
+    if (httpInput) httpInput.value = httpUrl || "";
     const modalHttpEnabled = document.getElementById("modal-http-enabled");
-    if (modalHttpEnabled) {
-        modalHttpEnabled.checked = !!httpEnabled;
-    }
+    if (modalHttpEnabled) modalHttpEnabled.checked = !!httpEnabled;
     const modalSnmpEnabled = document.getElementById("modal-snmp-enabled");
-    if (modalSnmpEnabled) {
-        modalSnmpEnabled.checked = !!snmpEnabled;
-    }
+    if (modalSnmpEnabled) modalSnmpEnabled.checked = !!snmpEnabled;
     const modalSnmpCommunity = document.getElementById("modal-snmp-community");
-    if (modalSnmpCommunity) {
-        modalSnmpCommunity.value = snmpCommunity || "netspot";
-    }
+    if (modalSnmpCommunity) modalSnmpCommunity.value = snmpCommunity || "netspot";
+
     setModalPorts(ports);
 
-    document.getElementById("editModal").classList.remove("hidden");
+    const modal = document.getElementById("editModal");
+    if (modal) openAppModal(modal);
 }
 
 function closeModal() {
-    document.getElementById("editModal").classList.add("hidden");
+    closeAppModal(document.getElementById("editModal"));
 }
+
 
 function formatBps(value) {
     if (value === null || value === undefined) return "N/A";
@@ -1534,6 +2149,32 @@ function formatBps(value) {
     if (bps < 1000_000_000) return `${(bps / 1000_000).toFixed(2)} Mbps`;
 
     return `${(bps / 1000_000_000).toFixed(2)} Gbps`;
+}
+
+function escapeHtml(str) {
+    if (str === null || str === undefined) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function escapeJsSingleQuotedAttr(val) {
+    return escapeHtml(JSON.stringify(val));
+}
+
+// Score de saúde + indicador + barra de progresso colorida pela severidade.
+function healthMeterHtml(h, severityIndicatorHtml = "") {
+    const score = Number(h.health_score);
+    const valid = h.health_score !== null && h.health_score !== undefined && Number.isFinite(score);
+    const pct = valid ? Math.max(0, Math.min(100, score)) : 0;
+    const sevMap = { HEALTHY: "sev-healthy", WARNING: "sev-warning", DEGRADED: "sev-degraded", CRITICAL: "sev-critical" };
+    const sev = sevMap[h.severity] || "sev-unknown";
+    return `${valid ? score : "N/A"}% ${severityIndicatorHtml}`
+        + `<span class="health-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}">`
+        + `<span class="health-meter-fill ${sev}" style="width:${pct}%"></span></span>`;
 }
 
 function calcRelativeBarWidth(value, maxValue) {
@@ -1608,6 +2249,7 @@ function chartCommonOptions(yMin = null, yMax = null, yLabel = "") {
     return {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
         plugins: {
             legend: {
                 labels: {
@@ -1617,7 +2259,8 @@ function chartCommonOptions(yMin = null, yMax = null, yLabel = "") {
                         size: 11,
                         weight: '500'
                     },
-                    boxWidth: 12,
+                    boxWidth: 8,
+                    usePointStyle: true,
                     padding: 15
                 }
             },
@@ -1723,6 +2366,23 @@ function updateOrCreateChart(chartKey, canvasEl, config) {
     current.update("none");
 }
 
+function destroyChartsForHost(name) {
+    if (!name) return;
+    const suffix = `-${name}`;
+    for (const key of Object.keys(charts)) {
+        if (key.endsWith(suffix) || key === name) {
+            try {
+                if (typeof charts[key]?.destroy === "function") {
+                    charts[key].destroy();
+                }
+            } catch (e) {
+                console.warn("Erro ao destruir gráfico do host:", name, e);
+            }
+            delete charts[key];
+        }
+    }
+}
+
 function parseApiDate(value) {
     if (!value) return null;
 
@@ -1768,14 +2428,32 @@ function formatMetric(value, suffix = "", digits = 2) {
 }
 
 async function submitModalEdit() {
-    const newName = document.getElementById("modal-name").value;
-    const newIp = document.getElementById("modal-ip").value;
-    const newHttp = document.getElementById("modal-http-url").value;
-    const newHttpEnabled = !!document.getElementById("modal-http-enabled")?.checked;
-    const newSnmpEnabled = !!document.getElementById("modal-snmp-enabled")?.checked;
+    if (!currentEditHost) return;
+    const nameInput = document.getElementById("modal-name");
+    const ipInput = document.getElementById("modal-ip");
+    const httpInput = document.getElementById("modal-http-url");
+    const httpEnabledInput = document.getElementById("modal-http-enabled");
+    const snmpEnabledInput = document.getElementById("modal-snmp-enabled");
     const modalSnmpCommInput = document.getElementById("modal-snmp-community");
-    const newSnmpComm = (modalSnmpCommInput?.value || "").trim() || "netspot";
     const modalPortsContainer = document.getElementById("modalPortsContainer");
+
+    const newName = (nameInput?.value || "").trim();
+    if (!newName) {
+        showToast("warning", "O nome do host é obrigatório.");
+        return;
+    }
+
+    const newIp = (ipInput?.value || "").trim();
+    if (!newIp) {
+        showToast("warning", "O endereço/IP é obrigatório.");
+        return;
+    }
+
+    const newHttp = (httpInput?.value || "").trim();
+    const newHttpEnabled = !!httpEnabledInput?.checked;
+    const newSnmpEnabled = !!snmpEnabledInput?.checked;
+    const newSnmpComm = (modalSnmpCommInput?.value || "").trim() || "netspot";
+
     let ports = [];
     try {
         ports = collectPorts(modalPortsContainer);
@@ -1784,33 +2462,61 @@ async function submitModalEdit() {
         return;
     }
 
-    const res = await fetchWithAuth(`${API}/host/update/${currentEditHost}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            address: newIp,
-            ports,
-            port: ports.length ? ports[0] : null,
-            url: newHttp || null,
-            http_url: newHttp || null,
-            http_enabled: newHttpEnabled,
-            snmp_enabled: newSnmpEnabled,
-            snmp_community: newSnmpComm
-        })
-    });
+    const saveBtn = document.querySelector("#editModal .modal-actions button.modal-btn-primary")
+        || document.querySelector("#editModal .modal-actions button:first-child");
+    const originalText = getButtonLabel(saveBtn, "Salvar");
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        setButtonLabel(saveBtn, "Salvando...");
+    }
 
-    if (res.ok) {
-        closeModal();
-        await loadHosts();
-        showToast("success", "Host atualizado com sucesso.");
-    } else {
-        showToast("error", "Erro ao salvar alterações do host.");
+    const oldHostName = currentEditHost;
+
+    try {
+        const res = await fetchWithAuth(`${API}/host/update/${encodeURIComponent(oldHostName)}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name: newName,
+                address: newIp,
+                ports,
+                port: ports.length ? ports[0] : null,
+                url: newHttp || null,
+                http_url: newHttp || null,
+                http_enabled: newHttpEnabled,
+                snmp_enabled: newSnmpEnabled,
+                snmp_community: newSnmpComm
+            })
+        });
+
+        if (res && res.ok) {
+            closeModal();
+            showToast("success", "Host atualizado com sucesso.");
+            // Se o nome foi alterado, limpa os gráficos associados e remove o cartão antigo
+            if (newName !== oldHostName) {
+                destroyChartsForHost(oldHostName);
+                const oldCard = document.getElementById(`card-${oldHostName}`);
+                if (oldCard) oldCard.remove();
+                currentHostsMap.delete(oldHostName);
+            }
+            await loadHosts();
+        } else {
+            const errData = res ? await res.json().catch(() => ({})) : {};
+            showToast("error", errData.detail || "Erro ao salvar alterações do host.");
+        }
+    } catch (err) {
+        showToast("error", "Não foi possível conectar ao servidor.");
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            setButtonLabel(saveBtn, originalText);
+        }
     }
 }
 
 async function loadLatencyChart(name) {
     const chartKey = `latency-${name}`;
-    const res = await fetchWithAuth(`${API}/host/history/${name}`);
+    const res = await fetchWithAuth(`${API}/host/history/${encodeURIComponent(name)}`);
     
     if (!res || !res.ok) return;
 
@@ -1885,12 +2591,16 @@ async function loadLatencyChart(name) {
         return {
             label: series.label,
             data: values,
-            borderColor: colors.line,
-            backgroundColor: colors.fill,
-            tension: 0.3,
-            spanGaps: true,
+            ...window.NetSpotChartTheme.lineStyle(colors.line, { fill: orderedSeries.length === 1 }),
         };
     });
+
+    window.NetSpotChartTheme.renderSummary(ctx, datasets.map((ds) => ({
+        label: ds.label,
+        color: ds.borderColor,
+        values: ds.data,
+        fmt: (v) => `${v.toFixed(1)} ms`,
+    })));
 
     updateOrCreateChart(chartKey, ctx, {
         type: "line",
@@ -1905,7 +2615,7 @@ async function loadLatencyChart(name) {
 async function loadSnmpChart(name) {
     const chartKey = `snmp-${name}`;
 
-    const res = await fetchWithAuth(`${API}/metrics/snmp/${name}`);
+    const res = await fetchWithAuth(`${API}/metrics/snmp/${encodeURIComponent(name)}`);
     if (!res || !res.ok) return;
 
     const data = await res.json();
@@ -1936,96 +2646,87 @@ async function loadSnmpChart(name) {
     const ctx = document.getElementById("snmp-chart-" + name);
     if (!ctx) return;
 
+    const T = window.NetSpotChartTheme;
+
+    const hasCpu = cpu.some(v => v !== null && v !== undefined);
+    const hasRam = ram.some(v => v !== null && v !== undefined);
+    const hasDisk = disk.some(v => v !== null && v !== undefined);
+    const hasRx = rx.some(v => v !== null && v !== undefined);
+    const hasTx = tx.some(v => v !== null && v !== undefined);
+
+    const datasets = [];
+    const summaryItems = [];
+
+    if (hasCpu) {
+        datasets.push({ label: "CPU (%)", data: cpu, ...T.lineStyle(cpuColor, { yAxisID: "y_percent" }) });
+        summaryItems.push({ label: "CPU", color: cpuColor, values: cpu, fmt: metricPercent });
+    }
+    if (hasRam) {
+        datasets.push({ label: "RAM (%)", data: ram, ...T.lineStyle(ramColor, { fill: false, yAxisID: "y_percent" }) });
+        summaryItems.push({ label: "RAM", color: ramColor, values: ram, fmt: metricPercent });
+    }
+    if (hasDisk) {
+        datasets.push({ label: "Disco (%)", data: disk, ...T.lineStyle(diskColor, { fill: false, yAxisID: "y_percent" }) });
+        summaryItems.push({ label: "Disco", color: diskColor, values: disk, fmt: metricPercent });
+    }
+    if (hasRx) {
+        datasets.push({ label: "Download (RX)", data: rx, ...T.lineStyle(rxColor, { fill: false, yAxisID: "y_bps" }) });
+        summaryItems.push({ label: "Download", color: rxColor, values: rx, fmt: formatBps });
+    }
+    if (hasTx) {
+        datasets.push({ label: "Upload (TX)", data: tx, ...T.lineStyle(txColor, { fill: false, yAxisID: "y_bps" }) });
+        summaryItems.push({ label: "Upload", color: txColor, values: tx, fmt: formatBps });
+    }
+
+    T.renderSummary(ctx, summaryItems);
+
+    // Eixos: % (esquerda, com faixas de limiar) e bps (direita, agora visível e legível).
+    const opts = chartCommonOptions();
+    const axisTitle = opts.scales.y.title;
+    const axisTicks = opts.scales.y.ticks;
+    opts.scales = {
+        x: opts.scales.x,
+        y_percent: {
+            ...opts.scales.y,
+            type: "linear",
+            position: "left",
+            min: 0,
+            max: 100,
+            title: { ...axisTitle, display: true, text: "Uso (%)" },
+        },
+        y_bps: {
+            type: "linear",
+            position: "right",
+            min: 0,
+            grid: { drawOnChartArea: false },
+            title: { ...axisTitle, display: true, text: "Rede" },
+            ticks: { ...axisTicks, callback: (v) => formatBps(v) },
+        },
+    };
+    opts.plugins.thresholdBands = T.thresholdBands("y_percent", T.percentBands(80, 95));
+    opts.plugins.tooltip.callbacks = {
+        label: (c) => {
+            if (c.dataset.yAxisID === "y_percent") {
+                const value = Number(c.parsed.y);
+                return `${c.dataset.label}: ${Number.isFinite(value) ? value.toFixed(2) : "N/A"}%`;
+            }
+            return `${c.dataset.label}: ${formatBps(c.parsed.y)}`;
+        }
+    };
+
     updateOrCreateChart(chartKey, ctx, {
         type: "line",
         data: {
             labels,
-            datasets: [
-                {
-                    label: "CPU (%)",
-                    data: cpu,
-                    borderColor: cpuColor,
-                    backgroundColor: cpuColor + "33",
-                    yAxisID: "y_percent",
-                    tension: 0.3
-                },
-                {
-                    label: "RAM (%)",
-                    data: ram,
-                    borderColor: ramColor,
-                    backgroundColor: ramColor + "33",
-                    yAxisID: "y_percent",
-                    tension: 0.3
-                },
-                {
-                    label: "Disco (%)",
-                    data: disk,
-                    borderColor: diskColor,
-                    backgroundColor: diskColor + "33",
-                    yAxisID: "y_percent",
-                    tension: 0.3
-                },
-                {
-                    label: "Download (RX)",
-                    data: rx,
-                    borderColor: rxColor,
-                    backgroundColor: rxColor + "33",
-                    yAxisID: "y_bps",
-                    tension: 0.3
-                },
-                {
-                    label: "Upload (TX)",
-                    data: tx,
-                    borderColor: txColor,
-                    backgroundColor: txColor + "33",
-                    yAxisID: "y_bps",
-                    tension: 0.3
-                }
-            ]
+            datasets
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => {
-                            if (ctx.dataset.yAxisID === "y_percent") {
-                                const value = Number(ctx.parsed.y);
-                                return `${ctx.dataset.label}: ${Number.isFinite(value) ? value.toFixed(2) : "N/A"}%`;
-                            }
-                            return `${ctx.dataset.label}: ${formatBps(ctx.parsed.y)}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y_percent: {
-                    type: "linear",
-                    position: "left",
-                    min: 0,
-                    max: 100,
-                    title: {
-                        display: true,
-                        text: "Uso (%)"
-                    }
-                },
-                y_bps: {
-                    type: "linear",
-                    position: "right",
-                    display: false,
-                    grid: {
-                        drawOnChartArea: false
-                    }
-                }
-            }
-        }
+        options: opts
     });
 }
 
 async function loadAvailabilityChartType(name) {
 
-    const res = await fetchWithAuth(`${API}/hosts/metrics/availability/type/${name}`);
+    const res = await fetchWithAuth(`${API}/hosts/metrics/availability/type/${encodeURIComponent(name)}`);
     if (!res || !res.ok) return;
 
     const data = await res.json();
@@ -2034,20 +2735,18 @@ async function loadAvailabilityChartType(name) {
     const tcp  = takeLast(data.tcp || []);
     const http = takeLast(data.http || []);
 
-    const base = ping.length ? ping : (tcp.length ? tcp : http);
-
-    const labels = base.map(p => formatApiTime(p.timestamp));
-
-    const pingValues = ping.map(p => p.availability);
-    const tcpValues  = tcp.map(p => p.availability);
-    const httpValues = http.map(p => p.availability);
-
     const ctx = document.getElementById("availability-chart-type-" + name);
     if (!ctx) return;
 
     const chartKey = `availability-type-${name}`;
 
-    if (!labels.length) {
+    // Apenas protocolos que realmente possuem dados monitorados para este host
+    const activeSeries = [];
+    if (ping.length) activeSeries.push({ key: "ping", label: "Ping", points: ping });
+    if (tcp.length)  activeSeries.push({ key: "tcp",  label: "TCP",  points: tcp });
+    if (http.length) activeSeries.push({ key: "http", label: "HTTP", points: http });
+
+    if (!activeSeries.length) {
         showChartEmpty(
             "availability-chart-type-box-" + name,
             "availability-chart-type-" + name,
@@ -2057,43 +2756,64 @@ async function loadAvailabilityChartType(name) {
     }
     clearChartEmpty("availability-chart-type-box-" + name, "availability-chart-type-" + name);
 
+    // Unifica e ordena cronologicamente todos os timestamps das séries ativas
+    const timestampSet = new Set();
+    activeSeries.forEach((s) => {
+        s.points.forEach((p) => {
+            if (p.timestamp) timestampSet.add(p.timestamp);
+        });
+    });
+    const sortedTimestamps = Array.from(timestampSet).sort();
+
+    const labels = sortedTimestamps.map((ts) => formatApiTime(ts));
+
     const isDark = document.body.classList.contains("dark-theme") || document.documentElement.classList.contains("dark-theme");
-    const pingColor = isDark ? "#81c995" : "#1e8e3e";
-    const tcpColor = isDark ? "#8ab4f8" : "#1a73e8";
-    const httpColor = isDark ? "#fde293" : "#f9ab00";
+    const colorMap = {
+        ping: isDark ? "#81c995" : "#1e8e3e",
+        tcp:  isDark ? "#8ab4f8" : "#1a73e8",
+        http: isDark ? "#fde293" : "#f9ab00",
+    };
+
+    const T = window.NetSpotChartTheme;
+    const datasets = [];
+    const summaryItems = [];
+
+    activeSeries.forEach((s) => {
+        const color = colorMap[s.key] || "#8ab4f8";
+        const mapByTs = new Map(s.points.map((p) => [p.timestamp, p.availability]));
+        const alignedValues = sortedTimestamps.map((ts) => (mapByTs.has(ts) ? mapByTs.get(ts) : null));
+        const rawValues = s.points.map((p) => p.availability);
+
+        datasets.push({
+            label: `Disponibilidade ${s.label} (%)`,
+            data: alignedValues,
+            spanGaps: true,
+            ...T.lineStyle(color, { fill: false })
+        });
+
+        summaryItems.push({
+            label: s.label,
+            color: color,
+            values: rawValues,
+            fmt: (v) => `${Number(v).toFixed(1)}%`
+        });
+    });
+
+    T.renderSummary(ctx, summaryItems);
+
+    const availOpts = chartCommonOptions(0, 100, "Disponibilidade (%)");
+    availOpts.plugins.thresholdBands = T.thresholdBands("y", [
+        { from: 0, to: 85, color: "rgba(217,48,37,0.08)" },
+        { from: 85, to: 95, color: "rgba(249,171,0,0.09)" },
+    ]);
 
     updateOrCreateChart(chartKey, ctx, {
         type: "line",
         data: {
             labels: labels,
-            datasets: [
-                {
-                    label: "Disponibilidade Ping (%)",
-                    data: pingValues,
-                    borderColor: pingColor,
-                    backgroundColor: pingColor + "33",
-                    tension: 0.3,
-                    fill: true
-                },
-                {
-                    label: "Disponibilidade TCP (%)",
-                    data: tcpValues,
-                    borderColor: tcpColor,
-                    backgroundColor: tcpColor + "33",
-                    tension: 0.3,
-                    fill: true
-                },
-                {
-                    label: "Disponibilidade HTTP (%)",
-                    data: httpValues,
-                    borderColor: httpColor,
-                    backgroundColor: httpColor + "33",
-                    tension: 0.3,
-                    fill: true
-                }
-            ]
+            datasets: datasets
         },
-        options: chartCommonOptions(null, null, "Disponibilidade (%)")
+        options: availOpts
     });
 }
 
@@ -2121,8 +2841,11 @@ function hostVisualState(host) {
     if (status === "DOWN") {
         return { cardClass: "card-state-down", badgeClass: "state-down", label: "DOWN" };
     }
-    if (status === "DEGRADED" || severity === "DEGRADED" || severity === "WARNING") {
+    if (status === "DEGRADED" || severity === "DEGRADED") {
         return { cardClass: "card-state-degraded", badgeClass: "state-degraded", label: "DEGRADED" };
+    }
+    if (severity === "WARNING") {
+        return { cardClass: "card-state-degraded", badgeClass: "state-degraded", label: "WARNING" };
     }
     return { cardClass: "card-state-up", badgeClass: "state-up", label: "UP" };
 }
@@ -2178,6 +2901,10 @@ function closeHostExpandedPanels(hostName, exceptId = null) {
     });
 }
 
+function setHostFace(hostName, faceNumber) {
+    updateHostFace(hostName, faceNumber);
+}
+
 function updateHostFace(hostName, faceNumber) {
     const card = document.getElementById(`card-${hostName}`);
     if (!card) return;
@@ -2187,15 +2914,24 @@ function updateHostFace(hostName, faceNumber) {
     const safeFace = Math.max(1, Math.min(3, Number(faceNumber) || 1));
     card.dataset.face = String(safeFace);
 
+    const FACE_NAMES = {
+        1: "Resumo e status",
+        2: "Métricas de rede e latência",
+        3: "Hardware e tráfego SNMP"
+    };
+
     faces.forEach((face) => {
         const n = Number(face.getAttribute("data-face"));
         face.classList.toggle("active", n === safeFace);
     });
 
-    const prevBtn = card.querySelector(".face-prev-btn");
-    const nextBtn = card.querySelector(".face-next-btn");
-    if (prevBtn) prevBtn.classList.toggle("hidden", safeFace <= 1);
-    if (nextBtn) nextBtn.classList.toggle("hidden", safeFace >= 3);
+    // Atualiza pílulas segmentadas de navegação
+    card.querySelectorAll(".face-pill").forEach((pill) => {
+        const pNum = Number(pill.getAttribute("data-face-num"));
+        const isActive = pNum === safeFace;
+        pill.classList.toggle("active", isActive);
+        pill.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
 }
 
 function nextHostFace(hostName) {
@@ -2208,6 +2944,57 @@ function prevHostFace(hostName) {
     const card = document.getElementById(`card-${hostName}`);
     const current = Number(card?.dataset?.face || 1);
     updateHostFace(hostName, current - 1);
+}
+
+async function copyHostAddress(address, btnEl, event) {
+    if (event) event.stopPropagation();
+    if (!address) return;
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(address);
+        } else {
+            const ta = document.createElement("textarea");
+            ta.value = address;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+        }
+
+        if (btnEl) {
+            btnEl.classList.add("copied");
+            const originalSvg = btnEl.innerHTML;
+            btnEl.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            setTimeout(() => {
+                btnEl.classList.remove("copied");
+                btnEl.innerHTML = originalSvg;
+            }, 1400);
+        }
+        showToast("success", `Endereço "${address}" copiado!`);
+    } catch (err) {
+        showToast("error", `Não foi possível copiar: ${err}`);
+    }
+}
+
+function togglePasswordVisibility(inputId, btnEl) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    const isPassword = input.type === "password";
+    input.type = isPassword ? "text" : "password";
+
+    if (btnEl) {
+        const eyeOpen = btnEl.querySelector(".eye-open");
+        const eyeClosed = btnEl.querySelector(".eye-closed");
+        if (eyeOpen && eyeClosed) {
+            eyeOpen.classList.toggle("hidden", isPassword);
+            eyeClosed.classList.toggle("hidden", !isPassword);
+        }
+        const label = isPassword ? "Ocultar senha" : "Mostrar senha";
+        btnEl.title = label;
+        btnEl.setAttribute("aria-label", label);
+        btnEl.setAttribute("aria-pressed", isPassword ? "true" : "false");
+    }
 }
 
 function alertSeverityClass(severity) {
@@ -2286,13 +3073,13 @@ function showAlertCard(alert) {
 
     card.innerHTML = `
         <div class="alert-header">
-            <strong>${alert.host_name}</strong>
+            <strong>${escapeHtml(alert.host_name)}</strong>
         </div>
         <div class="alert-subtitle">
-            ${showRawTransition ? rawTransitionText : transitionText}
+            ${escapeHtml(showRawTransition ? rawTransitionText : transitionText)}
         </div>
         <div class="alert-subtitle">
-            ${alert.host_address}${alert.host_port ? `:${alert.host_port}` : ""} | ${alertTypeLabel(alert.alert_type ?? "STATUS_CHANGE")}
+            ${escapeHtml(alert.host_address)}${alert.host_port ? `:${escapeHtml(alert.host_port)}` : ""} | ${escapeHtml(alertTypeLabel(alert.alert_type ?? "STATUS_CHANGE"))}
         </div>
         <div class="alert-subtitle">
             ${formatApiDateTime(alert.timestamp)}
@@ -2415,75 +3202,425 @@ async function checkAlerts() {
 }
 
 async function softDeleteHost(hostId, hostName) {
-
+    if (!hostName) return;
+    if (pendingDeletedHostNames.has(hostName)) return; // Previne cliques duplicados
     if (!confirm(`Mover host "${hostName}" para a lixeira?`)) return;
+
+    // Registra como exclusão pendente imediatamente para blindar contra respostas concorrentes de polling
+    pendingDeletedHostNames.add(hostName);
+    currentHostsMap.delete(hostName);
+
+    // Destrói gráficos ativos para liberar memória
+    destroyChartsForHost(hostName);
+
+    // Remoção visual imediata/otimista do card e linha da tabela NOC
+    const cardNode = document.getElementById(`card-${hostName}`);
+    if (cardNode) {
+        cardNode.style.transition = "opacity 0.2s ease, transform 0.2s ease";
+        cardNode.style.opacity = "0";
+        cardNode.style.transform = "scale(0.95)";
+        setTimeout(() => {
+            if (cardNode.parentNode) {
+                cardNode.remove();
+                const hostsDiv = document.getElementById("hosts");
+                if (hostsDiv && !hostsDiv.querySelector(".card")) {
+                    hostsDiv.innerHTML = "<div class='ui-state ui-state-empty'>Nenhum host cadastrado ainda.</div>";
+                }
+            }
+        }, 200);
+    }
+    const rowNode = document.getElementById(`row-${hostName}`);
+    if (rowNode) {
+        rowNode.style.transition = "opacity 0.2s ease";
+        rowNode.style.opacity = "0";
+        setTimeout(() => {
+            if (rowNode.parentNode) rowNode.remove();
+        }, 200);
+    }
 
     try {
         const res = await fetchWithAuth(`${API}/hosts/${hostId}/deactivate?host_name=${encodeURIComponent(hostName)}`, {
             method: "POST"
         });
 
-        if (!res.ok) {
-            const err = await res.json();
+        if (!res || !res.ok) {
+            const err = res ? await res.json() : {};
+            pendingDeletedHostNames.delete(hostName);
             showToast("error", "Erro ao mover para lixeira: " + (err.detail || "erro"));
+            await loadHosts();
             return;
         }
 
-        await loadHosts();
-        await loadTrashHosts();
+        selectedBulkDeactivateNames.delete(hostName);
         showToast("success", "Host movido para a lixeira.");
+        await Promise.all([
+            loadHosts(),
+            loadTrashHosts(),
+            loadBulkDeactivateHosts(),
+            loadDashboardSummary()
+        ]);
+
+        // Mantém proteção de 2 segundos para drenar qualquer resposta de rede concorrente defasada
+        setTimeout(() => {
+            pendingDeletedHostNames.delete(hostName);
+        }, 2000);
 
     } catch (e) {
+        pendingDeletedHostNames.delete(hostName);
         showToast("error", "Falha de conexão com a API.");
+        await loadHosts();
     }
 }
 
 async function loadTrashHosts() {
     const box = document.getElementById("trashHostsList");
+    const emptyBtn = document.getElementById("emptyTrashBtn");
     if (!box) return;
 
     try {
         const res = await fetchWithAuth(`${API}/hosts/trash`);
         if (!res || !res.ok) {
             box.innerHTML = "<small>Não foi possível carregar a lixeira.</small>";
+            if (emptyBtn) emptyBtn.disabled = true;
             return;
         }
 
         const hosts = await res.json();
         if (!Array.isArray(hosts) || hosts.length === 0) {
-            box.innerHTML = "<small>Nenhum host na lixeira.</small>";
+            box.innerHTML = "<div class='ui-state ui-state-empty' style='text-align: center; padding: 20px; margin: 8px 0;'>A lixeira está vazia.</div>";
+            if (emptyBtn) emptyBtn.disabled = true;
             return;
         }
+
+        if (emptyBtn) emptyBtn.disabled = false;
 
         box.innerHTML = hosts.map((host) => `
             <div class="trash-item">
                 <div class="trash-meta">
-                    <strong>${host.name}</strong>
-                    <small>${host.address}${host.port ? `:${host.port}` : ""}</small>
+                    <strong>${escapeHtml(host.name)}</strong>
+                    <small>${escapeHtml(host.address)}${host.port ? `:${escapeHtml(host.port)}` : ""}</small>
                     <small>Desativado em: ${formatApiDateTime(host.deleted_at)}</small>
                 </div>
                 <div class="trash-actions">
-                    <button onclick='restoreHost(${host.id}, ${JSON.stringify(host.name)})'>Restaurar</button>
-                    <button class="danger-btn" onclick='hardDeleteHost(${host.id}, ${JSON.stringify(host.name)})'>Excluir permanentemente</button>
+                    <button onclick='restoreHost(${Number(host.id)}, ${escapeJsSingleQuotedAttr(String(host.name))})'>Restaurar</button>
+                    <button class="danger-btn" onclick='hardDeleteHost(${Number(host.id)}, ${escapeJsSingleQuotedAttr(String(host.name))})'>Excluir permanentemente</button>
                 </div>
             </div>
         `).join("");
     } catch (err) {
         box.innerHTML = "<small>Erro ao carregar lixeira.</small>";
+        if (emptyBtn) emptyBtn.disabled = true;
     }
+}
+
+let bulkDeactivateHostsCache = [];
+const selectedBulkDeactivateNames = new Set();
+
+function updateBulkDeactivateSelectionUI() {
+    const checkboxes = Array.from(document.querySelectorAll("#bulkDeactivateHostsList .bulk-deactivate-check:not(:disabled)"));
+    const selectAllBtn = document.getElementById("selectAllBulkDeactivateBtn");
+    const actionBtn = document.getElementById("bulkDeactivateSelectedBtn");
+    const infoEl = document.getElementById("bulkDeactivateSelectionInfo");
+
+    const totalActive = bulkDeactivateHostsCache.length;
+    const selectedCount = selectedBulkDeactivateNames.size;
+
+    if (infoEl) {
+        infoEl.textContent = `${selectedCount} selecionado(s) de ${totalActive} host(s)`;
+    }
+    if (actionBtn) {
+        actionBtn.disabled = selectedCount === 0;
+        const trashIconSvg = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6l1 2h4v2H4V6h4l1-2zm-2 6h2v8H7v-8zm4 0h2v8h-2v-8zm4 0h2v8h-2v-8z"/></svg>`;
+        const actionLabel = selectedCount > 0
+            ? `Mover selecionados (${selectedCount})`
+            : "Mover selecionados para lixeira";
+        actionBtn.innerHTML = `${trashIconSvg}<span>${actionLabel}</span>`;
+    }
+    if (selectAllBtn) {
+        selectAllBtn.disabled = checkboxes.length === 0;
+        const allVisibleChecked = checkboxes.length > 0 && checkboxes.every((cb) => cb.checked);
+        const iconSvg = allVisibleChecked
+            ? `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>`
+            : `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="9 11 12 14 22 4"></polyline></svg>`;
+        selectAllBtn.innerHTML = `${iconSvg}<span>${allVisibleChecked ? "Desmarcar todos" : "Selecionar todos"}</span>`;
+    }
+}
+
+function renderBulkDeactivateHostsList() {
+    const box = document.getElementById("bulkDeactivateHostsList");
+    const searchInput = document.getElementById("bulkDeactivateSearchInput");
+    if (!box) return;
+
+    const query = String(searchInput?.value || "").trim().toLowerCase();
+    const activeNamesSet = new Set(bulkDeactivateHostsCache.map((h) => h.name));
+    for (const name of Array.from(selectedBulkDeactivateNames)) {
+        if (!activeNamesSet.has(name)) {
+            selectedBulkDeactivateNames.delete(name);
+        }
+    }
+
+    if (bulkDeactivateHostsCache.length === 0) {
+        box.innerHTML = "<div class='ui-state ui-state-empty' style='text-align: center; padding: 20px; margin: 8px 0;'>Nenhum host ativo no momento.</div>";
+        updateBulkDeactivateSelectionUI();
+        return;
+    }
+
+    const filtered = bulkDeactivateHostsCache.filter((h) => {
+        if (!query) return true;
+        const nameStr = String(h.name || "").toLowerCase();
+        const addrStr = String(h.address || "").toLowerCase();
+        const resolvedStr = String(h.last_resolved_ip || "").toLowerCase();
+        return nameStr.includes(query) || addrStr.includes(query) || resolvedStr.includes(query);
+    });
+
+    if (filtered.length === 0) {
+        box.innerHTML = "<div class='ui-state ui-state-empty' style='text-align: center; padding: 20px; margin: 8px 0;'>Nenhum host encontrado para esse filtro.</div>";
+        updateBulkDeactivateSelectionUI();
+        return;
+    }
+
+    box.innerHTML = filtered.map((host) => {
+        const isChecked = selectedBulkDeactivateNames.has(host.name) ? "checked" : "";
+        let statusDot = "bg-secondary";
+        if (host.status === "UP") statusDot = "bg-success";
+        else if (host.status === "DOWN") statusDot = "bg-danger";
+        else if (host.status === "DEGRADED") statusDot = "bg-warning";
+
+        const addrLabel = formatHostAddressLabel(host);
+        return `
+            <label class="trash-item bulk-select-item">
+                <div class="bulk-select-left">
+                    <input
+                        type="checkbox"
+                        class="bulk-deactivate-check"
+                        data-id="${Number(host.id)}"
+                        data-name="${escapeHtml(String(host.name))}"
+                        ${isChecked}
+                    >
+                    <div class="trash-meta">
+                        <strong>
+                            <span class="status-indicator ${statusDot}" style="display:inline-block; margin-right:6px;"></span>${escapeHtml(host.name)}
+                        </strong>
+                        <small>${escapeHtml(addrLabel)}</small>
+                    </div>
+                </div>
+                <div class="trash-actions">
+                    <button
+                        type="button"
+                        class="danger-btn"
+                        onclick='event.preventDefault(); event.stopPropagation(); softDeleteHost(${Number(host.id)}, ${escapeJsSingleQuotedAttr(String(host.name))})'
+                    >Mover 1 para lixeira</button>
+                </div>
+            </label>
+        `;
+    }).join("");
+
+    updateBulkDeactivateSelectionUI();
+}
+
+async function loadBulkDeactivateHosts() {
+    const box = document.getElementById("bulkDeactivateHostsList");
+    if (!box) return;
+
+    try {
+        const res = await fetchWithAuth(`${API}/hosts/list`);
+        if (!res || !res.ok) {
+            box.innerHTML = "<small>Não foi possível carregar os hosts ativos.</small>";
+            return;
+        }
+        const rawHosts = await res.json();
+        bulkDeactivateHostsCache = Array.isArray(rawHosts)
+            ? rawHosts.filter((h) => !pendingDeletedHostNames.has(h.name))
+            : [];
+        renderBulkDeactivateHostsList();
+    } catch (err) {
+        box.innerHTML = "<small>Erro ao carregar hosts ativos.</small>";
+    }
+}
+
+async function bulkDeactivateSelectedHosts() {
+    const selectedHosts = bulkDeactivateHostsCache.filter((h) => selectedBulkDeactivateNames.has(h.name));
+    if (selectedHosts.length === 0) {
+        showToast("warning", "Selecione pelo menos um host para enviar à lixeira.");
+        return;
+    }
+
+    if (!confirm(`Mover ${selectedHosts.length} host(s) selecionado(s) para a lixeira?`)) {
+        return;
+    }
+
+    const hostIds = selectedHosts.map((h) => Number(h.id)).filter((id) => Number.isFinite(id));
+    const hostNames = selectedHosts.map((h) => String(h.name));
+
+    const actionBtn = document.getElementById("bulkDeactivateSelectedBtn");
+    if (actionBtn) {
+        actionBtn.disabled = true;
+        setButtonLabel(actionBtn, "Movendo...");
+    }
+
+    // Remoção visual imediata no Dashboard e proteção contra race condition de polling
+    for (const hostName of hostNames) {
+        pendingDeletedHostNames.add(hostName);
+        destroyChartsForHost(hostName);
+        currentHostsMap.delete(hostName);
+        const cardNode = document.getElementById(`card-${hostName}`);
+        if (cardNode) cardNode.remove();
+        const rowNode = document.getElementById(`row-${hostName}`);
+        if (rowNode) rowNode.remove();
+    }
+    const hostsDiv = document.getElementById("hosts");
+    if (hostsDiv && !hostsDiv.querySelector(".card")) {
+        hostsDiv.innerHTML = "<div class='ui-state ui-state-empty'>Nenhum host cadastrado ainda.</div>";
+    }
+    updateStatusChipCounts();
+
+    try {
+        const res = await fetchWithAuth(`${API}/hosts/bulk-deactivate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                host_ids: hostIds,
+                host_names: hostNames
+            })
+        });
+
+        if (!res || !res.ok) {
+            const err = res ? await res.json().catch(() => ({})) : {};
+            for (const hostName of hostNames) {
+                pendingDeletedHostNames.delete(hostName);
+            }
+            showToast("error", "Erro ao mover hosts para lixeira: " + (err.detail || "erro"));
+            await Promise.all([loadHosts(), loadBulkDeactivateHosts()]);
+            return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        for (const hostName of hostNames) {
+            selectedBulkDeactivateNames.delete(hostName);
+        }
+
+        showToast("success", data.detail || `${hostNames.length} host(s) movido(s) para a lixeira.`);
+        await Promise.all([
+            loadHosts(),
+            loadTrashHosts(),
+            loadBulkDeactivateHosts(),
+            loadDashboardSummary()
+        ]);
+
+        setTimeout(() => {
+            for (const hostName of hostNames) {
+                pendingDeletedHostNames.delete(hostName);
+            }
+        }, 2000);
+    } catch (err) {
+        for (const hostName of hostNames) {
+            pendingDeletedHostNames.delete(hostName);
+        }
+        showToast("error", "Falha de conexão com a API.");
+        await Promise.all([loadHosts(), loadBulkDeactivateHosts()]);
+    } finally {
+        updateBulkDeactivateSelectionUI();
+    }
+}
+
+function switchTrashModalTab(tab) {
+    const tabDeactivateBtn = document.getElementById("tabBulkDeactivateBtn");
+    const tabTrashBtn = document.getElementById("tabTrashItemsBtn");
+    const panelDeactivate = document.getElementById("trashTabDeactivate");
+    const panelTrash = document.getElementById("trashTabItems");
+    const modalTitle = document.getElementById("trashModalTitle");
+
+    const isDeactivate = tab === "deactivate";
+
+    if (tabDeactivateBtn) {
+        tabDeactivateBtn.classList.toggle("active", isDeactivate);
+        tabDeactivateBtn.setAttribute("aria-selected", isDeactivate ? "true" : "false");
+    }
+    if (tabTrashBtn) {
+        tabTrashBtn.classList.toggle("active", !isDeactivate);
+        tabTrashBtn.setAttribute("aria-selected", !isDeactivate ? "true" : "false");
+    }
+    if (panelDeactivate) {
+        panelDeactivate.classList.toggle("hidden", !isDeactivate);
+    }
+    if (panelTrash) {
+        panelTrash.classList.toggle("hidden", isDeactivate);
+    }
+    if (modalTitle) {
+        modalTitle.textContent = isDeactivate ? "Enviar Hosts para a Lixeira" : "Itens na Lixeira";
+    }
+
+    if (isDeactivate) {
+        runTaskOnce("bulk-deactivate", loadBulkDeactivateHosts);
+    } else {
+        runTaskOnce("trash", loadTrashHosts);
+    }
+}
+
+function openBulkDeactivateModal() {
+    const modal = document.getElementById("trashModal");
+    if (!modal) return;
+    openAppModal(modal);
+    switchTrashModalTab("deactivate");
 }
 
 function openTrashModal() {
     const modal = document.getElementById("trashModal");
     if (!modal) return;
-    modal.classList.remove("hidden");
-    runTaskOnce("trash", loadTrashHosts);
+    openAppModal(modal);
+    switchTrashModalTab("trash");
 }
 
 function closeTrashModal() {
     const modal = document.getElementById("trashModal");
     if (!modal) return;
-    modal.classList.add("hidden");
+    closeAppModal(modal);
+}
+
+function openConfirmEmptyTrashModal() {
+    const modal = document.getElementById("confirmEmptyTrashModal");
+    if (modal) openAppModal(modal);
+}
+
+function closeConfirmEmptyTrashModal() {
+    const modal = document.getElementById("confirmEmptyTrashModal");
+    if (modal) closeAppModal(modal);
+}
+
+
+async function confirmEmptyTrash() {
+    const confirmBtn = document.getElementById("confirmEmptyTrashBtn");
+    const originalText = getButtonLabel(confirmBtn, "Sim, Excluir Todos");
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        setButtonLabel(confirmBtn, "Excluindo...");
+    }
+
+    try {
+        const res = await fetchWithAuth(`${API}/hosts/trash/empty`, {
+            method: "DELETE"
+        });
+
+        if (res && res.ok) {
+            const data = await res.json().catch(() => ({}));
+            closeConfirmEmptyTrashModal();
+            showToast("success", data.detail || "Lixeira esvaziada com sucesso.");
+            await Promise.all([
+                loadTrashHosts(),
+                loadDashboardSummary()
+            ]);
+        } else {
+            const err = res ? await res.json().catch(() => ({})) : {};
+            showToast("error", err.detail || "Erro ao esvaziar lixeira.");
+        }
+    } catch (err) {
+        showToast("error", "Não foi possível conectar ao servidor.");
+    } finally {
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            setButtonLabel(confirmBtn, originalText);
+        }
+    }
 }
 
 function openSidebarMenu() {
@@ -2493,6 +3630,8 @@ function openSidebarMenu() {
     menu.classList.remove("hidden");
     menu.setAttribute("aria-hidden", "false");
     overlay.classList.remove("hidden");
+    const openBtn = document.getElementById("openMenuBtn");
+    if (openBtn) openBtn.setAttribute("aria-expanded", "true");
 }
 
 function closeSidebarMenu() {
@@ -2502,10 +3641,12 @@ function closeSidebarMenu() {
     menu.classList.add("hidden");
     menu.setAttribute("aria-hidden", "true");
     overlay.classList.add("hidden");
+    const openBtn = document.getElementById("openMenuBtn");
+    if (openBtn) openBtn.setAttribute("aria-expanded", "false");
 }
 
 async function restoreHost(hostId, hostName) {
-    if (!confirm(`Restaurar o host \"${hostName}\" da lixeira?`)) return;
+    if (!confirm(`Restaurar o host "${hostName}" da lixeira?`)) return;
 
     try {
         const res = await fetchWithAuth(`${API}/hosts/${hostId}/restore?host_name=${encodeURIComponent(hostName)}`, {
@@ -2517,16 +3658,31 @@ async function restoreHost(hostId, hostName) {
             return;
         }
 
-        await loadHosts();
-        await loadTrashHosts();
         showToast("success", "Host restaurado com sucesso.");
+        await Promise.all([
+            loadHosts(),
+            loadTrashHosts(),
+            loadBulkDeactivateHosts(),
+            loadDashboardSummary()
+        ]);
     } catch (err) {
         showToast("error", "Falha de conexão com a API.");
     }
 }
 
 async function hardDeleteHost(hostId, hostName) {
-    if (!confirm(`Excluir permanentemente o host \"${hostName}\"?\nEssa ação não pode ser desfeita.`)) return;
+    if (!hostName) return;
+    if (!confirm(`Excluir permanentemente o host "${hostName}"?\nEssa ação não pode ser desfeita.`)) return;
+
+    destroyChartsForHost(hostName);
+    const cardNode = document.getElementById(`card-${hostName}`);
+    if (cardNode) {
+        cardNode.remove();
+        const hostsDiv = document.getElementById("hosts");
+        if (hostsDiv && !hostsDiv.querySelector(".card")) {
+            hostsDiv.innerHTML = "<div class='ui-state ui-state-empty'>Nenhum host cadastrado ainda.</div>";
+        }
+    }
 
     try {
         const res = await fetchWithAuth(`${API}/hosts/${hostId}/hard-delete?host_name=${encodeURIComponent(hostName)}`, {
@@ -2535,14 +3691,20 @@ async function hardDeleteHost(hostId, hostName) {
         if (!res || !res.ok) {
             const err = res ? await res.json() : {};
             showToast("error", "Erro na exclusão permanente: " + (err.detail || "erro"));
+            await loadHosts();
+            await loadTrashHosts();
             return;
         }
 
-        await loadHosts();
-        await loadTrashHosts();
         showToast("success", "Host excluído permanentemente.");
+        await Promise.all([
+            loadHosts(),
+            loadTrashHosts(),
+            loadDashboardSummary()
+        ]);
     } catch (err) {
         showToast("error", "Falha de conexão com a API.");
+        await loadHosts();
     }
 }
 
@@ -2565,7 +3727,7 @@ async function loadAvailability(name) {
     if (!ctx) return;
 
     try {
-        const response = await fetchWithAuth(`${API}/hosts/metrics/availability/host/${name}`);
+        const response = await fetchWithAuth(`${API}/hosts/metrics/availability/host/${encodeURIComponent(name)}`);
         
         if (!response || !response.ok) return;
 
@@ -2590,6 +3752,17 @@ async function loadAvailability(name) {
         const isDark = document.body.classList.contains("dark-theme") || document.documentElement.classList.contains("dark-theme");
         const availColor = isDark ? "#81c995" : "#1e8e3e";
 
+        const T = window.NetSpotChartTheme;
+        T.renderSummary(ctx, [
+            { label: "Disponibilidade", color: availColor, values, fmt: (v) => `${v.toFixed(2)}%` },
+        ]);
+
+        const availOpts = chartCommonOptions(0, 100, "Disponibilidade (%)");
+        availOpts.plugins.thresholdBands = T.thresholdBands("y", [
+            { from: 0, to: 85, color: "rgba(217,48,37,0.08)" },
+            { from: 85, to: 95, color: "rgba(249,171,0,0.09)" },
+        ]);
+
         updateOrCreateChart(chartKey, ctx, {
             type: 'line',
             data: {
@@ -2597,15 +3770,10 @@ async function loadAvailability(name) {
                 datasets: [{
                     label: 'Disponibilidade Host (%)',
                     data: values,
-                    borderColor: availColor,
-                    backgroundColor: availColor + "33",
-                    tension: 0.3,
-                    fill: true
+                    ...T.lineStyle(availColor)
                 }]
             },
-            options: {
-                ...chartCommonOptions(null, null, "Disponibilidade (%)")
-            }
+            options: availOpts
         });
     } catch (err) {
         console.error("Erro ao carregar disponibilidade:", err);
@@ -2651,15 +3819,15 @@ async function loadTimeline() {
             return `
                 <div class="timeline-item ${itemClass}">
                     <div class="timeline-item-top">
-                        <strong class="timeline-host">${inc.host_name}</strong>
-                        <span class="timeline-badge ${badgeClass}">${statusLabel}</span>
+                        <strong class="timeline-host">${escapeHtml(inc.host_name)}</strong>
+                        <span class="timeline-badge ${badgeClass}">${escapeHtml(statusLabel)}</span>
                     </div>
                     <div class="timeline-item-meta">
                         <small>Início: ${startedAt}</small>
                         <small>Fim: ${endedAt}</small>
                         <small>Duração: ${durationText}</small>
                     </div>
-                    <p class="timeline-reason">${reasonText}</p>
+                    <p class="timeline-reason">${escapeHtml(reasonText)}</p>
                 </div>
             `;
         }).join("");
@@ -2677,54 +3845,186 @@ async function loadDashboardSummary() {
 
     const data = await res.json();
 
-    const cards = box.querySelectorAll(".summary-card strong");
-    if (cards.length >= 6) {
-        cards[0].textContent = data.total_hosts ?? 0;
-        cards[1].textContent = data.up ?? 0;
-        cards[2].textContent = data.degraded ?? 0;
-        cards[3].textContent = data.down ?? 0;
-        cards[4].textContent = data.open_incidents ?? 0;
-        cards[5].textContent = data.closed_incidents ?? 0;
-    } else {
-        box.innerHTML = `
-            <div class="summary-card">
-                <small>Hosts monitorados</small>
-                <strong>${data.total_hosts ?? 0}</strong>
-            </div>
-            <div class="summary-card">
-                <small>Online</small>
-                <strong>${data.up ?? 0}</strong>
-            </div>
-            <div class="summary-card">
-                <small>Degradados</small>
-                <strong>${data.degraded ?? 0}</strong>
-            </div>
-            <div class="summary-card">
-                <small>Offline</small>
-                <strong>${data.down ?? 0}</strong>
-            </div>
-            <div class="summary-card">
-                <small>Incidentes abertos</small>
-                <strong>${data.open_incidents ?? 0}</strong>
-            </div>
-            <div class="summary-card">
-                <small>Incidentes fechados</small>
-                <strong>${data.closed_incidents ?? 0}</strong>
-            </div>
-        `;
+    if (box.querySelectorAll(".summary-card").length !== 6) {
+        const defs = [
+            ["Hosts monitorados", "summary-total", "all", "Exibir todos os hosts"],
+            ["Online", "summary-ok", "bg-success", "Filtrar apenas hosts Online"],
+            ["Degradados", "summary-warn", "bg-warning", "Filtrar apenas hosts Degradados"],
+            ["Offline", "summary-bad", "bg-danger", "Filtrar apenas hosts Offline"],
+            ["Incidentes abertos", "summary-bad", "incidents-open", "Ver incidentes abertos no histórico"],
+            ["Incidentes fechados", "summary-muted", "incidents-closed", "Ver incidentes fechados no histórico"],
+        ];
+        box.innerHTML = defs.map(([label, cls, filterKey, titleText]) => `
+            <div class="summary-card ${cls} summary-card-clickable" data-filter="${filterKey}" role="button" tabindex="0" title="${titleText}" aria-label="${titleText}">
+                <small>${label}</small>
+                <strong>0</strong>
+            </div>`).join("") + `
+            <div class="summary-bar" role="img">
+                <span class="summary-bar-seg seg-ok"></span>
+                <span class="summary-bar-seg seg-warn"></span>
+                <span class="summary-bar-seg seg-bad"></span>
+            </div>`;
+
+        box.querySelectorAll(".summary-card-clickable").forEach((card) => {
+            const trigger = () => handleSummaryCardClick(card.dataset.filter);
+            card.addEventListener("click", trigger);
+            card.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    trigger();
+                }
+            });
+        });
     }
+
+    const values = [
+        data.total_hosts, data.up, data.degraded, data.down,
+        data.open_incidents, data.closed_incidents,
+    ];
+    const strongs = box.querySelectorAll(".summary-card strong");
+    values.forEach((v, i) => {
+        if (strongs[i]) strongs[i].textContent = v ?? 0;
+    });
+    updateSummaryBar(box, data);
+    syncSummaryCardHighlight();
+}
+
+function handleSummaryCardClick(filterKey) {
+    if (!filterKey) return;
+    if (filterKey === "incidents-open") {
+        window.location.href = "incidents.html?status=open";
+        return;
+    }
+    if (filterKey === "incidents-closed") {
+        window.location.href = "incidents.html?status=closed";
+        return;
+    }
+
+    const select = document.getElementById("statusFilter");
+    if (!select) return;
+
+    if (select.value === filterKey && filterKey !== "all") {
+        select.value = "all";
+    } else {
+        select.value = filterKey;
+    }
+
+    syncStatusChips();
+    syncSummaryCardHighlight();
+    filterHosts();
+
+    const labelMap = { "all": "Todos", "bg-success": "Online", "bg-warning": "Degradados", "bg-danger": "Offline" };
+    showToast("info", `Filtro: ${labelMap[select.value] || select.value}`);
+}
+
+function syncSummaryCardHighlight() {
+    const select = document.getElementById("statusFilter");
+    const currentVal = select ? select.value : "all";
+    const box = document.getElementById("dashboardSummary");
+    if (!box) return;
+    box.querySelectorAll(".summary-card-clickable").forEach((card) => {
+        const filter = card.dataset.filter;
+        if (filter === "incidents-open" || filter === "incidents-closed") return;
+        card.classList.toggle("active-filter", filter === currentVal);
+    });
+}
+
+// Barra proporcional Online / Degradado / Offline (soma = hosts monitorados).
+function updateSummaryBar(box, data) {
+    const bar = box.querySelector(".summary-bar");
+    if (!bar) return;
+    const up = Number(data.up) || 0;
+    const degraded = Number(data.degraded) || 0;
+    const down = Number(data.down) || 0;
+    const total = Math.max(Number(data.total_hosts) || 0, up + degraded + down);
+    const pct = (n) => (total > 0 ? (n / total) * 100 : 0);
+    const segs = { ok: up, warn: degraded, bad: down };
+    for (const [key, n] of Object.entries(segs)) {
+        const seg = bar.querySelector(`.seg-${key}`);
+        if (seg) seg.style.width = `${pct(n)}%`;
+    }
+    bar.setAttribute("aria-label", `Online ${up}, degradado ${degraded}, offline ${down} de ${total} hosts`);
+    bar.title = bar.getAttribute("aria-label");
+}
+
+// ======================
+// Chips de filtro por status (sincronizados com o <select id="statusFilter">)
+// ======================
+const STATUS_CHIPS = [
+    ["all", "Todos"],
+    ["bg-success", "Online"],
+    ["bg-warning", "Degradado"],
+    ["bg-danger", "Offline"],
+];
+
+function syncStatusChips() {
+    const select = document.getElementById("statusFilter");
+    const bar = document.getElementById("statusChips");
+    if (!select || !bar) return;
+    bar.querySelectorAll(".status-chip").forEach((chip) => {
+        const active = chip.dataset.status === select.value;
+        chip.classList.toggle("active", active);
+        chip.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    syncSummaryCardHighlight();
+}
+
+function updateStatusChipCounts() {
+    const bar = document.getElementById("statusChips");
+    if (!bar) return;
+    const counts = { all: 0, "bg-success": 0, "bg-warning": 0, "bg-danger": 0 };
+    document.querySelectorAll("#hosts .card").forEach((card) => {
+        counts.all += 1;
+        const dot = card.querySelector(".status-indicator");
+        if (!dot) return;
+        for (const key of ["bg-success", "bg-warning", "bg-danger"]) {
+            if (dot.classList.contains(key)) counts[key] += 1;
+        }
+    });
+    bar.querySelectorAll(".status-chip").forEach((chip) => {
+        const el = chip.querySelector(".status-chip-count");
+        if (el) el.textContent = counts[chip.dataset.status] ?? 0;
+    });
+}
+
+function initStatusChips() {
+    const select = document.getElementById("statusFilter");
+    const bar = document.getElementById("statusChips");
+    if (!select || !bar) return;
+    bar.innerHTML = STATUS_CHIPS.map(([value, label]) => `
+        <button type="button" class="status-chip" data-status="${value}" aria-pressed="false">
+            ${label}<span class="status-chip-count">0</span>
+        </button>`).join("");
+    bar.addEventListener("click", (event) => {
+        const chip = event.target.closest(".status-chip");
+        if (!chip) return;
+        select.value = chip.dataset.status;
+        syncStatusChips();
+        syncSummaryCardHighlight();
+        filterHosts();
+    });
+    select.addEventListener("change", () => {
+        syncStatusChips();
+        syncSummaryCardHighlight();
+    });
+    syncStatusChips();
 }
 
 function filterHosts() {
     const searchInput = document.getElementById("searchInput");
     const statusInput = document.getElementById("statusFilter");
+    const emptyState = document.getElementById("hostsEmptyState");
+    const countBadge = document.getElementById("hostsCountBadge");
     if (!searchInput || !statusInput) return;
 
-    const searchTerm = String(searchInput.value || "").toLowerCase();
+    const searchTerm = String(searchInput.value || "").toLowerCase().trim();
     const statusFilter = String(statusInput.value || "all");
-    const cards = document.querySelectorAll(".card");
+    const cards = document.querySelectorAll("#hosts .card");
+    const rows = document.querySelectorAll("#nocTableBody tr.noc-row");
 
-    cards.forEach(card => {
+    let visibleCardsCount = 0;
+
+    cards.forEach((card) => {
         const hostTitleEl = card.querySelector(".host-title");
         const hostAddrEl = card.querySelector(".host-addr");
         const indicator = card.querySelector(".status-indicator");
@@ -2733,15 +4033,65 @@ function filterHosts() {
         const hostName = hostTitleEl.innerText.toLowerCase();
         const hostAddr = hostAddrEl.innerText.toLowerCase();
         
-        const matchesSearch = hostName.includes(searchTerm) || hostAddr.includes(searchTerm);
+        const matchesSearch = !searchTerm || hostName.includes(searchTerm) || hostAddr.includes(searchTerm);
         const matchesStatus = statusFilter === "all" || indicator.classList.contains(statusFilter);
 
         if (matchesSearch && matchesStatus) {
             card.style.display = "";
+            visibleCardsCount++;
         } else {
             card.style.display = "none";
         }
     });
+
+    rows.forEach((row) => {
+        const hostNameEl = row.querySelector(".noc-device-name");
+        const hostAddrEl = row.querySelector(".noc-device-addr");
+        const indicator = row.querySelector(".status-indicator");
+        if (!hostNameEl || !hostAddrEl || !indicator) return;
+
+        const hostName = hostNameEl.innerText.toLowerCase();
+        const hostAddr = hostAddrEl.innerText.toLowerCase();
+
+        const matchesSearch = !searchTerm || hostName.includes(searchTerm) || hostAddr.includes(searchTerm);
+        const matchesStatus = statusFilter === "all" || indicator.classList.contains(statusFilter);
+
+        if (matchesSearch && matchesStatus) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+
+    const totalCount = cards.length > 0 ? cards.length : rows.length;
+    if (countBadge) {
+        if (searchTerm || statusFilter !== "all") {
+            countBadge.textContent = `${visibleCardsCount} de ${totalCount} hosts`;
+            countBadge.classList.add("is-filtered");
+        } else {
+            countBadge.textContent = `${totalCount} ${totalCount === 1 ? "host" : "hosts"}`;
+            countBadge.classList.remove("is-filtered");
+        }
+    }
+
+    if (emptyState) {
+        if (visibleCardsCount === 0 && totalCount > 0) {
+            emptyState.classList.remove("hidden");
+        } else {
+            emptyState.classList.add("hidden");
+        }
+    }
+}
+
+function clearHostFilters() {
+    const searchInput = document.getElementById("searchInput");
+    const statusInput = document.getElementById("statusFilter");
+    if (searchInput) searchInput.value = "";
+    if (statusInput) statusInput.value = "all";
+    syncStatusChips();
+    syncSummaryCardHighlight();
+    filterHosts();
+    showToast("info", "Filtros limpos");
 }
 
 // ======================
@@ -2755,6 +4105,11 @@ if (!isLoginPage) {
         modalAddPortBtn.addEventListener("click", () => addPortInput(modalPortsContainer, "", true));
     }
 
+    const openBulkDeactivateBtn = document.getElementById("openBulkDeactivateBtn");
+    if (openBulkDeactivateBtn) {
+        openBulkDeactivateBtn.addEventListener("click", openBulkDeactivateModal);
+    }
+
     const openTrashBtn = document.getElementById("openTrashBtn");
     if (openTrashBtn) {
         openTrashBtn.addEventListener("click", openTrashModal);
@@ -2762,11 +4117,69 @@ if (!isLoginPage) {
 
     const refreshBtn = document.getElementById("refreshBtn");
     if (refreshBtn) {
-        refreshBtn.addEventListener("click", () => runTaskOnce("hosts-full", loadHosts));
+        refreshBtn.addEventListener("click", async () => {
+            const icon = refreshBtn.querySelector(".refresh-icon") || refreshBtn.querySelector("svg");
+            if (icon) icon.classList.add("spin");
+            try {
+                await runTaskOnce("hosts-full", loadHosts);
+                await runTaskOnce("summary", loadDashboardSummary);
+            } finally {
+                if (icon) setTimeout(() => icon.classList.remove("spin"), 450);
+            }
+        });
     }
     const refreshTrashBtn = document.getElementById("refreshTrashBtn");
     if (refreshTrashBtn) {
         refreshTrashBtn.addEventListener("click", () => runTaskOnce("trash", loadTrashHosts));
+    }
+    const refreshBulkDeactivateBtn = document.getElementById("refreshBulkDeactivateBtn");
+    if (refreshBulkDeactivateBtn) {
+        refreshBulkDeactivateBtn.addEventListener("click", () => runTaskOnce("bulk-deactivate", loadBulkDeactivateHosts));
+    }
+    const bulkDeactivateSelectedBtn = document.getElementById("bulkDeactivateSelectedBtn");
+    if (bulkDeactivateSelectedBtn) {
+        bulkDeactivateSelectedBtn.addEventListener("click", bulkDeactivateSelectedHosts);
+    }
+    const bulkDeactivateSearchInput = document.getElementById("bulkDeactivateSearchInput");
+    if (bulkDeactivateSearchInput) {
+        bulkDeactivateSearchInput.addEventListener("input", () => {
+            renderBulkDeactivateHostsList();
+        });
+    }
+    const selectAllBulkDeactivateBtn = document.getElementById("selectAllBulkDeactivateBtn");
+    if (selectAllBulkDeactivateBtn) {
+        selectAllBulkDeactivateBtn.addEventListener("click", () => {
+            const checkboxes = Array.from(document.querySelectorAll("#bulkDeactivateHostsList .bulk-deactivate-check:not(:disabled)"));
+            if (checkboxes.length === 0) return;
+            const anyUnchecked = checkboxes.some((cb) => !cb.checked);
+            checkboxes.forEach((cb) => {
+                cb.checked = anyUnchecked;
+                const hName = cb.getAttribute("data-name");
+                if (!hName) return;
+                if (anyUnchecked) {
+                    selectedBulkDeactivateNames.add(hName);
+                } else {
+                    selectedBulkDeactivateNames.delete(hName);
+                }
+            });
+            updateBulkDeactivateSelectionUI();
+        });
+    }
+    const bulkDeactivateHostsList = document.getElementById("bulkDeactivateHostsList");
+    if (bulkDeactivateHostsList) {
+        bulkDeactivateHostsList.addEventListener("change", (e) => {
+            if (e.target.classList.contains("bulk-deactivate-check")) {
+                const hName = e.target.getAttribute("data-name");
+                if (hName) {
+                    if (e.target.checked) {
+                        selectedBulkDeactivateNames.add(hName);
+                    } else {
+                        selectedBulkDeactivateNames.delete(hName);
+                    }
+                }
+                updateBulkDeactivateSelectionUI();
+            }
+        });
     }
     const discoverBtn = document.getElementById("discoverBtn");
     if (discoverBtn) {
@@ -2775,6 +4188,26 @@ if (!isLoginPage) {
     const importSelectedBtn = document.getElementById("importSelectedBtn");
     if (importSelectedBtn) {
         importSelectedBtn.addEventListener("click", importSelectedLanHosts);
+    }
+    const selectAllDiscoveryBtn = document.getElementById("selectAllDiscoveryBtn");
+    if (selectAllDiscoveryBtn) {
+        selectAllDiscoveryBtn.addEventListener("click", () => {
+            const checkboxes = Array.from(document.querySelectorAll("#networkDiscoveryList .discover-host-check:not(:disabled)"));
+            if (checkboxes.length === 0) return;
+            const anyUnchecked = checkboxes.some(cb => !cb.checked);
+            checkboxes.forEach(cb => { cb.checked = anyUnchecked; });
+            updateDiscoverySelectAllUI(anyUnchecked);
+        });
+    }
+    const discoveryList = document.getElementById("networkDiscoveryList");
+    if (discoveryList) {
+        discoveryList.addEventListener("change", (e) => {
+            if (e.target.classList.contains("discover-host-check")) {
+                const checkboxes = Array.from(document.querySelectorAll("#networkDiscoveryList .discover-host-check:not(:disabled)"));
+                const allChecked = checkboxes.length > 0 && checkboxes.every(cb => cb.checked);
+                updateDiscoverySelectAllUI(allChecked);
+            }
+        });
     }
     const openMenuBtn = document.getElementById("openMenuBtn");
     if (openMenuBtn) {
@@ -2821,33 +4254,87 @@ window.addEventListener("click", (event) => {
     const trashModal = document.getElementById("trashModal");
     const sidebarOverlay = document.getElementById("sidebarOverlay");
     const changePwdModal = document.getElementById("changePwdModal");
+    const confirmEmptyTrashModal = document.getElementById("confirmEmptyTrashModal");
+    const pwdModal = document.getElementById("pwdModal");
 
     if (event.target === editModal) closeModal();
     if (event.target === trashModal) closeTrashModal();
     if (event.target === sidebarOverlay) closeSidebarMenu();
     if (event.target === changePwdModal) closeChangePwdModal();
+    if (event.target === confirmEmptyTrashModal) closeConfirmEmptyTrashModal();
+    if (event.target === pwdModal) closeAppModal(pwdModal);
 });
 
 window.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape") return;
-    closeModal();
-    closeTrashModal();
-    closeSidebarMenu();
-    closeChangePwdModal();
+    const activeModal = document.querySelector(".modal:not(.hidden)");
+
+    if (event.key === "Escape") {
+        if (activeModal) {
+            event.preventDefault();
+            closeModal();
+            closeTrashModal();
+            closeChangePwdModal();
+            closeConfirmEmptyTrashModal();
+            const pwdModal = document.getElementById("pwdModal");
+            if (pwdModal) closeAppModal(pwdModal);
+        }
+        closeSidebarMenu();
+        return;
+    }
+
+    // Gerenciamento de foco acessível (Focus Trap)
+    if (event.key === "Tab" && activeModal) {
+        const focusableSelectors = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+        const focusables = Array.from(activeModal.querySelectorAll(focusableSelectors)).filter(el => el.offsetParent !== null);
+        if (focusables.length === 0) return;
+
+        const firstElement = focusables[0];
+        const lastElement = focusables[focusables.length - 1];
+
+        if (event.shiftKey && document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+        }
+    }
 });
+
+const editModalEl = document.getElementById("editModal");
+if (editModalEl) {
+    editModalEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && e.target.tagName === "INPUT") {
+            e.preventDefault();
+            submitModalEdit();
+        }
+    });
+}
+
+const changePwdModalEl = document.getElementById("changePwdModal");
+if (changePwdModalEl) {
+    changePwdModalEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && e.target.tagName === "INPUT") {
+            e.preventDefault();
+            changePassword();
+        }
+    });
+}
 
 const changePwdBtn = document.getElementById("changePasswordBtn");
 
-if(changePwdBtn){
-    changePwdBtn.onclick = () =>{
-        document.getElementById("changePwdModal").classList.remove("hidden");
-    }
+if (changePwdBtn) {
+    changePwdBtn.onclick = () => {
+        const modal = document.getElementById("changePwdModal");
+        if (modal) openAppModal(modal);
+    };
 }
 
-function closeChangePwdModal(){
+function closeChangePwdModal() {
     const modal = document.getElementById("changePwdModal");
-    if (modal) modal.classList.add("hidden");
+    if (modal) closeAppModal(modal);
 }
+
 
 const logoutBtn = document.getElementById("logoutBtn");
 
@@ -2885,13 +4372,15 @@ if (logoutBtn) {
     }
     
     function updateThemeIcon(isDarkState) {
+        const btn = document.getElementById("themeToggleBtn");
+        if (btn) btn.setAttribute("aria-pressed", isDarkState ? "true" : "false");
         const icon = document.getElementById("themeToggleIcon");
         if (!icon) return;
         if (isDarkState) {
             icon.innerHTML = `<path d="M12 3a9 9 0 109 9 9.75 9.75 0 00-.67-3.4 6.78 6.78 0 01-7.93-7.93A9.75 9.75 0 0012 3z" fill="currentColor"/>`;
             icon.removeAttribute("stroke");
         } else {
-            icon.innerHTML = `<circle cx="12" cy="12" r="4" fill="#f9ab00"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="#f9ab00" stroke-width="2" stroke-linecap="round"/>`;
+            icon.innerHTML = `<circle cx="12" cy="12" r="4" fill="var(--warning)"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="var(--warning)" stroke-width="2" stroke-linecap="round"/>`;
         }
     }
 
@@ -2905,30 +4394,21 @@ if (logoutBtn) {
         Object.values(charts).forEach(chart => {
             if (!chart) return;
             
-            // Scales Y
-            if (chart.options.scales?.y) {
-                if (chart.options.scales.y.title) {
-                    chart.options.scales.y.title.color = titleColor;
+            // Scales (suporta eixo único y e múltiplos eixos como y_percent e y_bps)
+            const scales = chart.options.scales || {};
+            Object.entries(scales).forEach(([scaleKey, scaleObj]) => {
+                if (!scaleObj) return;
+                if (scaleKey !== "x" && scaleObj.title) {
+                    scaleObj.title.color = titleColor;
                 }
-                if (chart.options.scales.y.grid) {
-                    chart.options.scales.y.grid.color = gridColor;
-                    chart.options.scales.y.grid.borderColor = gridColor;
+                if (scaleObj.grid) {
+                    scaleObj.grid.color = gridColor;
+                    scaleObj.grid.borderColor = gridColor;
                 }
-                if (chart.options.scales.y.ticks) {
-                    chart.options.scales.y.ticks.color = textColor;
+                if (scaleObj.ticks) {
+                    scaleObj.ticks.color = textColor;
                 }
-            }
-            
-            // Scales X
-            if (chart.options.scales?.x) {
-                if (chart.options.scales.x.grid) {
-                    chart.options.scales.x.grid.color = gridColor;
-                    chart.options.scales.x.grid.borderColor = gridColor;
-                }
-                if (chart.options.scales.x.ticks) {
-                    chart.options.scales.x.ticks.color = textColor;
-                }
-            }
+            });
             
             // Legend
             if (chart.options.plugins?.legend?.labels) {
@@ -2947,3 +4427,8 @@ if (logoutBtn) {
         });
     }
 })();
+
+if (!isLoginPage) {
+    initStatusChips();
+    initViewMode();
+}

@@ -24,7 +24,7 @@ def test_host_model_instantiation():
 
 
 def test_host_schema_pydantic_validation():
-    """Testa a validacao de DTOs Pydantic HostCreate."""
+    """Testa a validacao de DTOs Pydantic HostCreate e HostUpdate."""
     dto = HostCreate(
         name="Router-Core",
         address="10.0.0.1",
@@ -32,6 +32,15 @@ def test_host_schema_pydantic_validation():
     )
     assert dto.name == "Router-Core"
     assert dto.snmp_community == "netspot"
+
+    dto_update = HostUpdate(
+        name="Router-Novo",
+        address="10.0.0.2",
+        ports=[22, 80]
+    )
+    assert dto_update.name == "Router-Novo"
+    assert dto_update.address == "10.0.0.2"
+    assert dto_update.ports == [22, 80]
 
 
 def test_check_result_model():

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="dark-theme">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetSpot - Incidentes</title>
+    <link rel="stylesheet" href="../Frontend/css/style.css">
+    <style>
+        body { background: #0c1017; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
+        .incident-card-custom {
+            background: rgba(20, 27, 41, 0.85); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px;
+        }
+        .incident-item {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px;
+            display: grid; grid-template-columns: 220px 1fr 200px 100px; align-items: center; gap: 16px;
+        }
+        .incident-item.open {
+            border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05);
+        }
+        .incident-item.closed {
+            border-left: 4px solid #4ade80;
+        }
+    </style>
+</head>
+<body>
+<header class="app-topbar">
+    <div class="app-topbar-inner">
+        <div class="hero-copy app-topbar-title">
+            <a href="#" class="app-logo-link">
+                <img src="../Frontend/images/logo/Prancheta 2.png" alt="NetSpot" class="app-logo logo-dark" style="display:block; height:32px;">
+            </a>
+            <span class="page-subtitle" style="color: #38bdf8; font-weight: 600; margin-left: 12px;">/ Central de Incidentes NOC</span>
+        </div>
+        <div class="topbar-right-group">
+            <a class="topbar-action-btn" href="#" style="text-decoration:none;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                <span class="topbar-btn-text">Voltar ao Dashboard</span>
+            </a>
+        </div>
+    </div>
+</header>
+
+<main class="container app-content" style="max-width: 1600px; margin: 24px auto; padding: 0 24px;">
+    <!-- Resumo dos Incidentes -->
+    <section class="panel-section" style="margin-bottom: 24px;">
+        <article class="overview-card">
+            <h2>Métricas de Confiabilidade e MTTR</h2>
+            <div class="summary-grid">
+                <div class="summary-item"><span class="summary-label">Total Histórico</span><strong class="summary-value">12</strong></div>
+                <div class="summary-item"><span class="summary-label">Incidentes Abertos</span><strong class="summary-value" style="color: #ef4444;">1</strong></div>
+                <div class="summary-item"><span class="summary-label">Incidentes Resolvidos</span><strong class="summary-value" style="color: #4ade80;">11</strong></div>
+                <div class="summary-item"><span class="summary-label">MTTR Médio</span><strong class="summary-value" style="color: #38bdf8;">8m 24s</strong></div>
+                <div class="summary-item"><span class="summary-label">Taxa de Autocura</span><strong class="summary-value" style="color: #4ade80;">100%</strong></div>
+                <div class="summary-item"><span class="summary-label">Alertas Telegram</span><strong class="summary-value" style="color: #a855f7;">24 despachados</strong></div>
+            </div>
+        </article>
+    </section>
+
+    <!-- Toolbar e Filtros -->
+    <article class="incident-card-custom">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <input type="text" placeholder="Buscar por host, causa ou protocolo..." style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 8px; padding: 8px 16px; width: 360px;">
+                <div class="status-chips" style="display: flex; gap: 6px;">
+                    <button class="status-chip active" style="padding: 6px 14px; border-radius: 20px; font-size: 13px;">Todos (12)</button>
+                    <button class="status-chip chip-open" style="padding: 6px 14px; border-radius: 20px; font-size: 13px; color: #ef4444;">Abertos (1)</button>
+                    <button class="status-chip chip-closed" style="padding: 6px 14px; border-radius: 20px; font-size: 13px; color: #4ade80;">Fechados (11)</button>
+                </div>
+            </div>
+            <span style="font-size: 13px; color: #94a3b8;">Ordenado por: Mais recentes primeiro</span>
+        </div>
+
+        <!-- Lista de Incidentes -->
+        <div class="incidents-list">
+
+            <!-- Incidente 1: ABERTO -->
+            <div class="incident-item open">
+                <div>
+                    <strong style="color: #fff; font-size: 15px; display: block;">web_server1</strong>
+                    <small style="color: #94a3b8;">10.0.1.10 • LAN 1 Servidores</small>
+                </div>
+                <div>
+                    <div style="color: #fca5a5; font-weight: 600; font-size: 13px;">Serviço HTTP instável (HTTP 503) + Timeout HTTPS :443</div>
+                    <small style="color: #94a3b8;">Alerta despachado via RabbitMQ -> N8N -> Telegram</small>
+                </div>
+                <div style="font-size: 12px; color: #cbd5e1;">
+                    <div>Início: 25/10/2026 21:45:10</div>
+                    <div>Duração: <strong style="color: #ef4444;">14m 32s (Ativo)</strong></div>
+                </div>
+                <div>
+                    <span style="background: #ef4444; color: #fff; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 12px; display: inline-block;">OPEN</span>
+                </div>
+            </div>
+
+            <!-- Incidente 2: FECHADO -->
+            <div class="incident-item closed">
+                <div>
+                    <strong style="color: #fff; font-size: 15px; display: block;">pc14_devops</strong>
+                    <small style="color: #94a3b8;">10.0.2.14 • LAN 2 Estações</small>
+                </div>
+                <div>
+                    <div style="color: #e2e8f0; font-weight: 500; font-size: 13px;">Sobrecarga de recursos locais (CPU: 98% / RAM: 94%)</div>
+                    <small style="color: #94a3b8;">Detectado via telemetria SNMP MIB-II / Host Resources</small>
+                </div>
+                <div style="font-size: 12px; color: #cbd5e1;">
+                    <div>Início: 25/10/2026 20:12:00</div>
+                    <div>Duração: 16m 45s</div>
+                </div>
+                <div>
+                    <span style="background: rgba(74, 222, 128, 0.15); color: #4ade80; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 12px; display: inline-block;">CLOSED</span>
+                </div>
+            </div>
+
+            <!-- Incidente 3: FECHADO -->
+            <div class="incident-item closed">
+                <div>
+                    <strong style="color: #fff; font-size: 15px; display: block;">router_lab2</strong>
+                    <small style="color: #94a3b8;">10.0.2.1 • Gateway Laboratório</small>
+                </div>
+                <div>
+                    <div style="color: #e2e8f0; font-weight: 500; font-size: 13px;">Host sem resposta ICMP / Queda transitória de link físico</div>
+                    <small style="color: #94a3b8;">Disjuntor Circuit Breaker atuou silenciando tempestade de pacotes</small>
+                </div>
+                <div style="font-size: 12px; color: #cbd5e1;">
+                    <div>Início: 25/10/2026 18:30:10</div>
+                    <div>Duração: 4m 12s</div>
+                </div>
+                <div>
+                    <span style="background: rgba(74, 222, 128, 0.15); color: #4ade80; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 12px; display: inline-block;">CLOSED</span>
+                </div>
+            </div>
+
+            <!-- Incidente 4: FECHADO -->
+            <div class="incident-item closed">
+                <div>
+                    <strong style="color: #fff; font-size: 15px; display: block;">db_server2</strong>
+                    <small style="color: #94a3b8;">10.0.3.16 • PostgreSQL Réplica</small>
+                </div>
+                <div>
+                    <div style="color: #e2e8f0; font-weight: 500; font-size: 13px;">Porta 5432 recusada / Conexão recusada no handshake</div>
+                    <small style="color: #94a3b8;">Reinício automático do container via Docker Healthcheck</small>
+                </div>
+                <div style="font-size: 12px; color: #cbd5e1;">
+                    <div>Início: 25/10/2026 15:10:00</div>
+                    <div>Duração: 5m 30s</div>
+                </div>
+                <div>
+                    <span style="background: rgba(74, 222, 128, 0.15); color: #4ade80; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 12px; display: inline-block;">CLOSED</span>
+                </div>
+            </div>
+
+        </div>
+    </article>
+</main>
+</body>
+</html>
