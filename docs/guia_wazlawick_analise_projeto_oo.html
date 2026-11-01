@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Análise e Projeto de Sistemas Orientados a Objetos — Guia Prático Wazlawick</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --border: #334155;
+      --card-bg: #1e293b;
+      --code-bg: #090d16;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg-primary: #f8fafc;
+        --bg-secondary: #ffffff;
+        --bg-tertiary: #f1f5f9;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --accent: #0284c7;
+        --accent-hover: #0369a1;
+        --border: #e2e8f0;
+        --card-bg: #ffffff;
+        --code-bg: #f8fafc;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      line-height: 1.6;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar Navigation */
+    aside.sidebar {
+      width: 320px;
+      background-color: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      overflow-y: auto;
+      padding: 1.5rem 1rem;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-header h2 {
+      font-size: 1.1rem;
+      color: var(--accent);
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .sidebar-header p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+
+    nav.toc ul {
+      list-style: none;
+    }
+
+    nav.toc li {
+      margin-bottom: 0.4rem;
+    }
+
+    nav.toc a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      display: block;
+      padding: 0.35rem 0.6rem;
+      border-radius: 6px;
+      transition: all 0.15s ease-in-out;
+    }
+
+    nav.toc a:hover {
+      background-color: var(--bg-tertiary);
+      color: var(--text-main);
+    }
+
+    nav.toc a.active {
+      background-color: var(--accent);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* Main Content Area */
+    main.content {
+      margin-left: 320px;
+      flex: 1;
+      max-width: 1000px;
+      padding: 2.5rem 3rem;
+    }
+
+    header.doc-header {
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header.doc-header h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    header.doc-header .badge {
+      display: inline-block;
+      background-color: var(--bg-tertiary);
+      color: var(--accent);
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.8rem;
+    }
+
+    header.doc-header p.subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+    }
+
+    section {
+      margin-bottom: 3.5rem;
+      scroll-margin-top: 2rem;
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text-main);
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.4rem;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+
+    p {
+      margin-bottom: 1rem;
+      font-size: 0.98rem;
+    }
+
+    ul, ol {
+      margin-bottom: 1.2rem;
+      padding-left: 1.4rem;
+    }
+
+    li {
+      margin-bottom: 0.4rem;
+    }
+
+    /* Cards and Callouts */
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .callout {
+      border-left: 4px solid var(--accent);
+      background-color: var(--bg-secondary);
+      padding: 1rem 1.2rem;
+      margin: 1.2rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .callout.warning {
+      border-left-color: var(--warning);
+    }
+
+    .callout.success {
+      border-left-color: var(--success);
+    }
+
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.2rem 0;
+      font-size: 0.92rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.65rem 0.9rem;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--bg-tertiary);
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Code Blocks */
+    pre, code {
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+    }
+
+    code.inline-code {
+      background-color: var(--bg-tertiary);
+      color: var(--accent);
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+    }
+
+    pre {
+      background-color: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    /* Diagram ASCII/Box styles */
+    .diagram-box {
+      background-color: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      white-space: pre;
+      overflow-x: auto;
+      color: #38bdf8;
+      margin: 1.2rem 0;
+    }
+
+    /* Footer */
+    footer.doc-footer {
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+      margin-top: 3rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        flex-direction: column;
+      }
+      aside.sidebar {
+        position: relative;
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      main.content {
+        margin-left: 0;
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar / Table of Contents -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="badge">Guia de Engenharia</span>
+      <h2>Metodologia Wazlawick</h2>
+      <p>Análise e Projeto de Sistemas de Informação Orientados a Objetos (2ª Edição)</p>
+    </div>
+    <nav class="toc">
+      <ul>
+        <li><a href="#intro">1. Filosofia e o Processo Unificado</a></li>
+        <li><a href="#visao-geral">2. Visão Geral e Modelagem de Negócio</a></li>
+        <li><a href="#requisitos">3. Engenharia de Requisitos (FURPS+)</a></li>
+        <li><a href="#casos-de-uso">4. Casos de Uso (Alto Nível e Expandidos)</a></li>
+        <li><a href="#dss">5. Diagramas de Sequência de Sistema (DSS)</a></li>
+        <li><a href="#modelo-conceitual">6. Modelo Conceitual de Domínio</a></li>
+        <li><a href="#contratos-ocl">7. Contratos de Operação e Consulta (OCL)</a></li>
+        <li><a href="#grasp">8. Projeto OO e Padrões GRASP</a></li>
+        <li><a href="#dcp">9. Diagrama de Classes de Projeto (DCP)</a></li>
+        <li><a href="#webml">10. Modelagem de Interface (WebML)</a></li>
+        <li><a href="#persistencia-orm">11. Mapeamento Objeto-Relacional (ORM)</a></li>
+        <li><a href="#testes-codigo">12. Geração de Código e Testes OO</a></li>
+        <li><a href="#checklist">13. Checklist Síntese de Auditoria</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="content">
+
+    <header class="doc-header">
+      <div class="badge">Referência Técnica Rigorosa — Zero AI Slop</div>
+      <h1>Análise e Projeto Orientados a Objetos</h1>
+      <p class="subtitle">Síntese prática e conceitual baseada na obra de Raul Sidnei Wazlawick (Elsevier / Série SBC).</p>
+    </header>
+
+    <!-- Seção 1: Filosofia -->
+    <section id="intro">
+      <h2>1. Filosofia de Wazlawick e o Processo Unificado Ágil</h2>
+      
+      <p>A tese central de Raul Wazlawick diferencia-se da maioria dos manuais tradicionais de UML: <strong>diagramas não existem para gerar pilhas burocráticas de documentação, mas sim como programação em altíssimo nível com conexão estrita para geração de código</strong>. Inspirado na concisão do método de Craig Larman e no pragmatismo do Extreme Programming (XP), cada artefato só possui razão de existir se responder diretamente a como o sistema executará suas regras de negócio.</p>
+
+      <div class="card">
+        <h3>As Quatro Fases do Processo Unificado (UP):</h3>
+        <ul>
+          <li><strong>Concepção (Inception)</strong>: Rápida (poucos dias). Descobre se vale a pena desenvolver o sistema. Produz o Sumário Executivo, Modelagem de Negócios (Atividades/Estados), Requisitos preliminares e Casos de Uso de Alto Nível. Pergunta central: <em>comprar pronto ou construir?</em></li>
+          <li><strong>Elaboração (Elaboration)</strong>: Onde ocorre a maior parte da análise e projeto arquitetural. Expande casos de uso críticos, constrói DSSs, formaliza contratos em OCL, projeta o domínio com padrões GRASP e produz o Diagrama de Classes de Projeto (DCP). Mitiga os principais riscos técnicos do projeto.</li>
+          <li><strong>Construção (Construction)</strong>: Foco em codificação iterativa, mapeamento de banco de dados e testes automatizados orientados a objetos.</li>
+          <li><strong>Transição (Transition)</strong>: Homologação, migração de dados e implantação no ambiente de produção do cliente.</li>
+        </ul>
+      </div>
+
+      <div class="diagram-box">
+Fluxo Estrito de Encadeamento de Artefatos de Wazlawick:
+
+[Visão Geral / Negócio] ──► [Requisitos / FURPS+] ──► [Casos de Uso Alto Nível]
+                                                              │
+                                                              ▼
+[Modelo Conceitual] ◄── [DSS (Operações / Consultas)] ◄── [Casos de Uso Expandidos]
+       │                                  │
+       ▼                                  ▼
+[Contratos OCL (pre / post)] ──────► [Diagramas de Comunicação (GRASP)]
+                                                  │
+                                                  ▼
+                                     [Diagrama de Classes de Projeto - DCP]
+                                                  │
+                                                  ▼
+                                     [Banco de Dados Relacional + Código OO]
+      </div>
+    </section>
+
+    <!-- Seção 2: Visão Geral -->
+    <section id="visao-geral">
+      <h2>2. Visão Geral do Sistema e Modelagem de Negócio</h2>
+
+      <p>A fase de concepção inicia com o levantamento do sumário executivo (documento de 1 a 2 páginas). Para compreender o funcionamento da organização antes de projetar software, Wazlawick recomenda modelar os <strong>processos de negócio</strong> utilizando o <strong>Diagrama de Atividades da UML com Raias (Swimlanes)</strong>.</p>
+
+      <div class="card">
+        <h3>Regras Estruturais do Diagrama de Atividades de Negócio:</h3>
+        <ul>
+          <li><strong>Raias (Swimlanes)</strong>: Cada raia representa um ator ou entidade externa responsável pela execução da atividade (ex.: Cliente, Financeiro, Fornecedor);</li>
+          <li><strong>Nó Branch e Merge (Losangos)</strong>: Representam estruturas de decisão e união lógica. Ramos de saída <em>devem possuir condições de guarda mutuamente excludentes</em>;</li>
+          <li><strong>Nó Fork e Join (Barras Pretas)</strong>: Representam concorrência real. Um <code>fork</code> divide um fluxo em atividades executadas em paralelo; o <code>join</code> sincroniza obrigatoriamente todos os fluxos concorrentes antes de prosseguir;</li>
+          <li><strong>Propósito</strong>: Não é modelar telas de software, mas identificar gargalos, atores e limites do sistema computacional.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Seção 3: Requisitos -->
+    <section id="requisitos">
+      <h2>3. Engenharia de Requisitos (Classificação FURPS+)</h2>
+
+      <p>Wazlawick adota a taxonomia <strong>FURPS+</strong> (Robert Grady / Hewlett-Packard) para organizar os requisitos levantados, prevenindo que a equipe foque apenas nas funcionalidades e negligencie restrições arquiteturais críticas:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Categoria</th>
+            <th>Definição Segundo Wazlawick</th>
+            <th>Exemplos de Engenharia</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>F (Functionality)</strong></td>
+            <td>Capacidades funcionais diretas, regras de negócio e segurança básica.</td>
+            <td>Cálculo de Health Score ponderado, auditoria de falhas de autenticação.</td>
+          </tr>
+          <tr>
+            <td><strong>U (Usability)</strong></td>
+            <td>Fatores humanos, ergonomia da interface, acessibilidade e prevenção de erros.</td>
+            <td>Conformidade WCAG 2.1 AA (contraste 4.5:1), navegação fluida por teclado.</td>
+          </tr>
+          <tr>
+            <td><strong>R (Reliability)</strong></td>
+            <td>Tolerância a falhas, disponibilidade contínua e recuperação a frio.</td>
+            <td>Circuit Breaker com backoff exponencial, Dead Letter Queue (DLQ).</td>
+          </tr>
+          <tr>
+            <td><strong>P (Performance)</strong></td>
+            <td>Limiares estritos de tempo de resposta, consumo de memória e vazão.</td>
+            <td>Sondagem de 126 nós em &lt; 10 segundos, timeout DNS de 0.8s.</td>
+          </tr>
+          <tr>
+            <td><strong>S (Supportability)</strong></td>
+            <td>Configurabilidade, manutenibilidade, extensibilidade e testes automatizados.</td>
+            <td>Parametrização via variáveis de ambiente (.env), 86 testes no Pytest.</td>
+          </tr>
+          <tr>
+            <td><strong>+ (Restrições)</strong></td>
+            <td>Limitações de implementação, requisitos legais, empacotamento e interfaces externas.</td>
+            <td>Isolamento em Docker Compose, Licença GPL-3.0, operação 100% offline-first.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Seção 4: Casos de Uso -->
+    <section id="casos-de-uso">
+      <h2>4. Casos de Uso de Alto Nível vs Expandidos</h2>
+
+      <p>Um dos erros mais comuns apontados por Wazlawick é a transformação de cada clique de botão ou tela em um caso de uso isolado. O autor delimita regras estritas:</p>
+
+      <div class="callout">
+        <div class="callout-title">⚠️ Regra de Granularidade de Wazlawick:</div>
+        Um Caso de Uso deve representar um <strong>processo completo que entregue valor mensurável ao ator de negócio</strong>. Casos de uso atômicos como "Digitar Senha" ou "Clicar em Salvar" são incorretos; o caso de uso real é "Efetuar Login" ou "Cadastrar Dispositivo".
+      </div>
+
+      <h3>4.1. Caso de Uso de Alto Nível</h3>
+      <p>Utilizado na concepção para planejamento iterativo. Contém apenas: <strong>Nome</strong>, <strong>Atores Envolvidos</strong> e <strong>Descrição Sumária do Objetivo</strong>.</p>
+
+      <h3>4.2. Caso de Uso Expandido</h3>
+      <p>Elaborado iterativamente durante a fase de elaboração. Wazlawick simplifica o template clássico do RUP, exigindo apenas os blocos que afetam diretamente o design de classes:</p>
+      <ul>
+        <li><strong>Atores</strong>: Ator primário (iniciador) e secundários (serviços externos/coadjuvantes);</li>
+        <li><strong>Interessados e Interesses (Stakeholders)</strong>: O que cada parte exige que seja garantido;</li>
+        <li><strong>Pré-condições</strong>: O que o sistema assume como verdadeiro antes da execução;</li>
+        <li><strong>Fluxo Principal (Caminho Feliz)</strong>: Diálogo ordenado e numerado entre Ator e Sistema;</li>
+        <li><strong>Fluxos Alternativos e de Exceção</strong>: Variações de negócio e tratamentos de contingência numerados com referência aos passos do fluxo principal (ex.: <code>3a. Dispositivo inalcançável</code>).</li>
+      </ul>
+    </section>
+
+    <!-- Seção 5: DSS -->
+    <section id="dss">
+      <h2>5. Diagramas de Sequência de Sistema (DSS)</h2>
+
+      <p>O DSS é a ponte entre a narrativa do caso de uso e a arquitetura técnica orientada a objetos. No DSS, o sistema é modelado como uma <strong>caixa-preta estrita</strong>, representada pela instância <code>:Sistema</code>.</p>
+
+      <div class="diagram-box">
+Estrutura Canônica de um DSS segundo Wazlawick:
+
+  Ator (Operador)                      :Sistema (Caixa-Preta)
+        │                                        │
+        │─── 1. iniciarSondagem(hostId) ────────►│  (Operação de Sistema)
+        │                                        │
+        │◄── 2. [status: "verificando"] ─────────│  (Retorno / Confirmação)
+        │                                        │
+        │─── 3. consultarTelemetria(hostId) ────►│  (Consulta de Sistema)
+        │                                        │
+        │◄── 4. metricas: Tuple(...) ────────────│  (Retorno de Dados)
+        │                                        │
+      </div>
+
+      <div class="card">
+        <h3>Descoberta de Operações vs Consultas:</h3>
+        <ul>
+          <li><strong>Operações de Sistema</strong>: Mensagens disparadas pelo ator que <em>alteram o estado do sistema</em> (criam instâncias, modificam atributos, estabelecem vínculos). Exigem <strong>Contratos de Operação</strong>;</li>
+          <li><strong>Consultas de Sistema</strong>: Mensagens que <em>não geram efeito colateral no banco</em>; apenas recuperam e projetam coleções ou tuplas de dados. Exigem <strong>Contratos de Consulta</strong>.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Seção 6: Modelo Conceitual -->
+    <section id="modelo-conceitual">
+      <h2>6. Modelo Conceitual de Domínio</h2>
+
+      <p>O Modelo Conceitual (ou Modelo de Domínio) é um Diagrama de Classes UML que representa conceitos do <strong>espaço do problema (domínio de negócio)</strong>, e não classes de software.</p>
+
+      <div class="callout warning">
+        <div class="callout-title">🚫 O que NÃO deve aparecer no Modelo Conceitual:</div>
+        Métodos, tipos primitivos específicos de linguagens de programação (ex: <code>int32</code>, <code>std::string</code>), visibilidade de atributos (<code>+</code>, <code>-</code>), classes técnicas como DAOs, Controllers ou elementos de interface.
+      </div>
+
+      <h3>Conceitos Avançados de Modelagem de Wazlawick:</h3>
+      <ul>
+        <li><strong>Associação Derivada (<code>/nome</code>)</strong>: Associação que pode ser computada ou inferida a partir de outras associações existentes no modelo;</li>
+        <li><strong>Classes Associativas</strong>: Utilizadas quando uma associação possui atributos próprios que não pertencem a nenhuma das entidades isoladamente (ex.: histórico de incidentes em um monitoramento);</li>
+        <li><strong>Transições de Estado no Domínio</strong>:
+          <ul>
+            <li><em>Transição Estável</em>: Mudança simples no valor de um atributo de estado (ex.: ativo para inativo);</li>
+            <li><em>Transição Monotônica</em>: O objeto ganha novos atributos e associações ao longo do ciclo de vida, sem retorno (ex.: incidente gerado que recebe timestamp de resolução);</li>
+            <li><em>Transição Cíclica</em>: Estados que alternam recursivamente (ex.: host alternando entre UP, DOWN e RECOVERY).</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Seção 7: Contratos OCL -->
+    <section id="contratos-ocl">
+      <h2>7. Contratos de Operação e Consulta de Sistema (OCL)</h2>
+
+      <p>A contribuição metodológica mais profunda de Raul Wazlawick é o rigor no uso de <strong>Object Constraint Language (OCL)</strong> para definir contratos de software inequívocos, eliminando ambiguidades da linguagem natural.</p>
+
+      <div class="card">
+        <h3>As 4 Categorias de Pós-condição em um Contrato:</h3>
+        <ol>
+          <li><strong>Instâncias Criadas</strong>: Entidades que passaram a existir no universo do sistema;</li>
+          <li><strong>Instâncias Destruídas</strong>: Entidades expurgadas ou finalizadas;</li>
+          <li><strong>Atributos Modificados</strong>: Novos valores atribuídos a instâncias existentes;</li>
+          <li><strong>Associações Estabelecidas ou Desfeitas</strong>: Navegações vinculadas ou dissociadas.</li>
+        </ol>
+      </div>
+
+      <h3>Exemplo Canônico de Contrato em OCL:</h3>
+      <pre><code>-- Operação de registro de incidente operacional
+Context NetSpotSystem::registrarIncidente(hostId: Integer, motivo: String): Incidente
+pre:
+    Host.allInstances()->exists(h | h.id = hostId and h.status = #UP) and
+    motivo.size() > 0
+post:
+    -- 1. Instância criada
+    Incidente.allInstances()->exists(i |
+        i.ocorridoEm = now() and
+        i.motivo = motivo and
+        -- 2. Atributos modificados
+        let h = Host.allInstances()->any(h | h.id = hostId) in
+        h.status = #DOWN and
+        h.streakFalhas = h.streakFalhas@pre + 1 and
+        -- 3. Associação estabelecida
+        i.host = h and
+        result = i
+    )</code></pre>
+    </section>
+
+    <!-- Seção 8: GRASP -->
+    <section id="grasp">
+      <h2>8. Projeto Orientado a Objetos e os 9 Padrões GRASP</h2>
+
+      <p>Na fase de projeto, a equipe sai do <em>espaço do problema</em> e entra no <em>espaço da solução</em>. Wazlawick ensina que projetar OO é o ato disciplinado de <strong>atribuir responsabilidades a classes através de padrões estabelecidos</strong>.</p>
+
+      <div class="card">
+        <h3>Classificação de Responsabilidades:</h3>
+        <ul>
+          <li><strong>Responsabilidades de Conhecer (Knowing)</strong>: Conhecer dados privados de seus atributos, conhecer objetos relacionados e conhecer coisas que pode calcular;</li>
+          <li><strong>Responsabilidades de Fazer (Doing)</strong>: Fazer algo por si mesmo, iniciar ações em outros objetos, controlar e coordenar atividades.</li>
+        </ul>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Padrão GRASP</th>
+            <th>Princípio Fundamental de Wazlawick</th>
+            <th>Aplicação Prática no Projeto</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Especialista na Informação</strong></td>
+            <td>Atribua a responsabilidade à classe que detém as informações necessárias para cumpri-la.</td>
+            <td>O próprio objeto <code>HostMetrics</code> calcula seu <code>HealthScore</code> ponderado.</td>
+          </tr>
+          <tr>
+            <td><strong>Criador (Creator)</strong></td>
+            <td>Classe B cria classe A se B contém, agrega, grava ou usa A de maneira muito próxima.</td>
+            <td><code>MonitorEngine</code> instancia <code>CheckResult</code> após executar a sondagem.</td>
+          </tr>
+          <tr>
+            <td><strong>Controlador (Controller)</strong></td>
+            <td>Primeiro objeto atrás da interface UI que recebe e orquestra a operação de sistema.</td>
+            <td>Controladores de fachada ou de caso de uso (ex.: rotas de API do FastAPI).</td>
+          </tr>
+          <tr>
+            <td><strong>Baixo Acoplamento</strong></td>
+            <td>Mantenha dependências entre classes reduzidas para maximizar reuso e manutenibilidade.</td>
+            <td>Uso de filas assíncronas (RabbitMQ) desacoplando sondagem de notificações.</td>
+          </tr>
+          <tr>
+            <td><strong>Alta Coesão</strong></td>
+            <td>Mantenha classes focadas e com escopo delimitado, sem misturar responsabilidades.</td>
+            <td>Separar o resolvedor SNMP (<code>oid_resolver.py</code>) da lógica de persistência.</td>
+          </tr>
+          <tr>
+            <td><strong>Polimorfismo</strong></td>
+            <td>Resolva comportamentos variantes com operações polimórficas em vez de cadeias condicionais <code>if/switch</code>.</td>
+            <td>Drivers SNMP polimórficos por fabricante (Linux, Cisco, Mikrotik, Huawei).</td>
+          </tr>
+          <tr>
+            <td><strong>Invenção Pura</strong></td>
+            <td>Crie classes conceituais artificiais de serviço quando o domínio de negócio não oferecer alta coesão.</td>
+            <td>Criação de classes como <code>CircuitBreakerService</code>, <code>RetentionManager</code>, DAOs.</td>
+          </tr>
+          <tr>
+            <td><strong>Indireção</strong></td>
+            <td>Insira um objeto intermediário entre dois componentes para diminuir o acoplamento direto.</td>
+            <td>Message Broker (AMQP) intermediando o backend e o executor n8n.</td>
+          </tr>
+          <tr>
+            <td><strong>Variações Protegidas</strong></td>
+            <td>Encapsule pontos prováveis de instabilidade ou mudança atrás de interfaces estáveis.</td>
+            <td>Interfaces para sondagens ICMP/TCP isolando especificidades de sockets do SO.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Seção 9: DCP -->
+    <section id="dcp">
+      <h2>9. Diagrama de Classes de Projeto (DCP)</h2>
+
+      <p>O <strong>DCP</strong> é a evolução final do Modelo Conceitual após a aplicação dos padrões GRASP e a construção dos Diagramas de Comunicação/Sequência. Ele representa o código real a ser implementado:</p>
+
+      <ul>
+        <li><strong>Visibilidade Estrita</strong>: Atributos privados (<code>-</code>) ou protegidos (<code>#</code>); métodos públicos (<code>+</code>);</li>
+        <li><strong>Tipos Concretos</strong>: Tipos de retorno e parâmetros correspondentes à linguagem de programação (ex.: <code>int</code>, <code>str</code>, <code>datetime</code>);</li>
+        <li><strong>Navegabilidade Direcionada</strong>: Associações com setas explícitas demonstrando quem mantém a referência de memória de quem;</li>
+        <li><strong>Métodos Derivados das Mensagens</strong>: Cada mensagem enviada nos diagramas de comunicação torna-se um método na classe receptora.</li>
+      </ul>
+    </section>
+
+    <!-- Seção 10: WebML -->
+    <section id="webml">
+      <h2>10. Projeto da Interface com o Usuário e Modelagem Web (WebML)</h2>
+
+      <p>Para sistemas modernos orientados à Web, Wazlawick recomenda o <strong>WebML (Web Modeling Language)</strong>, estruturado em duas dimensões complementares:</p>
+      <ol>
+        <li><strong>Modelo Estrutural</strong>: Representa a estrutura de dados acessada pelas páginas (derivado do DCP);</li>
+        <li><strong>Modelo de Hipertexto (Navegação)</strong>:
+          <ul>
+            <li><strong>Unidades de Dados (Data Units)</strong>: Exibem detalhes de uma única entidade (ex.: card 3D com KPIs de um host);</li>
+            <li><strong>Unidades de Índice (Index Units)</strong>: Exibem listas navegáveis com paginação (ex.: inventário tabular NOC);</li>
+            <li><strong>Unidades de Entrada (Entry Units)</strong>: Formulários interativos para captura de dados (ex.: cadastro de host);</li>
+            <li><strong>Links Contextuais</strong>: Transportam parâmetros de navegação entre páginas (ex.: <code>hostId</code> transportado ao abrir modal de histórico).</li>
+          </ul>
+        </li>
+      </ol>
+    </section>
+
+    <!-- Seção 11: Persistência ORM -->
+    <section id="persistencia-orm">
+      <h2>11. Persistência de Dados e Mapeamento Objeto-Relacional (ORM)</h2>
+
+      <p>Wazlawick formaliza o mapeamento entre o modelo orientado a objetos na memória e o modelo relacional em disco, resolvendo a <em>incompatibilidade de impedância (Object-Relational Impedance Mismatch)</em>:</p>
+
+      <div class="card">
+        <h3>Estratégias de Mapeamento de Herança:</h3>
+        <ul>
+          <li><strong>Tabela Única por Hierarquia (Single Table)</strong>: Mapeia toda a árvore de classes em uma única tabela com coluna discriminadora. Alto desempenho (zero junções), mas colunas nulas para subclasses;</li>
+          <li><strong>Tabela por Classe Concreta</strong>: Cada classe folha possui sua própria tabela contendo todos os atributos (inclusive herdados). Elimina nulos, mas dificulta consultas polimórficas;</li>
+          <li><strong>Tabela por Classe com Junção (Joined Tables)</strong>: Cada classe gera uma tabela própria; subclasses possuem chave estrangeira apontando para a tabela mãe. Estrutura relacional normalizada e elegante.</li>
+        </ul>
+      </div>
+
+      <h3>Mapeamento de Associações:</h3>
+      <ul>
+        <li><strong>Associação 1:1 e 1:N</strong>: Mapeada via Chave Estrangeira (<code>Foreign Key</code>) na tabela do lado "Muitos";</li>
+        <li><strong>Associação N:M</strong>: Mapeada obrigatoriamente através de uma tabela associativa intermediária contendo as chaves estrangeiras de ambas as entidades.</li>
+      </ul>
+    </section>
+
+    <!-- Seção 12: Testes e Código -->
+    <section id="testes-codigo">
+      <h2>12. Geração de Código e Testes Orientados a Objetos</h2>
+
+      <p>A fase de construção conclui o método de Wazlawick. Se os artefatos anteriores foram rigorosamente elaborados, a codificação é quase mecânica:</p>
+
+      <ul>
+        <li><strong>Implementação dos Métodos</strong>: O corpo do método é extraído diretamente da sequência de mensagens desenhada no Diagrama de Comunicação;</li>
+        <li><strong>Validação de Contratos</strong>: As pré-condições do OCL transformam-se em validações de fronteira (ex.: checagens no Pydantic ou <code>raise ValueError</code>); as pós-condições transformam-se nas asserções dos testes automatizados;</li>
+        <li><strong>Testes Orientados a Objetos</strong>: Testes unitários focam no comportamento de instâncias isoladas; testes de integração validam as cadeias de delegação e persistência.</li>
+      </ul>
+    </section>
+
+    <!-- Seção 13: Checklist -->
+    <section id="checklist">
+      <h2>13. Checklist de Auditoria e Conformidade Wazlawick</h2>
+
+      <p>Utilize esta lista de verificação antes de submeter projetos a bancas acadêmicas ou auditorias de software:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Artefato / Etapa</th>
+            <th>Critério de Aceitação Conforme o Método Wazlawick</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Visão Geral</strong></td>
+            <td>Sumário executivo sucinto (1–2 págs) com Diagrama de Atividades com raias e nós branch/fork bem delimitados.</td>
+            <td>✅ Conforme</td>
+          </tr>
+          <tr>
+            <td><strong>Requisitos FURPS+</strong></td>
+            <td>Requisitos categorizados com critérios de aceitação auditáveis (sem termos subjetivos).</td>
+            <td>✅ Conforme</td>
+          </tr>
+          <tr>
+            <td><strong>Casos de Uso</strong></td>
+            <td>Foco em processos de negócio com entrega de valor real; sem atomização de cliques de tela.</td>
+            <td>✅ Conforme</td>
+          </tr>
+          <tr>
+            <td><strong>DSS</strong></td>
+            <td>Sistema representado como caixa-preta; operações e consultas de sistema identificadas formalmente.</td>
+            <td>✅ Conforme</td>
+          </tr>
+          <tr>
+            <td><strong>Modelo Conceitual</strong></td>
+            <td>Livre de elementos de software (sem métodos, sem visibilidade, sem bibliotecas de programação).</td>
+            <td>✅ Conforme</td>
+          </tr>
+          <tr>
+            <td><strong>Contratos OCL</strong></td>
+            <td>Pré e pós-condições formais cobrindo criação, destruição, modificação e associações.</td>
+            <td>✅ Conforme</td>
+          </tr>
+          <tr>
+            <td><strong>Padrões GRASP</strong></td>
+            <td>Atribuição consciente de responsabilidades orientada por Especialista, Criador, Controlador e Alta Coesão.</td>
+            <td>✅ Conforme</td>
+          </tr>
+          <tr>
+            <td><strong>DCP</strong></td>
+            <td>Tipagem completa da linguagem, métodos derivados de diagramas de interação e navegabilidade de setas explícita.</td>
+            <td>✅ Conforme</td>
+          </tr>
+          <tr>
+            <td><strong>Geração & Testes</strong></td>
+            <td>Código estruturado em multicamadas e 100% dos fluxos críticos cobertos por testes automatizados.</td>
+            <td>✅ Conforme</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="doc-footer">
+      <p>Documento de Apoio Metodológico elaborado para o projeto <strong>NetSpot (NOC Lite)</strong> com base na obra clássica do Prof. Raul Sidnei Wazlawick (UFSC / Série SBC / Elsevier).</p>
+      <p>Princípio Orientador: <em>Engenharia de Software Consciente e Pragmática — Zero AI Slop.</em></p>
+    </footer>
+
+  </main>
+
+  <script>
+    // Smooth scrolling highlight for TOC
+    const links = document.querySelectorAll('nav.toc a');
+    window.addEventListener('scroll', () => {
+      let current = '';
+      const sections = document.querySelectorAll('section');
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        if (pageYOffset >= sectionTop - 100) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      links.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === `#${current}`) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

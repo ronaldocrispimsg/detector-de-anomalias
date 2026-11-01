@@ -6,13 +6,11 @@
       window.location.replace("login.html");
   }
 </script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="js/vendor/chart.umd.min.js"></script>
+<script src="js/chart-theme.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NetSpot - Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <script>
   (function() {
@@ -27,60 +25,88 @@
 <body>
 <header class="app-topbar">
     <div class="app-topbar-inner">
-        <button id="openMenuBtn" class="menu-trigger-btn icon-btn nav" title="Abrir menu" aria-label="Abrir menu">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <button id="openMenuBtn" class="topbar-action-btn account-btn" type="button" title="Painel da Conta: Alterar senha e Sair" aria-label="Painel da Conta: Alterar senha e Sair" aria-expanded="false" aria-controls="sidebarMenu">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span class="topbar-btn-text">Conta</span>
         </button>
         <div class="hero-copy app-topbar-title">
             <a href="dashboard.html" class="app-logo-link" title="Ir para o início">
-                <img src="images/logo/Prancheta 1.png" alt="NetSpot" class="app-logo logo-light">
-                <img src="images/logo/Prancheta 2.png" alt="NetSpot" class="app-logo logo-dark">
+                <img src="images/logo/Prancheta 1.png" alt="NetSpot" class="app-logo logo-light" width="93" height="48">
+                <img src="images/logo/Prancheta 2.png" alt="NetSpot" class="app-logo logo-dark" width="93" height="48">
             </a>
         </div>
-        <button id="themeToggleBtn" class="theme-switch-pill" type="button" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro">
-            <svg class="theme-switch-icon-sun" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <svg class="theme-switch-icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 109 9 9.75 9.75 0 00-.67-3.4 6.78 6.78 0 01-7.93-7.93A9.75 9.75 0 0012 3z"/></svg>
-            <span class="theme-switch-thumb">
-                <svg id="themeToggleIcon" viewBox="0 0 24 24" width="14" height="14"></svg>
-            </span>
-        </button>
-        <a class="toolbar-link-btn icon-btn nav" href="simulator.html" title="Abrir Simulador de Anomalias (IA/ML)" aria-label="Abrir Simulador de Anomalias">
-            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zM12 6v6l4 2"/></svg>
-        </a>
-        <a class="toolbar-link-btn icon-btn nav" href="incidents.html" title="Abrir histórico completo de incidentes" aria-label="Abrir histórico completo de incidentes">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
-        </a>
+        <div class="topbar-right-group">
+            <button id="themeToggleBtn" class="theme-switch-pill" type="button" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro" aria-pressed="false">
+                <svg class="theme-switch-icon-sun" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <svg class="theme-switch-icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 109 9 9.75 9.75 0 00-.67-3.4 6.78 6.78 0 01-7.93-7.93A9.75 9.75 0 0012 3z"/></svg>
+                <span class="theme-switch-thumb">
+                    <svg id="themeToggleIcon" viewBox="0 0 24 24" width="14" height="14"></svg>
+                </span>
+            </button>
+            <a class="topbar-action-btn simulator-btn" href="simulator.html" title="Abrir Simulador de Anomalias (IA/ML)" aria-label="Abrir Simulador de Anomalias">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2a10 10 0 100 20 10 10 0 000-20zM12 6v6l4 2"/>
+                </svg>
+                <span class="topbar-btn-text">Simulador IA</span>
+            </a>
+            <a class="topbar-action-btn incidents-btn" href="incidents.html" title="Abrir histórico completo de incidentes" aria-label="Abrir histórico completo de incidentes">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <span class="topbar-btn-text">Incidentes</span>
+            </a>
+        </div>
     </div>
 </header>
-<div class="container app-content">
+<main class="container app-content" id="main-content" role="main">
+<h1 class="visually-hidden">NetSpot - Painel de Monitoramento de Rede</h1>
 
 <section class="panel-section">
     <article class="overview-card">
-        <h2>Resumo da Rede</h2>
+        <h2>Resumo da rede</h2>
         <div id="dashboardSummary" class="summary-grid"></div>
     </article>
 </section>
 
 <section class="panel-section">
     <article class="overview-card">
-        <h2>Cadastrar Host</h2>
+        <h2>Cadastrar host</h2>
         <form id="hostForm">
-            <input id="name" placeholder="Nome" required>
-            <input id="address" placeholder="Endereço/IP" required>
-            <input id="http_url" placeholder="URL HTTP (opcional)">
+            <label for="name" class="visually-hidden">Nome amigável do host</label>
+            <input id="name" placeholder="Nome (ex.: Servidor Web 01)" required title="Nome identificador do host (ex.: Servidor Apache, Router Core)">
+
+            <label for="address" class="visually-hidden">Endereço IP ou Hostname</label>
+            <input id="address" placeholder="Hostname ou IP (ex.: pc1.lab.local)" title="Dica: Em redes com DHCP, prefira o Hostname (DNS) para acompanhar mudanças de IP automaticamente." required>
+
+            <label for="http_url" class="visually-hidden">URL HTTP/HTTPS</label>
+            <input id="http_url" placeholder="URL HTTP opcional (ex.: http://10.0.1.10:80/)" title="Se preenchida, o NetSpot envia requisição GET e afere a latência web.">
+
+            <small class="discovery-helper-text discovery-helper-full">
+                <strong>Dica DHCP:</strong> Prefira cadastrar o <strong>Hostname (DNS)</strong> para rastrear trocas de IP automaticamente.
+            </small>
+
             <label class="snmp-enable-field snmp-enable-switch">
                 <input id="http_enabled" type="checkbox" checked>
                 <span class="snmp-switch" aria-hidden="true"></span>
                 <span class="snmp-enable-text">
                     <strong>Check HTTP/HTTPS</strong>
-                    <small>Ativa monitoramento web</small>
+                    <small>Latência e código HTTP</small>
                 </span>
             </label>
             <div id="portsField" class="ports-field">
               <div class="ports-field-head">
                 <span>Portas TCP</span>
-                <button id="addPortBtn" type="button" class="add-port-btn" title="Adicionar porta" aria-label="Adicionar porta">+</button>
+                <button id="addPortBtn" type="button" class="add-port-btn" title="Adicionar porta TCP" aria-label="Adicionar porta TCP">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span>Adicionar porta</span>
+                </button>
               </div>
-              <small class="ports-help">Informe apenas portas TCP que deseja monitorar.</small>
+              <small class="ports-help">(ex.: 80, 443, 22). Use '+' para adicionar.</small>
               <div id="portsContainer" class="ports-container"></div>
             </div>
             <label class="snmp-enable-field snmp-enable-switch">
@@ -88,29 +114,46 @@
                 <span class="snmp-switch" aria-hidden="true"></span>
                 <span class="snmp-enable-text">
                     <strong>Ativar SNMP</strong>
-                    <small>Usar community netspot</small>
+                    <small>CPU, RAM, Disco e Rede</small>
                 </span>
             </label>
-            <input id="snmp_community" value="netspot" placeholder="netspot">
-            <button type="submit">Cadastrar</button>
+            <label for="snmp_community" class="visually-hidden">Community SNMP</label>
+            <input id="snmp_community" value="netspot" placeholder="Community SNMP (padrão: netspot)" title="Community SNMP v2c (padrão: netspot)">
+            <button type="submit" class="btn-primary">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                <span>Cadastrar host</span>
+            </button>
         </form>
     </article>
 </section>
 
 <section class="panel-section">
     <article class="overview-card">
-        <h2>Descoberta de Rede (LAN)</h2>
+        <h2>Descoberta de rede (LAN)</h2>
         <div class="network-discovery-form">
-            <input id="discoverSubnet" value="192.168.1.0/24" placeholder="Subnet CIDR (ex.: 192.168.0.0/24)">
-            <button id="discoverBtn" type="button">Descobrir rede</button>
+            <label for="discoverSubnet" class="visually-hidden">Subnet CIDR para varredura</label>
+            <input id="discoverSubnet" placeholder="Subnet CIDR (ex.: 192.168.1.0/24)" title="Notação CIDR da sub-rede local (ex.: 192.168.1.0/24). No laboratório Kathará, use 10.0.1.0/24, 10.0.2.0/24 ou 10.0.3.0/24.">
+            <button id="discoverBtn" type="button" class="btn-primary">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <span>Descobrir rede</span>
+            </button>
         </div>
-        <small class="discovery-helper-text">Limite máximo permitido: máscara <strong>/20</strong> (máx. 4096 endereços).</small>
+        <small class="discovery-helper-text">
+            Varredura ICMP com resolução de nomes (DNS/SNMP) e portas abertas (máx. /20).
+        </small>
         <div id="networkDiscoveryInfo" class="network-discovery-info" aria-live="polite"></div>
         <div id="networkDiscoveryList" class="network-discovery-list">
             <small>Nenhuma descoberta executada.</small>
         </div>
         <div class="network-discovery-actions">
-            <button id="importSelectedBtn" type="button">Adicionar selecionados</button>
+            <button id="selectAllDiscoveryBtn" type="button" class="btn-secondary-action hidden">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="9 11 12 14 22 4"></polyline></svg>
+                <span>Selecionar todos</span>
+            </button>
+            <button id="importSelectedBtn" type="button" class="btn-primary">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
+                <span>Adicionar selecionados</span>
+            </button>
         </div>
         <div id="networkImportResult" class="network-import-result" aria-live="polite"></div>
     </article>
@@ -118,104 +161,282 @@
 
 <section class="panel-section">
       <div class="filter-bar">
+        <label for="searchInput" class="visually-hidden">Filtrar hosts por nome ou IP</label>
         <input type="text" id="searchInput" placeholder="Filtrar por nome ou IP..." onkeyup="filterHosts()">
+
+        <label for="statusFilter" class="visually-hidden">Filtrar por status</label>
         <select id="statusFilter" onchange="filterHosts()">
             <option value="all">Todos os Status</option>
             <option value="bg-success">Online</option>
             <option value="bg-danger">Offline</option>
             <option value="bg-warning">Degradado</option>
         </select>
+        <div id="statusChips" class="status-chips"></div>
     </div>
     <div class="hosts-toolbar">
       <div class="hosts-toolbar-main">
         <h2>Hosts</h2>
-        <button id="openTrashBtn" class="trash-open-btn" title="Abrir lixeira" aria-label="Abrir lixeira">
+        <span id="hostsCountBadge" class="hosts-count-badge" title="Total de hosts visíveis">0 hosts</span>
+        <button id="openBulkDeactivateBtn" class="trash-open-btn" type="button" title="Selecionar múltiplos hosts ativos para enviar à lixeira" aria-label="Mover hosts em lote para lixeira">
+            <span class="btn-icon-wrap">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            </span>
+            Mover para lixeira
+        </button>
+        <button id="openTrashBtn" class="trash-open-btn" type="button" title="Abrir lixeira" aria-label="Abrir lixeira">
             <span class="btn-icon-wrap">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l1 2h4v2H4V6h4l1-2zm-2 6h2v8H7v-8zm4 0h2v8h-2v-8zm4 0h2v8h-2v-8z"/></svg>
             </span>
             Lixeira
         </button>
       </div>
-      <button id="refreshBtn">Atualizar Lista</button>
+
+      <div class="hosts-toolbar-actions">
+        <!-- View Mode Switcher (Cards vs Tabela NOC) -->
+        <div class="view-mode-toggle" role="group" aria-label="Modo de visualização dos hosts">
+          <button id="viewCardsBtn" type="button" class="view-mode-btn active" onclick="setViewMode('cards')" title="Visualização em Grade de Cards 3D" aria-pressed="true">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <span>Cards</span>
+          </button>
+          <button id="viewTableBtn" type="button" class="view-mode-btn" onclick="setViewMode('table')" title="Visualização em Tabela Compacta de Operação NOC" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <span>Tabela NOC</span>
+          </button>
+        </div>
+
+        <button id="refreshBtn" class="refresh-pill-btn" type="button" title="Atualizar lista de hosts" aria-label="Atualizar lista de hosts">
+            <svg class="refresh-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+            </svg>
+            <span>Atualizar lista</span>
+        </button>
+      </div>
     </div>
     <div id="hosts"></div>
+    <div id="hostsTableView" class="noc-table-wrap hidden">
+      <div class="noc-table-responsive">
+        <table class="noc-table" role="table">
+          <thead>
+            <tr>
+              <th scope="col" class="noc-th-status">Status</th>
+              <th scope="col" class="noc-th-device">Dispositivo</th>
+              <th scope="col" class="noc-th-health">Saúde</th>
+              <th scope="col" class="noc-th-sla">SLA (10m)</th>
+              <th scope="col" class="noc-th-ping">Ping</th>
+              <th scope="col" class="noc-th-web">Web Check</th>
+              <th scope="col" class="noc-th-tcp">Portas TCP</th>
+              <th scope="col" class="noc-th-cause">Causa Provável</th>
+              <th scope="col" class="noc-th-actions">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="nocTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="hostsEmptyState" class="empty-state-box hidden" aria-live="polite">
+        <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+        </div>
+        <h3 class="empty-state-title">Nenhum host encontrado</h3>
+        <p class="empty-state-desc">Nenhum dispositivo corresponde aos critérios de pesquisa ou filtros aplicados.</p>
+        <button type="button" class="btn-clear-filter" onclick="clearHostFilters()">Limpar busca e filtros</button>
+    </div>
 </section>
 
 <div id="toastContainer" class="toast-container"></div>
 
     <div id="alert-container"></div>
 
-<div id="editModal" class="modal hidden">
+<div id="editModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
   <div class="modal-content">
-    <h3>Editar Host</h3>
+    <div class="modal-header">
+      <h3 id="editModalTitle">Editar host</h3>
+      <button type="button" class="modal-close-btn" onclick="closeModal()" title="Fechar" aria-label="Fechar"><span aria-hidden="true">&times;</span></button>
+    </div>
 
-    <input id="modal-name" disabled>
-    <input id="modal-ip" placeholder="Endereco/IP">
-    <input id="modal-http-url" placeholder="URL HTTP (opcional)">
+    <label class="modal-label" for="modal-name">Nome do Host</label>
+    <input id="modal-name" placeholder="Nome (ex.: Servidor Web 01)" required title="Nome identificador do host">
+
+    <label class="modal-label" for="modal-ip">Endereço / IP (ou Hostname/FQDN)</label>
+    <input id="modal-ip" placeholder="Hostname ou IP (ex.: pc1.lab.local)" title="Dica: Em redes com DHCP, prefira o Hostname (DNS) para acompanhar mudanças de IP automaticamente.">
+    <small class="discovery-helper-text dhcp-helper-modal">
+      <strong>Dica DHCP:</strong> Prefira o <strong>Hostname (DNS)</strong> para acompanhar mudanças de IP.
+    </small>
+
+    <label class="modal-label" for="modal-http-url">URL HTTP/HTTPS (opcional)</label>
+    <input id="modal-http-url" placeholder="URL HTTP opcional (ex.: http://10.0.1.10:80/)" title="Se preenchida, o NetSpot envia requisição GET e afere a latência web.">
+
     <label class="snmp-enable-field snmp-enable-switch">
       <input id="modal-http-enabled" type="checkbox">
       <span class="snmp-switch" aria-hidden="true"></span>
       <span class="snmp-enable-text">
         <strong>Check HTTP/HTTPS</strong>
-        <small>Ativa monitoramento web</small>
+        <small>Latência e código HTTP</small>
       </span>
     </label>
+
     <div id="modalPortsField" class="ports-field">
       <div class="ports-field-head">
         <span>Portas TCP</span>
-        <button id="modalAddPortBtn" type="button" class="add-port-btn" title="Adicionar porta" aria-label="Adicionar porta">+</button>
+        <button id="modalAddPortBtn" type="button" class="add-port-btn" title="Adicionar porta TCP" aria-label="Adicionar porta TCP">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Adicionar porta</span>
+        </button>
       </div>
+      <small class="ports-help">(ex.: 80, 443, 22). Use '+' para adicionar.</small>
       <div id="modalPortsContainer" class="ports-container"></div>
     </div>
+
     <label class="snmp-enable-field snmp-enable-switch">
       <input id="modal-snmp-enabled" type="checkbox">
       <span class="snmp-switch" aria-hidden="true"></span>
       <span class="snmp-enable-text">
         <strong>Ativar SNMP</strong>
-        <small>Usar community netspot</small>
+        <small>CPU, RAM, Disco e Rede</small>
       </span>
     </label>
-    <input id="modal-snmp-community" value="netspot" placeholder="netspot">
+
+    <label class="modal-label" for="modal-snmp-community">Community SNMP</label>
+    <input id="modal-snmp-community" value="netspot" placeholder="Community SNMP (padrão: netspot)" title="Community SNMP v2c (padrão: netspot)">
 
     <div class="modal-actions">
-      <button type="button" onclick="submitModalEdit()">Salvar</button>
-      <button type="button" onclick="closeModal()">Cancelar</button>
+      <button type="button" class="modal-btn-primary" onclick="submitModalEdit()">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>Salvar alterações</span>
+      </button>
+      <button type="button" class="modal-btn-secondary" onclick="closeModal()">Cancelar</button>
     </div>
 
   </div>
 </div>
 
-<div id="changePwdModal" class="modal hidden">
+<div id="changePwdModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="changePwdModalTitle">
   <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="changePwdModalTitle">Alterar senha</h3>
+      <button type="button" class="modal-close-btn" onclick="closeChangePwdModal()" title="Fechar" aria-label="Fechar"><span aria-hidden="true">&times;</span></button>
+    </div>
 
-    <h3>Alterar Senha</h3>
+    <label class="modal-label" for="current-pwd">Senha Atual</label>
+    <div class="password-input-wrap">
+      <input id="current-pwd" type="password" placeholder="Senha atual" autocomplete="current-password" title="Digite sua senha atual de acesso">
+      <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('current-pwd', this)" title="Mostrar senha" aria-label="Mostrar senha" aria-pressed="false">
+        <svg class="eye-open" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        <svg class="eye-closed hidden" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle><line x1="2" y1="2" x2="22" y2="22"></line></svg>
+      </button>
+    </div>
 
-    <input id="current-pwd" type="password" placeholder="Senha atual">
-    <input id="new-pwd" type="password" placeholder="Nova senha">
-    <input id="confirm-pwd" type="password" placeholder="Confirmar nova senha">
+    <label class="modal-label" for="new-pwd">Nova Senha</label>
+    <div class="password-input-wrap">
+      <input id="new-pwd" type="password" placeholder="Nova senha (mín. 4 caracteres)" autocomplete="new-password" title="A nova senha deve possuir no mínimo 4 caracteres">
+      <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('new-pwd', this)" title="Mostrar senha" aria-label="Mostrar senha" aria-pressed="false">
+        <svg class="eye-open" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        <svg class="eye-closed hidden" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle><line x1="2" y1="2" x2="22" y2="22"></line></svg>
+      </button>
+    </div>
+    <small class="discovery-helper-text pwd-helper-modal">
+      Mínimo de 4 caracteres.
+    </small>
+
+    <label class="modal-label" for="confirm-pwd">Confirmar Nova Senha</label>
+    <div class="password-input-wrap">
+      <input id="confirm-pwd" type="password" placeholder="Confirmar nova senha" autocomplete="new-password" title="Repita a nova senha exatamente como digitada acima">
+      <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('confirm-pwd', this)" title="Mostrar senha" aria-label="Mostrar senha" aria-pressed="false">
+        <svg class="eye-open" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        <svg class="eye-closed hidden" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle><line x1="2" y1="2" x2="22" y2="22"></line></svg>
+      </button>
+    </div>
 
     <div class="modal-actions">
-      <button type="button" onclick="changePassword()">Alterar</button>
-      <button type="button" onclick="closeChangePwdModal()">Cancelar</button>
+      <button type="button" class="modal-btn-primary" onclick="changePassword()">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V7a5 5 0 00-5-5zm-3 8V7a3 3 0 116 0v3H9zm3 3a2 2 0 012 2 2 2 0 11-2-2z"/></svg>
+          <span>Alterar senha</span>
+      </button>
+      <button type="button" class="modal-btn-secondary" onclick="closeChangePwdModal()">Cancelar</button>
     </div>
 
   </div>
 </div>
 
-<div id="trashModal" class="modal hidden">
+<div id="trashModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="trashModalTitle">
   <div class="modal-content trash-modal-content">
     <div class="trash-modal-header">
-      <h3>Lixeira</h3>
-      <button class="modal-close-btn" onclick="closeTrashModal()" aria-label="Fechar lixeira">×</button>
+      <h3 id="trashModalTitle">Gerenciar Lixeira e Exclusão</h3>
+      <button type="button" class="modal-close-btn" onclick="closeTrashModal()" aria-label="Fechar lixeira"><span aria-hidden="true">&times;</span></button>
     </div>
-    <div class="trash-modal-toolbar">
-      <button id="refreshTrashBtn">Atualizar lista</button>
+
+    <div class="trash-modal-tabs" role="tablist" aria-label="Abas da lixeira">
+      <button id="tabBulkDeactivateBtn" class="trash-tab-btn" type="button" role="tab" aria-selected="false" aria-controls="trashTabDeactivate" onclick="switchTrashModalTab('deactivate')">
+        Enviar para lixeira (Ativos)
+      </button>
+      <button id="tabTrashItemsBtn" class="trash-tab-btn active" type="button" role="tab" aria-selected="true" aria-controls="trashTabItems" onclick="switchTrashModalTab('trash')">
+        Itens na lixeira
+      </button>
     </div>
-    <div id="trashHostsList" class="trash-list"></div>
+
+    <!-- Aba 1: Seleção em lote de hosts ativos para enviar à lixeira -->
+    <div id="trashTabDeactivate" class="trash-tab-panel hidden" role="tabpanel" aria-labelledby="tabBulkDeactivateBtn">
+      <div class="bulk-deactivate-search-row">
+        <label for="bulkDeactivateSearchInput" class="visually-hidden">Filtrar hosts ativos</label>
+        <input id="bulkDeactivateSearchInput" type="text" placeholder="Filtrar hosts ativos por nome ou IP..." title="Filtrar lista de hosts ativos">
+      </div>
+      <div class="trash-modal-toolbar bulk-deactivate-toolbar">
+        <div class="bulk-toolbar-left">
+          <button id="selectAllBulkDeactivateBtn" class="btn-secondary-action" type="button" title="Alternar seleção de todos os hosts visíveis">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="9 11 12 14 22 4"></polyline></svg>
+              <span>Selecionar todos</span>
+          </button>
+          <small id="bulkDeactivateSelectionInfo" class="bulk-selection-info" aria-live="polite">0 selecionado(s)</small>
+        </div>
+        <div class="bulk-toolbar-right">
+          <button id="bulkDeactivateSelectedBtn" class="trash-empty-btn danger-btn" type="button" disabled title="Mover todos os hosts marcados para a lixeira">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6l1 2h4v2H4V6h4l1-2zm-2 6h2v8H7v-8zm4 0h2v8h-2v-8zm4 0h2v8h-2v-8z"/></svg>
+            <span>Mover selecionados para lixeira</span>
+          </button>
+          <button id="refreshBulkDeactivateBtn" type="button" class="btn-secondary-action" title="Atualizar lista de hosts ativos">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path></svg>
+            <span>Atualizar lista</span>
+          </button>
+        </div>
+      </div>
+      <div id="bulkDeactivateHostsList" class="trash-list"></div>
+    </div>
+
+    <!-- Aba 2: Itens atualmente na lixeira -->
+    <div id="trashTabItems" class="trash-tab-panel" role="tabpanel" aria-labelledby="tabTrashItemsBtn">
+      <div class="trash-modal-toolbar">
+        <button id="emptyTrashBtn" class="trash-empty-btn danger-btn" type="button" onclick="openConfirmEmptyTrashModal()" title="Excluir permanentemente todos os hosts da lixeira">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          <span>Excluir todos</span>
+        </button>
+        <button id="refreshTrashBtn" type="button" class="btn-secondary-action" title="Atualizar itens da lixeira">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path></svg>
+          <span>Atualizar lista</span>
+        </button>
+      </div>
+      <div id="trashHostsList" class="trash-list"></div>
+    </div>
   </div>
 </div>
 
+<div id="confirmEmptyTrashModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirmEmptyTrashTitle">
+  <div class="modal-content confirm-modal-content">
+    <div class="modal-header">
+      <h3 id="confirmEmptyTrashTitle">Excluir todos da lixeira</h3>
+      <button type="button" class="modal-close-btn" onclick="closeConfirmEmptyTrashModal()" title="Fechar" aria-label="Fechar"><span aria-hidden="true">&times;</span></button>
+    </div>
+    <p class="confirm-modal-text">Tem certeza de que deseja excluir permanentemente <strong>todos os hosts</strong> que estão na lixeira?<br><small class="confirm-modal-subnote">Essa ação não poderá ser desfeita.</small></p>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn-danger" id="confirmEmptyTrashBtn" onclick="confirmEmptyTrash()">Sim, excluir todos</button>
+      <button type="button" class="modal-btn-secondary" onclick="closeConfirmEmptyTrashModal()">Cancelar</button>
+    </div>
+  </div>
 </div>
+
+</main>
 
 <div id="sidebarOverlay" class="sidebar-overlay hidden"></div>
 <aside id="sidebarMenu" class="sidebar-menu hidden" aria-hidden="true">

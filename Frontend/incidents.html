@@ -9,9 +9,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NetSpot - Incidentes</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <script>
   (function() {
@@ -27,37 +24,57 @@
     <div class="app-topbar-inner">
         <div class="hero-copy app-topbar-title">
             <a href="dashboard.html" class="app-logo-link" title="Ir para o início">
-                <img src="images/logo/Prancheta 1.png" alt="NetSpot" class="app-logo logo-light">
-                <img src="images/logo/Prancheta 2.png" alt="NetSpot" class="app-logo logo-dark">
+                <img src="images/logo/Prancheta 1.png" alt="NetSpot" class="app-logo logo-light" width="93" height="48">
+                <img src="images/logo/Prancheta 2.png" alt="NetSpot" class="app-logo logo-dark" width="93" height="48">
             </a>
             <span class="page-subtitle">/ Incidentes</span>
         </div>
-        <button id="themeToggleBtn" class="theme-switch-pill" type="button" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro">
-            <svg class="theme-switch-icon-sun" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <svg class="theme-switch-icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 109 9 9.75 9.75 0 00-.67-3.4 6.78 6.78 0 01-7.93-7.93A9.75 9.75 0 0012 3z"/></svg>
-            <span class="theme-switch-thumb">
-                <svg id="themeToggleIcon" viewBox="0 0 24 24" width="14" height="14"></svg>
-            </span>
-        </button>
-        <a class="toolbar-link-btn icon-btn nav" href="dashboard.html" title="Voltar ao dashboard" aria-label="Voltar ao dashboard">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6l-6 6 6 6M8 12h12"/></svg>
-        </a>
+        <div class="topbar-right-group">
+            <button id="themeToggleBtn" class="theme-switch-pill" type="button" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro" aria-pressed="false">
+                <svg class="theme-switch-icon-sun" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <svg class="theme-switch-icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 109 9 9.75 9.75 0 00-.67-3.4 6.78 6.78 0 01-7.93-7.93A9.75 9.75 0 0012 3z"/></svg>
+                <span class="theme-switch-thumb">
+                    <svg id="themeToggleIcon" viewBox="0 0 24 24" width="14" height="14"></svg>
+                </span>
+            </button>
+            <a class="topbar-action-btn" href="dashboard.html" title="Voltar ao dashboard" aria-label="Voltar ao dashboard">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                <span class="topbar-btn-text">Dashboard</span>
+            </a>
+        </div>
     </div>
 </header>
 
-<div class="container app-content">
+<main class="container app-content" id="main-content" role="main">
+    <h1 class="visually-hidden">NetSpot - Histórico de Incidentes</h1>
 
     <section class="panel-section">
         <article class="overview-card incidents-page-card">
             <div class="incidents-toolbar">
-                <input id="incidentsSearch" type="text" placeholder="Buscar por nome do host...">
+                <label for="incidentsSearch" class="visually-hidden">Buscar incidentes</label>
+                <input id="incidentsSearch" type="text" placeholder="Buscar por host, motivo ou protocolo..." title="Filtre incidentes por host, motivo ou protocolo">
+                <button id="refreshIncidentsBtn" class="refresh-pill-btn" type="button" title="Atualizar lista de incidentes" aria-label="Atualizar lista de incidentes">
+                    <svg class="refresh-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    <span>Atualizar</span>
+                </button>
+            </div>
+            <div class="status-chips incidents-chips" id="incidentStatusChips" role="group" aria-label="Filtrar por estado do incidente">
+                <button type="button" class="status-chip active" data-status="all">
+                    Todos <span class="status-chip-count" id="countAll">0</span>
+                </button>
+                <button type="button" class="status-chip chip-open" data-status="open">
+                    Abertos <span class="status-chip-count" id="countOpen">0</span>
+                </button>
+                <button type="button" class="status-chip chip-closed" data-status="closed">
+                    Fechados <span class="status-chip-count" id="countClosed">0</span>
+                </button>
             </div>
             <div id="incidentsList" class="incidents-list" aria-live="polite">
                 <small>Carregando incidentes...</small>
             </div>
         </article>
     </section>
-</div>
+</main>
 <script src="js/incidents.js"></script>
 </body>
 </html>

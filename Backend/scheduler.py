@@ -1,8 +1,9 @@
+import asyncio
 import logging
 import os
 import time
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from threading import Lock
 
 from sqlalchemy import select
@@ -57,6 +58,7 @@ from Backend.snmp_engine import (
     snmp_has_usable_data,
     update_host_snmp,
 )
+from Backend.services.circuit_breaker import circuit_breaker
 from Backend.utils import (
     INCIDENT_TYPE_DNS_FAILURE,
     INCIDENT_TYPE_SERVICE_DEGRADED,
@@ -79,7 +81,7 @@ _DEGRADED_STREAKS_LOCK = Lock()
 
 MONITOR_INTERVAL_SECONDS = int(os.getenv("NETSPOT_MONITOR_INTERVAL_SECONDS", "10"))
 CLEANUP_INTERVAL_SECONDS = int(os.getenv("NETSPOT_CLEANUP_INTERVAL_SECONDS", "3600"))
-SNMP_ALLOWED_COMMUNITY = "netspot"
+SNMP_ALLOWED_COMMUNITY = (os.getenv("NETSPOT_SNMP_COMMUNITY") or "netspot").strip().lower()
 
 
 def _alert_cooldown_passed(
@@ -159,20 +161,35 @@ def determine_operational_state(host: Host, ping_result, tcp_result, http_result
     return "DOWN", primary_check, service_up_without_icmp
 
 
-def _resolve_host_check_url(host: Host) -> str | None:
+def _resolve_host_check_url(host: Host, resolved_ip: str | None = None) -> str | None:
     if not bool(getattr(host, "http_enabled", True)):
         return None
 
     ports = _host_tcp_ports(host)
     primary_port = ports[0] if ports else None
+    target_host = (host.address or resolved_ip or "").strip()
 
     if host.http_url:
         return host.http_url
-    if primary_port in (80, 443):
-        return host.address
+    if not target_host:
+        return None
+    if 80 in ports and 443 in ports:
+        return target_host
+    if 443 in ports:
+        return f"https://{target_host}"
+    if 80 in ports:
+        return f"http://{target_host}"
+    for web_port in (8443, 8080, 8000, 3000, 9187):
+        if web_port in ports:
+            scheme = "https" if web_port == 8443 else "http"
+            return f"{scheme}://{target_host}:{web_port}"
+    if primary_port == 443:
+        return f"https://{target_host}"
+    if primary_port == 80:
+        return f"http://{target_host}"
     if primary_port:
-        return f"{host.address}:{primary_port}"
-    return host.address or None
+        return f"{target_host}:{primary_port}"
+    return target_host
 
 
 def _host_tcp_ports(host: Host) -> list[int]:
@@ -268,6 +285,12 @@ async def _host_check_async(host_id: int) -> None:
         old_status_normalized = str(old_status or "").strip().upper()
         baseline_pending = bool(getattr(host, "baseline_pending", False))
 
+        # Pattern Circuit Breaker: pausa polling se disjuntor estiver OPEN por falhas repetidas
+        if not circuit_breaker.is_allowed(host.id):
+            logger.info("[CIRCUIT BREAKER] Polling pausado para host '%s' (id=%s) - Disjuntor OPEN", host.name, host.id)
+            await db.close()
+            return
+
         dns_result = await resolve_dns_cached(host.address, db)
         ips, ttl, ttl_remaining = _extract_ips_and_ttl(dns_result)
 
@@ -280,7 +303,7 @@ async def _host_check_async(host_id: int) -> None:
             if (
                 (
                     not host.last_ttl_alert
-                    or (datetime.utcnow() - host.last_ttl_alert).seconds > 3600
+                    or (datetime.now(timezone.utc).replace(tzinfo=None) - host.last_ttl_alert).total_seconds() > 3600
                 )
                 and _alert_cooldown_passed(
                     host.id, "DNS_TTL_LOW", 3600, fingerprint=str(ttl)
@@ -299,14 +322,16 @@ async def _host_check_async(host_id: int) -> None:
                     "host_name": host.name,
                     "host_address": host.address,
                     "ttl": ttl,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
                 })
-                host.last_ttl_alert = datetime.utcnow()
+                host.last_ttl_alert = datetime.now(timezone.utc).replace(tzinfo=None)
 
         if not ips:
             host.status = "DOWN"
+            host.health_score = 0
+            host.severity = "CRITICAL"
             host.last_resolved_ip = None
-            host.last_check = datetime.utcnow()
+            host.last_check = datetime.now(timezone.utc).replace(tzinfo=None)
             if baseline_pending:
                 host.baseline_pending = False
 
@@ -323,6 +348,7 @@ async def _host_check_async(host_id: int) -> None:
 
             host.fail_streak = (host.fail_streak or 0) + 1
             host.success_streak = 0
+            circuit_breaker.record_failure(host.id)
 
             await db.flush()
 
@@ -351,33 +377,30 @@ async def _host_check_async(host_id: int) -> None:
             await db.commit()
             return
 
-        db.add(
-            CheckResult(
-                host_id=host.id,
-                host_name=host.name,
-                check_type="dns",
-                success=True,
-                latency=None,
-                error=None,
-            )
+        dns_check = CheckResult(
+            host_id=host.id,
+            host_name=host.name,
+            check_type="dns",
+            success=True,
+            latency=None,
+            error=None,
         )
 
         index = (host.id + int(time.time() / 20)) % len(ips)
         ip = ips[index]
 
+        dns_alert = None
         if host.last_resolved_ip and host.last_resolved_ip not in ips:
             old_ip = host.last_resolved_ip
             new_ip = str(ips)
             if _alert_cooldown_passed(
                 host.id, "DNS_CHANGE", 300, fingerprint=f"{old_ip}->{new_ip}"
             ):
-                db.add(
-                    Alert(
-                        host_id=host.id,
-                        alert_type="DNS_CHANGE",
-                        old_status=old_ip,
-                        new_status=new_ip,
-                    )
+                dns_alert = Alert(
+                    host_id=host.id,
+                    alert_type="DNS_CHANGE",
+                    old_status=old_ip,
+                    new_status=new_ip,
                 )
                 await send_telegram_alert_async({
                     "event": "dns_change",
@@ -385,35 +408,57 @@ async def _host_check_async(host_id: int) -> None:
                     "host_address": host.address,
                     "old_ip": old_ip,
                     "new_ip": new_ip,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
                 })
 
         host.last_resolved_ip = ip
-        await close_incident_async(
-            db,
-            host.name,
-            incident_type=INCIDENT_TYPE_DNS_FAILURE,
-            auto_commit=False,
+
+        tcp_ports = _host_tcp_ports(host)
+        url = _resolve_host_check_url(host, resolved_ip=ip)
+
+        async def _run_all_tcp_ports() -> list[dict]:
+            if not tcp_ports:
+                return []
+
+            async def _check_single_tcp_port(p: int) -> dict:
+                res = await tcp_check(ip, p)
+                res["port"] = p
+                return res
+
+            return list(await asyncio.gather(*[_check_single_tcp_port(p) for p in tcp_ports]))
+
+        async def _run_http_check():
+            if not url:
+                return None
+            return await http_check(url)
+
+        ping_result, tcp_results, http_result = await asyncio.gather(
+            ping_host(ip),
+            _run_all_tcp_ports(),
+            _run_http_check(),
         )
-
-        ping_result = await ping_host(ip)
-
-        tcp_results = []
-        for tcp_port in _host_tcp_ports(host):
-            result = await tcp_check(ip, tcp_port)
-            result["port"] = tcp_port
-            tcp_results.append(result)
 
         tcp_result = _aggregate_tcp_results(tcp_results)
 
-        http_result = None
-        url = _resolve_host_check_url(host)
-        if url:
-            http_result = await http_check(url)
+        host.status_ping = "UP" if ping_result.get("success") else "DOWN"
+        host.latency_ping = ping_result.get("latency")
+        if tcp_result is not None:
+            host.status_tcp = "UP" if tcp_result.get("success") else "DOWN"
+            host.latency_tcp = tcp_result.get("latency")
+        else:
+            host.status_tcp = None
+            host.latency_tcp = None
+
+        if url and http_result is not None:
             protocol = str(http_result.get("protocol") or "").lower()
             host.last_http_protocol = protocol.upper() if protocol in {"http", "https"} else None
-            host.http_latency = http_result.get("latency")
-            host.https_latency = None
+            host.http_latency = http_result.get("http_latency")
+            host.https_latency = http_result.get("https_latency")
+            if host.http_latency is None and host.https_latency is None:
+                if protocol == "https":
+                    host.https_latency = http_result.get("latency")
+                else:
+                    host.http_latency = http_result.get("latency")
             host.web_tcp_port = 443 if protocol == "https" else (80 if protocol == "http" else None)
             host.web_tcp_port_latency = None
 
@@ -424,8 +469,10 @@ async def _host_check_async(host_id: int) -> None:
                 )
                 return existing or await tcp_check(ip, int(target_port))
 
-            http_port_result = await _probe_aux_port(80)
-            https_port_result = await _probe_aux_port(443)
+            http_port_result, https_port_result = await asyncio.gather(
+                _probe_aux_port(80),
+                _probe_aux_port(443),
+            )
 
             host.tcp_http_port_ok = bool(http_port_result.get("success"))
             host.tcp_http_port_latency = (
@@ -478,7 +525,7 @@ async def _host_check_async(host_id: int) -> None:
                 "host_name": host.name,
                 "host_address": host.address,
                 "health_score": score,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
             })
 
         new_status, primary_check, service_up_without_icmp = determine_operational_state(
@@ -496,14 +543,17 @@ async def _host_check_async(host_id: int) -> None:
             host.success_streak = (host.success_streak or 0) + 1
             host.fail_streak = 0
             _set_degraded_streak(host.id, 0)
+            circuit_breaker.record_success(host.id)
         elif new_status == "DEGRADED":
             host.success_streak = 0
             host.fail_streak = (host.fail_streak or 0) + 1
             _increment_degraded_streak(host.id)
+            circuit_breaker.record_success(host.id)
         else:
             host.fail_streak = (host.fail_streak or 0) + 1
             host.success_streak = 0
             _set_degraded_streak(host.id, 0)
+            circuit_breaker.record_failure(host.id)
 
         is_real_recovery = (
             old_status_normalized in {"DOWN", "DEGRADED"}
@@ -511,14 +561,21 @@ async def _host_check_async(host_id: int) -> None:
             and host.success_streak >= ALERT_RECOVER_THRESHOLD
         )
 
-        if (not baseline_pending) and old_status and old_status != new_status:
-            if service_up_without_icmp and new_status == "UP":
-                pass
-            elif new_status != "UP" and host.fail_streak >= ALERT_FAIL_THRESHOLD:
+        is_confirmed_failure = (
+            (not baseline_pending)
+            and new_status != "UP"
+            and not (service_up_without_icmp and new_status == "UP")
+            and host.fail_streak == ALERT_FAIL_THRESHOLD
+        )
+
+        if not baseline_pending:
+            if is_confirmed_failure:
+                previous_state = old_status if (old_status and old_status != new_status) else "UP"
                 db.add(
                     Alert(
                         host_id=host.id,
-                        old_status=old_status,
+                        alert_type="STATUS_CHANGE",
+                        old_status=previous_state,
                         new_status=new_status,
                     )
                 )
@@ -526,17 +583,18 @@ async def _host_check_async(host_id: int) -> None:
                     "event": "failure_confirmed",
                     "host_name": host.name,
                     "host_address": host.address,
-                    "old_status": old_status,
+                    "old_status": previous_state,
                     "new_status": new_status,
                     "fail_streak": host.fail_streak,
                     "check_used": primary_check,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
                 })
             elif is_real_recovery:
                 db.add(
                     Alert(
                         host_id=host.id,
-                        old_status=old_status,
+                        alert_type="UP_RECOVERED",
+                        old_status=old_status or "DOWN",
                         new_status="UP_RECOVERED",
                     )
                 )
@@ -544,11 +602,20 @@ async def _host_check_async(host_id: int) -> None:
                     "event": "recovery",
                     "host_name": host.name,
                     "host_address": host.address,
-                    "old_status": old_status,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "old_status": old_status or "DOWN",
+                    "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
                 })
+            elif old_status and old_status != new_status and not (service_up_without_icmp and new_status == "UP"):
+                db.add(
+                    Alert(
+                        host_id=host.id,
+                        alert_type="STATUS_CHANGE",
+                        old_status=old_status,
+                        new_status=new_status,
+                    )
+                )
 
-        host.last_check = datetime.utcnow()
+        host.last_check = datetime.now(timezone.utc).replace(tzinfo=None)
 
         db.add(
             CheckResult(
@@ -600,30 +667,57 @@ async def _host_check_async(host_id: int) -> None:
                     status_code=http_result.get("status_code"),
                 )
             )
+        if dns_check:
+            db.add(dns_check)
+        if dns_alert:
+            db.add(dns_alert)
+
+        # Executa SNMP antes de persistir o flush no Host,
+        # impedindo lock exclusivo na linha da tabela hosts enquanto aguarda I/O de rede UDP
+        snmp_data = None
+        if new_status in ("UP", "DEGRADED") and _snmp_is_configured(host) and can_attempt_snmp(host.id):
+            try:
+                snmp_data = await update_host_snmp(host, db)
+            except Exception:
+                logger.exception("[SNMP ERROR] host=%s", host.name)
+                register_snmp_failure(host.id, host.name)
+            else:
+                if snmp_has_usable_data(snmp_data):
+                    register_snmp_success(host.id)
+                else:
+                    register_snmp_failure(host.id, host.name)
 
         await db.flush()
-
-        host.sla_rolling_ping = await calc_sla_rolling_ping_async(db, host.id, 50)
-        host.jitter_ms_ping = await calc_jitter_ping_async(db, host.id, 10)
-
-        active_tcp_ports = _host_tcp_ports(host)
-        host.sla_rolling_tcp = await calc_sla_rolling_tcp_ports_async(db, host.id, active_tcp_ports, 50)
-        host.jitter_ms_tcp = await calc_jitter_tcp_ports_async(db, host.id, active_tcp_ports, 10)
-
-        host.sla_rolling_http = await calc_sla_rolling_http_async(db, host.id, 50)
-        host.jitter_ms_http = await calc_jitter_http_async(db, host.id, 10)
-
-        host.slope = await calc_latency_trend_ping_async(db, host.id, 10)
-        host.trend = classify_trend(host.slope)
-
-        host.slope_http = await calc_latency_trend_http_async(db, host.id, 10)
-        host.trend_http = classify_trend_http(host.slope_http)
 
         if service_up_without_icmp:
             host.sla_rolling_ping = None
             host.jitter_ms_ping = None
             host.slope = None
             host.trend = "UNKNOWN"
+        else:
+            host.sla_rolling_ping = await calc_sla_rolling_ping_async(db, host.id, 50)
+            host.jitter_ms_ping = await calc_jitter_ping_async(db, host.id, 10)
+            host.slope = await calc_latency_trend_ping_async(db, host.id, 10)
+            host.trend = classify_trend(host.slope)
+
+        active_tcp_ports = _host_tcp_ports(host)
+        if active_tcp_ports:
+            host.sla_rolling_tcp = await calc_sla_rolling_tcp_ports_async(db, host.id, active_tcp_ports, 50)
+            host.jitter_ms_tcp = await calc_jitter_tcp_ports_async(db, host.id, active_tcp_ports, 10)
+        else:
+            host.sla_rolling_tcp = None
+            host.jitter_ms_tcp = None
+
+        if bool(getattr(host, "http_enabled", True)):
+            host.sla_rolling_http = await calc_sla_rolling_http_async(db, host.id, 50)
+            host.jitter_ms_http = await calc_jitter_http_async(db, host.id, 10)
+            host.slope_http = await calc_latency_trend_http_async(db, host.id, 10)
+            host.trend_http = classify_trend_http(host.slope_http)
+        else:
+            host.sla_rolling_http = None
+            host.jitter_ms_http = None
+            host.slope_http = None
+            host.trend_http = "UNKNOWN"
 
         host.severity = refine_severity(
             host.severity,
@@ -636,20 +730,6 @@ async def _host_check_async(host_id: int) -> None:
             ignore_ping_metrics=service_up_without_icmp,
         )
 
-        snmp_data = None
-
-        if host.status == "UP" and _snmp_is_configured(host) and can_attempt_snmp(host.id):
-            try:
-                snmp_data = await update_host_snmp(host, db)
-            except Exception:
-                logger.exception("[SNMP ERROR] host=%s", host.name)
-                register_snmp_failure(host.id, host.name)
-            else:
-                if snmp_has_usable_data(snmp_data):
-                    register_snmp_success(host.id)
-                else:
-                    register_snmp_failure(host.id, host.name)
-
         preventive_severity, preventive_reasons = apply_preventive_logic(
             host,
             snmp_data,
@@ -657,6 +737,17 @@ async def _host_check_async(host_id: int) -> None:
         )
 
         host.severity = max_severity(host.severity, preventive_severity)
+
+        # Harmonização matemática entre Severidade e Health Score
+        if host.status == "DOWN":
+            host.health_score = 0
+            host.severity = "CRITICAL"
+        elif host.severity == "CRITICAL" and host.health_score > 35:
+            host.health_score = 35
+        elif host.severity == "DEGRADED" and host.health_score > 60:
+            host.health_score = 60
+        elif host.severity == "WARNING" and host.health_score > 80:
+            host.health_score = 80
 
         final_status = host.status
         primary_checks = [primary_check.lower()]
@@ -713,10 +804,17 @@ async def _host_check_async(host_id: int) -> None:
                 auto_commit=False,
             )
 
-        if host.severity in ("WARNING", "DEGRADED", "CRITICAL"):
+        await close_incident_async(
+            db,
+            host.name,
+            incident_type=INCIDENT_TYPE_DNS_FAILURE,
+            auto_commit=False,
+        )
+
+        if host.status != "DOWN" and host.severity in ("WARNING", "DEGRADED", "CRITICAL") and preventive_reasons:
             if (
                 not host.last_preventive_alert
-                or datetime.utcnow() - host.last_preventive_alert > timedelta(minutes=30)
+                or datetime.now(timezone.utc).replace(tzinfo=None) - host.last_preventive_alert > timedelta(minutes=30)
             ):
                 severity_labels = {
                     "WARNING": "Atenção",
@@ -755,9 +853,9 @@ async def _host_check_async(host_id: int) -> None:
                         "host_address": host.address,
                         "condition": condition_text,
                         "details": details_text,
-                        "timestamp": datetime.utcnow().isoformat()
+                        "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
                     })
-                    host.last_preventive_alert = datetime.utcnow()
+                    host.last_preventive_alert = datetime.now(timezone.utc).replace(tzinfo=None)
 
         await db.commit()
     except Exception:
@@ -774,8 +872,21 @@ async def get_active_host_ids() -> list[int]:
         return [row[0] for row in rows.all()]
 
 
+_in_flight_hosts: set[int] = set()
+_in_flight_lock = asyncio.Lock()
+
+
 async def process_host_check(host_id: int) -> None:
-    await _host_check_async(host_id)
+    async with _in_flight_lock:
+        if host_id in _in_flight_hosts:
+            logger.debug("[SCHEDULER] Checagem de host_id=%s já em andamento, descartando execução concorrente", host_id)
+            return
+        _in_flight_hosts.add(host_id)
+    try:
+        await _host_check_async(host_id)
+    finally:
+        async with _in_flight_lock:
+            _in_flight_hosts.discard(host_id)
 
 
 async def check_all_hosts() -> None:
@@ -801,7 +912,7 @@ async def trim_history(db, host_id, check_type, limit=500):
     old = res.scalars().all()
 
     for row in old:
-        db.delete(row)
+        await db.delete(row)
 
 
 async def cleanup_old_data():

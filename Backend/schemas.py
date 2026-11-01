@@ -10,6 +10,7 @@ class PasswordChangeRequest(BaseModel):
     new_password: str
 
 class HostUpdate(BaseModel):
+    name: Optional[str] = None
     address: str
     port: Optional[int] = None
     ports: Optional[List[int]] = None
@@ -27,7 +28,7 @@ class HostCreate(BaseModel):
     url: Optional[str] = None
     http_url: Optional[str] = None
     http_enabled: bool = True
-    snmp_enabled: bool = False
+    snmp_enabled: bool = True
     snmp_community: Optional[str] = "netspot"
 
 
@@ -38,7 +39,21 @@ class NetworkDiscoveryRequest(BaseModel):
 class NetworkImportHostItem(BaseModel):
     name: str
     address: str
+    ports: Optional[List[int]] = None
+    http_enabled: Optional[bool] = None
+    http_url: Optional[str] = None
+    snmp_enabled: Optional[bool] = None
+    snmp_community: Optional[str] = None
 
 
 class NetworkImportRequest(BaseModel):
     hosts: List[NetworkImportHostItem]
+    snmp_enabled: Optional[bool] = True
+    snmp_community: Optional[str] = "netspot"
+
+
+class BulkDeactivateRequest(BaseModel):
+    host_ids: Optional[List[int]] = None
+    host_names: Optional[List[str]] = None
+
+

@@ -1,0 +1,65 @@
+$TTL    86400
+@       IN      SOA     ns1.lab.local. root.lab.local. (
+                              1         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                          86400 )       ; Negative Cache TTL
+;
+@       IN      NS      ns1.lab.local.
+@       IN      NS      ns2.lab.local.
+
+ns1     IN      A       10.0.3.7
+ns2     IN      A       10.0.3.8
+dns1    IN      A       10.0.3.7
+dns2    IN      A       10.0.3.8
+
+router-lab1 IN  A       10.0.1.1
+router-lab2 IN  A       10.0.2.1
+router-lab3 IN  A       10.0.3.1
+
+pc1     IN      A       10.0.1.2
+pc2     IN      A       10.0.1.3
+pc3     IN      A       10.0.1.4
+pc4     IN      A       10.0.1.5
+pc5     IN      A       10.0.1.6
+pc6     IN      A       10.0.1.7
+pc7     IN      A       10.0.1.8
+pc8     IN      A       10.0.1.9
+pc9     IN      A       10.0.1.10
+pc10    IN      A       10.0.1.11
+pc11    IN      A       10.0.1.12
+pc12    IN      A       10.0.1.13
+pc13    IN      A       10.0.1.14
+pc14    IN      A       10.0.1.15
+pc15    IN      A       10.0.1.16
+
+pc16    IN      A       10.0.2.2
+pc17    IN      A       10.0.2.3
+pc18    IN      A       10.0.2.4
+pc19    IN      A       10.0.2.5
+pc20    IN      A       10.0.2.6
+pc21    IN      A       10.0.2.7
+pc22    IN      A       10.0.2.8
+pc23    IN      A       10.0.2.9
+pc24    IN      A       10.0.2.10
+pc25    IN      A       10.0.2.11
+pc26    IN      A       10.0.2.12
+pc27    IN      A       10.0.2.13
+pc28    IN      A       10.0.2.14
+pc29    IN      A       10.0.2.15
+pc30    IN      A       10.0.2.16
+
+web1    IN      A       10.0.3.2
+web2    IN      A       10.0.3.3
+web3    IN      A       10.0.3.4
+web     IN      A       10.0.3.2
+
+app1    IN      A       10.0.3.5
+app2    IN      A       10.0.3.6
+app     IN      A       10.0.3.5
+
+db1     IN      A       10.0.3.9
+db2     IN      A       10.0.3.10
+db3     IN      A       10.0.3.11
+db      IN      A       10.0.3.9

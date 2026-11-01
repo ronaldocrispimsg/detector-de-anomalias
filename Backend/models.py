@@ -1,7 +1,13 @@
-from sqlalchemy import Boolean, Column, Float, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Float, Integer, String, DateTime, ForeignKey, Index
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from Backend.database import Base
+
+
+def _utcnow_naive():
+    """Retorna datetime UTC sem tzinfo para persistência segura em banco."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 
 
 class Host(Base):
@@ -85,10 +91,14 @@ class Host(Base):
 
 class CheckResult(Base):
     __tablename__ = "checks"
+    __table_args__ = (
+        Index("ix_checks_host_type_ts", "host_id", "check_type", "timestamp"),
+        Index("ix_checks_host_ts", "host_id", "timestamp"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
 
-    host_id = Column(Integer, ForeignKey("hosts.id"))
+    host_id = Column(Integer, ForeignKey("hosts.id"), index=True)
     host_name = Column(String)
 
     check_type = Column(String)
@@ -99,30 +109,36 @@ class CheckResult(Base):
     status_code = Column(Integer, nullable=True)
     tcp_port = Column(Integer, nullable=True)
     
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=_utcnow_naive, index=True)
 
     host = relationship("Host", back_populates="checks")
 
 class Alert(Base):
     __tablename__ = "alerts"
+    __table_args__ = (
+        Index("ix_alerts_host_ts", "host_id", "timestamp"),
+    )
 
     id = Column(Integer, primary_key=True)
-    host_id = Column(Integer)
+    host_id = Column(Integer, index=True)
     alert_type = Column(String)
 
     old_status = Column(String)
     new_status = Column(String)
 
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=_utcnow_naive, index=True)
 
 class Incident(Base):
     __tablename__ = "incidents"
+    __table_args__ = (
+        Index("ix_incidents_status_started", "status", "started_time"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     host_name = Column(String, index=True)
-    status = Column(String, default="OPEN")
+    status = Column(String, default="OPEN", index=True)
     reason = Column(String)
-    started_time = Column(DateTime, default=datetime.utcnow)
+    started_time = Column(DateTime, default=_utcnow_naive, index=True)
     ended_time = Column(DateTime, nullable=True)
     duration_seconds = Column(Integer, nullable=True)
 
@@ -151,10 +167,13 @@ class User(Base):
 
 class SNMPMetric(Base):
     __tablename__ = "snmp_metrics"
+    __table_args__ = (
+        Index("ix_snmp_metrics_host_ts", "host_id", "timestamp"),
+    )
 
     id = Column(Integer, primary_key=True)
 
-    host_id = Column(Integer)
+    host_id = Column(Integer, index=True)
     cpu = Column(Float)
     ram = Column(Float)
     disk = Column(Float)
@@ -162,4 +181,4 @@ class SNMPMetric(Base):
     network_out_bps = Column(Float, nullable=True)
     network_total_bps = Column(Float, nullable=True)
 
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=_utcnow_naive, index=True)

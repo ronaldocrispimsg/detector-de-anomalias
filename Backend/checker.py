@@ -8,21 +8,35 @@ import dns.resolver
 import httpx
 import socket
 from urllib.parse import urlparse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from Backend.models import DNSCache
 
+def _is_literal_ip(address: str) -> bool:
+    for family in (socket.AF_INET, socket.AF_INET6):
+        try:
+            socket.inet_pton(family, str(address or "").strip())
+            return True
+        except Exception:
+            pass
+    return False
+
 def resolve_dns_real_sync(address):
+    if _is_literal_ip(address):
+        return [str(address).strip()], 0
+    resolver = dns.resolver.Resolver()
+    resolver.lifetime = 1.5
+    resolver.timeout = 1.0
     try:
-        answers = dns.resolver.resolve(address, "A")
+        answers = resolver.resolve(address, "A")
     except:
         try:
-            answers = dns.resolver.resolve(address, "AAAA")
+            answers = resolver.resolve(address, "AAAA")
         except:
             return [], None
 
     ips = [r.to_text() for r in answers]
-    ttl = answers.rrset.ttl
+    ttl = answers.rrset.ttl if answers.rrset is not None else 60
     return ips, ttl
 
 def resolve_dns_cached_sync(address: str, db):
@@ -42,15 +56,16 @@ def resolve_dns_cached_sync(address: str, db):
     # ---------- cache ----------
     record = db.query(DNSCache).filter(DNSCache.hostname == address).first()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     ttl_remaining = 0
 
     if record:
         ttl_remaining = (record.expires_time - now).total_seconds()
 
         # cache válido (com margem)
-        if ttl_remaining > record.ttl * 0.1:
-            return json.loads(record.ip_list), record.ttl, int(ttl_remaining)
+        ttl_base = record.ttl or 60
+        if ttl_remaining > ttl_base * 0.1:
+            return json.loads(record.ip_list), ttl_base, int(ttl_remaining)
 
     # resolve DNS real
     ips, ttl = resolve_dns_real_sync(address)
@@ -84,6 +99,8 @@ def resolve_dns_cached_sync(address: str, db):
     return ips, ttl, ttl
 
 async def resolve_dns_real(address):
+    if _is_literal_ip(address):
+        return [str(address).strip()], 0
     try:
         answers = await dns.asyncresolver.resolve(address, "A")
     except:
@@ -93,7 +110,7 @@ async def resolve_dns_real(address):
             return [], None
 
     ips = [r.to_text() for r in answers]
-    ttl = answers.rrset.ttl
+    ttl = answers.rrset.ttl if answers.rrset is not None else 60
     return ips, ttl
 
 async def resolve_dns_cached(address: str, db):
@@ -115,15 +132,16 @@ async def resolve_dns_cached(address: str, db):
     result = await db.execute(stmt)
     record = result.scalars().first()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     ttl_remaining = 0
 
     if record:
         ttl_remaining = (record.expires_time - now).total_seconds()
 
         # cache válido (com margem)
-        if ttl_remaining > record.ttl * 0.1:
-            return json.loads(record.ip_list), record.ttl, int(ttl_remaining)
+        ttl_base = record.ttl or 60
+        if ttl_remaining > ttl_base * 0.1:
+            return json.loads(record.ip_list), ttl_base, int(ttl_remaining)
 
     # resolve DNS real
     ips, ttl = await resolve_dns_real(address)
@@ -156,7 +174,7 @@ async def resolve_dns_cached(address: str, db):
 
     return ips, ttl, ttl
 
-async def ping_host(ip: str, count: int = 3, timeout: int = 5, max_ms=5000):
+async def ping_host(ip: str, count: int = 1, timeout: int = 2, max_ms=5000):
     is_windows = platform.system().lower() == "windows"
     
     if is_windows:
@@ -173,7 +191,19 @@ async def ping_host(ip: str, count: int = 3, timeout: int = 5, max_ms=5000):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
-        stdout, stderr = await proc.communicate()
+        try:
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout + 3)
+        except asyncio.TimeoutError:
+            try:
+                proc.kill()
+                await proc.wait()
+            except Exception:
+                pass
+            return {
+                "success": False,
+                "error": "Ping timeout excedido",
+                "latency": None
+            }
         stdout_str = stdout.decode('utf-8', errors='ignore')
         stderr_str = stderr.decode('utf-8', errors='ignore')
 
@@ -215,7 +245,7 @@ async def ping_host(ip: str, count: int = 3, timeout: int = 5, max_ms=5000):
             "latency": None
         }
 
-async def tcp_check(ip: str, port: int, timeout: int = 5):
+async def tcp_check(ip: str, port: int, timeout: int = 2):
     start = time.time()
 
     try:
@@ -237,10 +267,16 @@ async def tcp_check(ip: str, port: int, timeout: int = 5):
             "latency": latency
         }
         
+    except asyncio.TimeoutError:
+        return {
+            "success": False,
+            "error": "timeout",
+            "latency": None
+        }
     except Exception as e:
         return {
             "success": False,
-            "error": str(e),
+            "error": str(e) or type(e).__name__,
             "latency": None
         }
 
@@ -269,7 +305,7 @@ async def _http_attempt(client: httpx.AsyncClient, url: str, timeout=1):
     except Exception as e:
         return {"success": False, "latency": None, "status_code": None, "error": str(e)}
 
-async def _http_with_retries(client: httpx.AsyncClient, url: str, retries: int = 3, timeout: int = 1):
+async def _http_with_retries(client: httpx.AsyncClient, url: str, retries: int = 1, timeout: int = 2):
     last_result = None
     for _ in range(max(1, retries)):
         result = await _http_attempt(client, url, timeout=timeout)
@@ -278,11 +314,12 @@ async def _http_with_retries(client: httpx.AsyncClient, url: str, retries: int =
             return result
     return last_result or {"success": False, "latency": None, "status_code": None, "error": "http_failed"}
 
-async def http_check(url: str, timeout=1, retries=3):
+async def http_check(url: str, timeout=2, retries=1):
     parsed = urlparse(url if "://" in url else f"//{url}")
     has_explicit_scheme = parsed.scheme in ("http", "https")
 
-    async with httpx.AsyncClient(verify=False) as client:
+    # Entrada segura: hosts internos podem ter certificados autoassinados
+    async with httpx.AsyncClient(verify=False) as client:  # nosec B501
         if has_explicit_scheme:
             result = await _http_with_retries(client, url, retries=retries, timeout=timeout)
             result["protocol"] = parsed.scheme
@@ -294,14 +331,16 @@ async def http_check(url: str, timeout=1, retries=3):
         https_url = f"https://{base}"
         http_url = f"http://{base}"
 
-        https_result = await _http_with_retries(client, https_url, retries=retries, timeout=timeout)
+        https_result, http_result = await asyncio.gather(
+            _http_with_retries(client, https_url, retries=retries, timeout=timeout),
+            _http_with_retries(client, http_url, retries=retries, timeout=timeout),
+        )
         if https_result.get("success"):
             https_result["protocol"] = "https"
             https_result["https_latency"] = https_result.get("latency")
-            https_result["http_latency"] = None
+            https_result["http_latency"] = http_result.get("latency") if http_result.get("success") else None
             return https_result
 
-        http_result = await _http_with_retries(client, http_url, retries=retries, timeout=timeout)
         http_result["protocol"] = "http"
         http_result["https_latency"] = https_result.get("latency") if https_result.get("success") else None
         http_result["http_latency"] = http_result.get("latency") if http_result.get("success") else None
