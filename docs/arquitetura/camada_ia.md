@@ -102,3 +102,4 @@ pytest Backend/tests/test_anomalies.py -v
 # Reproduzir baselines e gerar gráficos para o artigo
 python scripts/eval_benchmarks.py
 ```
+

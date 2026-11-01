@@ -17,3 +17,4 @@ O diretório `Backend/services/agent/` implementa o agente autônomo com saída 
 ```bash
 pytest Backend/services/agent/tests -v
 ```
+

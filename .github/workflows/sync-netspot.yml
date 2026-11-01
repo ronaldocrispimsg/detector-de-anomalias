@@ -81,3 +81,4 @@ jobs:
                 --body "Foram detectadas atualizações no repositório upstream NetSpot que necessitam de mesclagem ou revisão." || true
             fi
           fi
+

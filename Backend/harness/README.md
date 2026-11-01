@@ -20,3 +20,4 @@ python scripts/eval_benchmarks.py
 # Gerar gráficos e sumários para o artigo
 python scripts/generate_article_stats.py
 ```
+
