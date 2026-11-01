@@ -137,7 +137,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="NetSpot NOC Lite API",
     description="Sistema de Monitoramento de Redes com Foco em Prevenção de Falhas",
-    version="1.0.0",
+    version="1.1.1",
     lifespan=lifespan
 )
 
