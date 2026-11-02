@@ -9,10 +9,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NetSpot - Simulador Visual de Anomalias</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300..800&family=Roboto:wght@100..900&display=swap" rel="stylesheet">
+<title>NetSpot - Simulador e Classificador de Anomalias</title>
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/simulator.css">
 <script>
@@ -62,237 +59,274 @@
     </div>
 </header>
 
-<div class="sim-container">
-    <!-- Topbar Header -->
-    <div class="sim-header">
-        <div class="sim-title-group">
-            <h1>🖥️ Simulador & Classificador Visual de Anomalias</h1>
-            <p>Selecione qualquer cenário abaixo com 1 clique para visualizar as métricas em tempo real e o diagnóstico inteligente (Heurísticas, ML e IA Generativa Local).</p>
-        </div>
-        <div class="sim-actions">
-            <span id="genaiStatusBadge" class="risk-badge" style="background: rgba(16,185,129,0.2); color:#34d399; font-size:0.75rem; border: 1px solid #059669;">Checando LLM...</span>
-            <button id="runBenchmarkBtn" class="sim-btn sim-btn-accent" type="button">⚡ Benchmark (10 Cenários)</button>
-        </div>
-    </div>
+<main class="container app-content" id="main-content" role="main">
+    <h1 class="visually-hidden">NetSpot - Simulador e Classificador de Anomalias de Rede</h1>
 
-    <!-- SEÇÃO 1: Galeria Visual dos 10 Cenários (1 Clique) -->
-    <div class="section-title">
-        <span>🎮 Selecione o Cenário para Simular (1 Clique)</span>
-        <span class="badge">10 Cenários Prontos</span>
-    </div>
-
-    <div id="scenarioCardsContainer" class="scenario-cards-grid">
-        <!-- Injetado dinamicamente via JS -->
-    </div>
-
-    <!-- SEÇÃO 2: Painel de Telemetria Visual (Métricas Animadas) -->
-    <div class="section-title">
-        <span>📊 Telemetria do Sistema em Tempo Real</span>
-        <span id="activeScenarioTag" class="badge" style="background:rgba(168,85,247,0.2); color:#c084fc;">NORMAL</span>
-    </div>
-
-    <div class="telemetry-grid">
-        <!-- Meter 1: CPU -->
-        <div class="meter-card">
-            <div class="meter-header">
-                <span>💻 USO DE CPU</span>
-                <span id="meterCpuVal" class="meter-value">28%</span>
+    <!-- Seção de Cabeçalho / Hero -->
+    <section class="panel-section">
+        <article class="overview-card sim-hero-card">
+            <div class="sim-hero-header">
+                <div>
+                    <h2 class="sim-hero-title">Simulador & Classificador de Anomalias de Rede</h2>
+                    <p class="sim-hero-subtitle">Ambiente interativo de injeção determinística de falhas e inferência inteligente via Heurísticas de NOC, Machine Learning clássico e IA Generativa Local com RAG.</p>
+                </div>
+                <div class="sim-hero-actions">
+                    <span id="genaiStatusBadge" class="status-pill status-pill-active">Checando IA...</span>
+                    <button id="runBenchmarkBtn" class="btn-primary" type="button" title="Executar teste de benchmark comparativo nos 11 cenários">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        <span>Executar Benchmark</span>
+                    </button>
+                </div>
             </div>
-            <div class="progress-track">
-                <div id="meterCpuBar" class="progress-bar" style="width: 28%; background-color: #10b981;"></div>
-            </div>
-        </div>
+        </article>
+    </section>
 
-        <!-- Meter 2: RAM -->
-        <div class="meter-card">
-            <div class="meter-header">
-                <span>🧠 MEMÓRIA RAM</span>
-                <span id="meterRamVal" class="meter-value">45%</span>
+    <!-- Seção 1: Galeria de Cenários (1 Clique) -->
+    <section class="panel-section">
+        <article class="overview-card">
+            <div class="section-card-header">
+                <div class="section-title-wrap">
+                    <h2>Cenários Operacionais e Falhas</h2>
+                    <span class="badge-count">11 Cenários Prontos</span>
+                </div>
+                <small class="section-help-text">Selecione qualquer cenário com 1 clique para simular o vetor de telemetria e acionar o ensemble tríplice de diagnóstico.</small>
             </div>
-            <div class="progress-track">
-                <div id="meterRamBar" class="progress-bar" style="width: 45%; background-color: #3b82f6;"></div>
+            <div id="scenarioCardsContainer" class="scenario-cards-grid" role="radiogroup" aria-label="Cenários de simulação">
+                <!-- Injetado dinamicamente via JS -->
             </div>
-        </div>
+        </article>
+    </section>
 
-        <!-- Meter 3: DISCO -->
-        <div class="meter-card">
-            <div class="meter-header">
-                <span>💽 ARMAZENAMENTO DISCO</span>
-                <span id="meterDiskVal" class="meter-value">40%</span>
+    <!-- Seção 2: Telemetria em Tempo Real -->
+    <section class="panel-section">
+        <article class="overview-card">
+            <div class="section-card-header">
+                <div class="section-title-wrap">
+                    <h2>Telemetria do Sistema em Tempo Real</h2>
+                    <span id="activeScenarioTag" class="status-pill status-pill-scenario">NORMAL</span>
+                </div>
+                <small class="section-help-text">Métricas atômicas de saturação de recursos, camada de rede e aplicação HTTP.</small>
             </div>
-            <div class="progress-track">
-                <div id="meterDiskBar" class="progress-bar" style="width: 40%; background-color: #8b5cf6;"></div>
+
+            <div class="telemetry-grid">
+                <!-- Meter 1: CPU -->
+                <div class="meter-card">
+                    <div class="meter-header">
+                        <span>USO DE CPU</span>
+                        <span id="meterCpuVal" class="meter-value">28%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="meterCpuBar" class="progress-bar" style="width: 28%; background-color: var(--success);"></div>
+                    </div>
+                </div>
+
+                <!-- Meter 2: RAM -->
+                <div class="meter-card">
+                    <div class="meter-header">
+                        <span>MEMÓRIA RAM</span>
+                        <span id="meterRamVal" class="meter-value">45%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="meterRamBar" class="progress-bar" style="width: 45%; background-color: var(--primary);"></div>
+                    </div>
+                </div>
+
+                <!-- Meter 3: DISCO -->
+                <div class="meter-card">
+                    <div class="meter-header">
+                        <span>ARMAZENAMENTO DISCO</span>
+                        <span id="meterDiskVal" class="meter-value">40%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="meterDiskBar" class="progress-bar" style="width: 40%; background-color: #8e24aa;"></div>
+                    </div>
+                </div>
+
+                <!-- Meter 4: LATÊNCIA & LOSS -->
+                <div class="meter-card">
+                    <div class="meter-header">
+                        <span>LATÊNCIA ICMP</span>
+                        <span id="meterLatencyVal" class="meter-value">15 ms</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="meterLatencyBar" class="progress-bar" style="width: 15%; background-color: var(--success);"></div>
+                    </div>
+                    <div class="meter-subinfo">
+                        <span>Perda: <strong id="meterLossVal">0%</strong></span>
+                        <span>Jitter: <strong id="meterJitterVal">2 ms</strong></span>
+                    </div>
+                </div>
+
+                <!-- Meter 5: BANDA ENTRADA -->
+                <div class="meter-card">
+                    <div class="meter-header">
+                        <span>BANDA ENTRADA (IN)</span>
+                        <span id="meterNetInVal" class="meter-value">5.0 MB/s</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="meterNetInBar" class="progress-bar" style="width: 10%; background-color: #00838f;"></div>
+                    </div>
+                </div>
+
+                <!-- Meter 6: BANDA SAÍDA -->
+                <div class="meter-card">
+                    <div class="meter-header">
+                        <span>BANDA SAÍDA (OUT)</span>
+                        <span id="meterNetOutVal" class="meter-value">2.0 MB/s</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="meterNetOutBar" class="progress-bar" style="width: 5%; background-color: #c2185b;"></div>
+                    </div>
+                </div>
+
+                <!-- Meter 7: STATUS HTTP -->
+                <div class="meter-card">
+                    <div class="meter-header">
+                        <span>APLICAÇÃO HTTP</span>
+                        <span id="meterHttpBadge" class="risk-badge risk-BAIXO">200 OK</span>
+                    </div>
+                    <div class="meter-subinfo">
+                        <span>Tempo Resposta:</span>
+                        <strong id="meterHttpRespVal">120 ms</strong>
+                    </div>
+                </div>
+
+                <!-- Meter 8: CONEXÕES TCP -->
+                <div class="meter-card">
+                    <div class="meter-header">
+                        <span>CONEXÕES TCP</span>
+                        <span id="meterConnVal" class="meter-value">45</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="meterConnBar" class="progress-bar" style="width: 8%; background-color: var(--primary);"></div>
+                    </div>
+                </div>
             </div>
-        </div>
+        </article>
+    </section>
 
-        <!-- Meter 4: LATÊNCIA ICMP -->
-        <div class="meter-card">
-            <div class="meter-header">
-                <span>🚀 LATÊNCIA ICMP / LOSS</span>
-                <span id="meterLatencyVal" class="meter-value">15 ms</span>
+    <!-- Seção 3: Diagnóstico Inteligente & Ensemble Tríplice -->
+    <section class="panel-section">
+        <article class="overview-card">
+            <div class="section-card-header">
+                <div class="section-title-wrap">
+                    <h2>Diagnóstico Inteligente & Parecer dos Motores</h2>
+                </div>
+                <small class="section-help-text">Consenso automatizado combinando regras determinísticas de NOC, detecção estatística e inferência generativa com RAG.</small>
             </div>
-            <div class="progress-track">
-                <div id="meterLatencyBar" class="progress-bar" style="width: 15%; background-color: #10b981;"></div>
+
+            <!-- Banner Veredito Ensemble -->
+            <div class="verdict-banner" id="verdictBanner">
+                <div class="verdict-info">
+                    <span class="verdict-eyebrow">VEREDITO DE CONSENSO (ENSEMBLE MULTI-MOTOR)</span>
+                    <h3 id="finalScenarioTitle">CENÁRIO DETECTADO: OPERAÇÃO NORMAL</h3>
+                    <p id="finalScenarioMeta">Confiança: 98% | Consenso: SIM (Unânime)</p>
+                </div>
+                <div id="riskLevelBadge" class="risk-badge risk-BAIXO">RISCO BAIXO</div>
             </div>
-            <div style="font-size:0.75rem; color:var(--sim-text-muted); margin-top:6px; display:flex; justify-content:space-between;">
-                <span>Perda Pacotes: <strong id="meterLossVal" style="color:#fff;">0%</strong></span>
-                <span>Jitter: <strong id="meterJitterVal" style="color:#fff;">2 ms</strong></span>
+
+            <!-- Grade dos 3 Motores -->
+            <div class="motors-tri-grid">
+                <!-- Motor 1: Heurística -->
+                <div class="motor-card">
+                    <div class="motor-title">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+                        <span>Motor 1: Regras Heurísticas</span>
+                    </div>
+                    <div id="heurScenario" class="motor-pred">NORMAL</div>
+                    <div id="heurMeta" class="motor-meta">Confiança: 95% | Severidade: OK</div>
+                    <span class="motor-section-label">REGRAS DISPARADAS:</span>
+                    <ul id="heurRulesList" class="rules-list">
+                        <li>Nenhuma violação registrada.</li>
+                    </ul>
+                </div>
+
+                <!-- Motor 2: Machine Learning -->
+                <div class="motor-card">
+                    <div class="motor-title">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        <span>Motor 2: Machine Learning</span>
+                    </div>
+                    <div id="mlScenario" class="motor-pred">NORMAL</div>
+                    <div id="mlMeta" class="motor-meta">IsolationForest Anomaly Score: 0.120</div>
+                    <span class="motor-section-label">TOP FEATURES DETERMINANTES:</span>
+                    <ul id="mlFeaturesList" class="features-list">
+                        <li>latency_ms: 15%</li>
+                        <li>ram_usage_pct: 12%</li>
+                    </ul>
+                </div>
+
+                <!-- Motor 3: IA Generativa + RAG -->
+                <div class="motor-card">
+                    <div class="motor-title">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zM12 6v6l4 2"></path></svg>
+                        <span>Motor 3: IA Generativa + RAG</span>
+                    </div>
+                    <div id="genaiScenario" class="motor-pred">NORMAL</div>
+                    <div id="genaiMeta" class="motor-meta">Provedor: Engine Local GenAI com RAG</div>
+                    <span class="motor-section-label">SÍNTESE DIAGNÓSTICA:</span>
+                    <p id="genaiSummaryText" style="margin: 0; font-size: var(--fs-xs); color: var(--text-soft); line-height: 1.5;">Sistema operando em parâmetros normais.</p>
+                </div>
             </div>
-        </div>
 
-        <!-- Meter 5: BANDA ENTRADA -->
-        <div class="meter-card">
-            <div class="meter-header">
-                <span>📥 BANDA ENTRADA (IN)</span>
-                <span id="meterNetInVal" class="meter-value">5.0 MB/s</span>
+            <!-- Análise Técnica & Playbook -->
+            <div class="genai-analysis-card">
+                <div class="genai-analysis-header">
+                    <h3>Análise Técnica de Causa Raiz & Resolução NOC</h3>
+                    <span id="ragBadge" class="status-pill status-pill-active">⚡ RAG ChromaDB: Ativo</span>
+                </div>
+                <p id="genaiRootCause"><strong>Causa Raiz:</strong> Operação dentro do SLA ideal sem anomalias detectadas.</p>
+                <p id="genaiImpact"><strong>Impacto NOC:</strong> Sem impacto na disponibilidade ou desempenho.</p>
+
+                <!-- Evidências Vetoriais RAG -->
+                <div id="ragEvidenceBox" class="rag-evidence-box">
+                    <span class="rag-evidence-title">EVIDÊNCIAS VETORIAIS RECUPERADAS (CHROMADB RAG):</span>
+                    <ul id="ragEvidenceList" class="rag-evidence-list">
+                        <li>Carregando vetores de contexto do dataset...</li>
+                    </ul>
+                </div>
+
+                <span class="playbook-title">PLAYBOOK DE MITIGAÇÃO RECOMENDADO:</span>
+                <ol id="genaiPlaybookList" class="playbook-list">
+                    <li>Manter rotina padrão de monitoramento ativo NOC.</li>
+                </ol>
             </div>
-            <div class="progress-track">
-                <div id="meterNetInBar" class="progress-bar" style="width: 10%; background-color: #06b6d4;"></div>
-            </div>
-        </div>
-
-        <!-- Meter 6: BANDA SAÍDA -->
-        <div class="meter-card">
-            <div class="meter-header">
-                <span>📤 BANDA SAÍDA (OUT)</span>
-                <span id="meterNetOutVal" class="meter-value">2.0 MB/s</span>
-            </div>
-            <div class="progress-track">
-                <div id="meterNetOutBar" class="progress-bar" style="width: 5%; background-color: #ec4899;"></div>
-            </div>
-        </div>
-
-        <!-- Meter 7: STATUS HTTP & SERVIÇO -->
-        <div class="meter-card">
-            <div class="meter-header">
-                <span>🌐 APLICAÇÃO HTTP</span>
-                <span id="meterHttpBadge" class="risk-badge risk-BAIXO" style="padding:2px 10px; font-size:0.8rem;">200 OK</span>
-            </div>
-            <div style="font-size:0.8rem; color:var(--sim-text-muted); margin-top:10px;">
-                Tempo Resposta: <strong id="meterHttpRespVal" style="color:#fff;">120 ms</strong>
-            </div>
-        </div>
-
-        <!-- Meter 8: CONEXÕES TCP -->
-        <div class="meter-card">
-            <div class="meter-header">
-                <span>🔌 CONEXÕES TCP ATIVAS</span>
-                <span id="meterConnVal" class="meter-value">45</span>
-            </div>
-            <div class="progress-track">
-                <div id="meterConnBar" class="progress-bar" style="width: 8%; background-color: #a855f7;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- SEÇÃO 3: Parecer Unificado & Diagnóstico dos 3 Motores -->
-    <div class="section-title">
-        <span>🎯 Diagnóstico Multi-Motor & Parecer Inteligente</span>
-    </div>
-
-    <!-- Banner Veredito Ensemble -->
-    <div class="verdict-banner">
-        <div class="verdict-info">
-            <p>VEREDITO DE CONSENSO (ENSEMBLE HYBRID)</p>
-            <h2 id="finalScenarioTitle">CENÁRIO DETECTADO: OPERAÇÃO NORMAL</h2>
-            <p id="finalScenarioMeta">Confiança: 98% | Consenso dos Motores: SIM</p>
-        </div>
-        <div id="riskLevelBadge" class="risk-badge risk-BAIXO">RISCO BAIXO</div>
-    </div>
-
-    <!-- Grade dos 3 Motores -->
-    <div class="motors-tri-grid">
-        <!-- Motor 1: Heurística -->
-        <div class="motor-card">
-            <div class="motor-title">📐 Motor 1: Regras Heurísticas</div>
-            <div id="heurScenario" class="motor-pred">NORMAL</div>
-            <div id="heurMeta" class="motor-meta">Confiança: 95% | Severidade: OK</div>
-            <strong style="font-size:0.75rem; color:var(--sim-text-muted);">REGRAS DISPARADAS:</strong>
-            <ul id="heurRulesList" class="rules-list" style="margin-top:6px;">
-                <li>Nenhuma violação registrada.</li>
-            </ul>
-        </div>
-
-        <!-- Motor 2: Machine Learning -->
-        <div class="motor-card">
-            <div class="motor-title">🤖 Motor 2: Machine Learning</div>
-            <div id="mlScenario" class="motor-pred">NORMAL</div>
-            <div id="mlMeta" class="motor-meta">IsolationForest Anomaly Score: 0.120</div>
-            <strong style="font-size:0.75rem; color:var(--sim-text-muted);">TOP MÉTRICAS DETERMINANTES:</strong>
-            <ul id="mlFeaturesList" class="features-list" style="margin-top:6px;">
-                <li>latency_ms: 15%</li>
-                <li>ram_usage_pct: 12%</li>
-            </ul>
-        </div>
-
-        <!-- Motor 3: IA Generativa Local com RAG -->
-        <div class="motor-card">
-            <div class="motor-title">🧠 Motor 3: IA Generativa + RAG ChromaDB</div>
-            <div id="genaiScenario" class="motor-pred">NORMAL</div>
-            <div id="genaiMeta" class="motor-meta">Provedor: Engine Local GenAI com RAG</div>
-            <strong style="font-size:0.75rem; color:var(--sim-text-muted);">SÍNTESE DIAGNÓSTICA RAG:</strong>
-            <p id="genaiSummaryText" style="font-size:0.82rem; color:#cbd5e1; margin:6px 0 0 0;">Sistema operando em parâmetros normais.</p>
-        </div>
-    </div>
-
-    <!-- Diagnóstico Técnico, Evidências RAG e Playbook LLM -->
-    <div class="genai-box">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h4 style="margin:0;">📋 Análise Técnica de Causa Raiz & Playbook de Resolução NOC</h4>
-            <span id="ragBadge" class="risk-badge" style="background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid #2563eb; font-size:0.75rem;">⚡ RAG ChromaDB: Ativo</span>
-        </div>
-        <p id="genaiRootCause" style="margin-top:12px;"><strong>Causa Raiz:</strong> Operação dentro do SLA ideal sem anomalias detectadas.</p>
-        <p id="genaiImpact"><strong>Impacto NOC:</strong> Sem impacto na disponibilidade ou desempenho.</p>
-
-        <!-- Evidências Históricas RAG recuperadas -->
-        <div id="ragEvidenceBox" style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin:12px 0;">
-            <strong style="font-size:0.82rem; color:#60a5fa; display:block; margin-bottom:6px;">🔎 EVIDÊNCIAS VETORIAIS RECUPERADAS DO DATASET REAL (CHROMADB RAG):</strong>
-            <ul id="ragEvidenceList" style="font-size:0.8rem; color:#cbd5e1; margin:0; padding-left:18px; line-height:1.5;">
-                <li>Carregando vetores de contexto do dataset...</li>
-            </ul>
-        </div>
-
-        <strong style="font-size:0.85rem; color:#c084fc; display:block; margin-bottom:8px; margin-top:12px;">PLAYBOOK DE MITIGAÇÃO RECOMENDADO:</strong>
-        <ol id="genaiPlaybookList" class="playbook-list">
-            <li>Manter rotina padrão de monitoramento ativo NOC.</li>
-        </ol>
-    </div>
-
-</div>
+        </article>
+    </section>
+</main>
 
 <!-- Modal Benchmark -->
-<div id="benchmarkModal" class="modal hidden">
-    <div class="modal-content" style="max-width:800px; background:#0b1329; border: 1px solid var(--sim-card-border); padding:2rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:0.8rem; margin-bottom:1rem;">
-            <h2 style="color:var(--sim-accent-neon); margin:0; font-size:1.4rem;">⚡ Relatório de Benchmark Multi-Motor</h2>
-            <button type="button" class="sim-btn sim-btn-secondary" onclick="closeBenchmarkModal()" style="padding: 4px 10px; font-size: 0.8rem;">✕ Fechar</button>
+<div id="benchmarkModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="benchModalTitle">
+    <div class="modal-content modal-content-wide">
+        <div class="modal-header">
+            <h3 id="benchModalTitle">Relatório de Benchmark Multi-Motor</h3>
+            <button type="button" class="modal-close-btn" onclick="closeBenchmarkModal()" title="Fechar" aria-label="Fechar"><span aria-hidden="true">&times;</span></button>
         </div>
-        <p style="color:var(--sim-text-muted); font-size:0.9rem; margin-top:0;">Resultado do teste comparativo de acurácia executado em 100 amostras simuladas dos 10 cenários:</p>
+        <p style="color: var(--text-muted); font-size: var(--fs-sm); margin: 0 0 1rem 0;">Resultado do teste comparativo de acurácia executado em 110 amostras sintéticas dos 11 cenários:</p>
 
-        
-        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin: 1.5rem 0;">
-            <div class="motor-card" style="text-align:center;">
-                <span style="font-size:0.8rem; color:var(--sim-text-muted);">Heurísticas</span>
-                <h2 id="benchHeurAcc" style="color:#60a5fa; margin:6px 0 0 0;">100%</h2>
+        <div class="bench-stats-grid">
+            <div class="bench-stat-card">
+                <span>Heurísticas</span>
+                <h3 id="benchHeurAcc" style="color: var(--primary);">100%</h3>
             </div>
-            <div class="motor-card" style="text-align:center;">
-                <span style="font-size:0.8rem; color:var(--sim-text-muted);">Machine Learning</span>
-                <h2 id="benchMLAcc" style="color:#34d399; margin:6px 0 0 0;">100%</h2>
+            <div class="bench-stat-card">
+                <span>Machine Learning</span>
+                <h3 id="benchMLAcc" style="color: var(--success);">100%</h3>
             </div>
-            <div class="motor-card" style="text-align:center;">
-                <span style="font-size:0.8rem; color:var(--sim-text-muted);">GenAI Local</span>
-                <h2 id="benchGenAIAcc" style="color:#c084fc; margin:6px 0 0 0;">100%</h2>
+            <div class="bench-stat-card">
+                <span>GenAI Local</span>
+                <h3 id="benchGenAIAcc" style="color: #8e24aa;">100%</h3>
             </div>
-            <div class="motor-card" style="text-align:center;">
-                <span style="font-size:0.8rem; color:var(--sim-text-muted);">Consensus Ensemble</span>
-                <h2 id="benchEnsAcc" style="color:#f472b6; margin:6px 0 0 0;">100%</h2>
+            <div class="bench-stat-card">
+                <span>Consenso Ensemble</span>
+                <h3 id="benchEnsAcc" style="color: #c2185b;">100%</h3>
             </div>
         </div>
 
-        <div style="max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.3); padding:10px; border-radius:8px;">
-            <table style="width:100%; font-size:0.8rem; border-collapse:collapse; text-align:left;">
+        <div class="bench-table-wrap">
+            <table class="bench-table">
                 <thead>
-                    <tr style="border-bottom:1px solid rgba(255,255,255,0.1); color:var(--sim-text-muted);">
+                    <tr>
                         <th>Cenário Esperado</th>
                         <th>Heurística</th>
                         <th>ML</th>
@@ -304,71 +338,80 @@
             </table>
         </div>
 
+        <div class="modal-actions" style="margin-top: 1.25rem;">
+            <button type="button" class="btn-secondary-action" onclick="closeBenchmarkModal()">Fechar Relatório</button>
+        </div>
     </div>
 </div>
 
 <!-- Modal Personalização de Telemetria Customizada -->
-<div id="customTuningModal" class="modal hidden">
-    <div class="modal-content" style="max-width:850px; background:#0b1329; border: 1px solid var(--sim-card-border); padding: 2rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem;">
-            <h2 style="color:var(--sim-accent-neon); margin:0; font-size: 1.4rem;">🎛️ Personalizar Métricas do Cenário Customizado</h2>
-            <button type="button" class="sim-btn sim-btn-secondary" onclick="closeCustomModal()" style="padding: 4px 10px; font-size: 0.8rem;">✕ Fechar</button>
+<div id="customTuningModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="customTuningTitle">
+    <div class="modal-content modal-content-wide">
+        <div class="modal-header">
+            <h3 id="customTuningTitle">Personalizar Métricas de Telemetria</h3>
+            <button type="button" class="modal-close-btn" onclick="closeCustomModal()" title="Fechar" aria-label="Fechar"><span aria-hidden="true">&times;</span></button>
         </div>
-        <p style="color:var(--sim-text-muted); font-size:0.88rem; margin-top:0;">Ajuste livremente os valores de telemetria abaixo para testar hipóteses personalizadas nos 3 motores de IA:</p>
+        <p style="color: var(--text-muted); font-size: var(--fs-sm); margin: 0 0 1rem 0;">Ajuste os valores de telemetria abaixo para avaliar a capacidade diagnóstica dos motores de IA em novos regimes de falhas:</p>
 
-        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 1.2rem; margin: 1.5rem 0;">
+        <div class="custom-sliders-grid">
             <div class="slider-group">
                 <div class="slider-label"><span>Uso de CPU (%):</span><span><strong id="val_cpu">28</strong>%</span></div>
-                <input type="range" id="input_cpu" class="sim-slider" min="0" max="100" step="1" value="28" oninput="updateVal('cpu', this.value)">
+                <input type="range" id="input_cpu" class="sim-slider" min="0" max="100" step="1" value="28" oninput="updateVal('cpu', this.value)" aria-label="Uso de CPU">
             </div>
             <div class="slider-group">
                 <div class="slider-label"><span>Uso de RAM (%):</span><span><strong id="val_ram">45</strong>%</span></div>
-                <input type="range" id="input_ram" class="sim-slider" min="0" max="100" step="1" value="45" oninput="updateVal('ram', this.value)">
+                <input type="range" id="input_ram" class="sim-slider" min="0" max="100" step="1" value="45" oninput="updateVal('ram', this.value)" aria-label="Uso de RAM">
             </div>
             <div class="slider-group">
                 <div class="slider-label"><span>Uso de Disco (%):</span><span><strong id="val_disk">40</strong>%</span></div>
-                <input type="range" id="input_disk" class="sim-slider" min="0" max="100" step="1" value="40" oninput="updateVal('disk', this.value)">
+                <input type="range" id="input_disk" class="sim-slider" min="0" max="100" step="1" value="40" oninput="updateVal('disk', this.value)" aria-label="Uso de Disco">
             </div>
             <div class="slider-group">
                 <div class="slider-label"><span>Latência ICMP (ms):</span><span><strong id="val_latency">15</strong> ms</span></div>
-                <input type="range" id="input_latency" class="sim-slider" min="0" max="1000" step="5" value="15" oninput="updateVal('latency', this.value)">
+                <input type="range" id="input_latency" class="sim-slider" min="0" max="1000" step="5" value="15" oninput="updateVal('latency', this.value)" aria-label="Latência ICMP">
             </div>
             <div class="slider-group">
                 <div class="slider-label"><span>Perda de Pacotes (%):</span><span><strong id="val_loss">0</strong>%</span></div>
-                <input type="range" id="input_loss" class="sim-slider" min="0" max="100" step="1" value="0" oninput="updateVal('loss', this.value)">
+                <input type="range" id="input_loss" class="sim-slider" min="0" max="100" step="1" value="0" oninput="updateVal('loss', this.value)" aria-label="Perda de Pacotes">
             </div>
             <div class="slider-group">
                 <div class="slider-label"><span>Jitter (ms):</span><span><strong id="val_jitter">2</strong> ms</span></div>
-                <input type="range" id="input_jitter" class="sim-slider" min="0" max="200" step="1" value="2" oninput="updateVal('jitter', this.value)">
+                <input type="range" id="input_jitter" class="sim-slider" min="0" max="200" step="1" value="2" oninput="updateVal('jitter', this.value)" aria-label="Jitter">
             </div>
             <div class="slider-group">
                 <div class="slider-label"><span>Banda Entrada (IN MB/s):</span><span><strong id="val_net_in">5.0</strong> MB/s</span></div>
-                <input type="range" id="input_net_in" class="sim-slider" min="0" max="600" step="10" value="5" oninput="updateVal('net_in', this.value)">
+                <input type="range" id="input_net_in" class="sim-slider" min="0" max="600" step="10" value="5" oninput="updateVal('net_in', this.value)" aria-label="Banda de Entrada">
             </div>
             <div class="slider-group">
                 <div class="slider-label"><span>Banda Saída (OUT MB/s):</span><span><strong id="val_net_out">2.0</strong> MB/s</span></div>
-                <input type="range" id="input_net_out" class="sim-slider" min="0" max="600" step="10" value="2" oninput="updateVal('net_out', this.value)">
+                <input type="range" id="input_net_out" class="sim-slider" min="0" max="600" step="10" value="2" oninput="updateVal('net_out', this.value)" aria-label="Banda de Saída">
             </div>
             <div class="slider-group">
                 <div class="slider-label"><span>Conexões TCP Ativas:</span><span><strong id="val_conn">45</strong></span></div>
-                <input type="range" id="input_conn" class="sim-slider" min="0" max="5000" step="50" value="45" oninput="updateVal('conn', this.value)">
+                <input type="range" id="input_conn" class="sim-slider" min="0" max="5000" step="50" value="45" oninput="updateVal('conn', this.value)" aria-label="Conexões TCP Ativas">
             </div>
             <div class="slider-group">
-                <div class="slider-label"><span>Status HTTP Aplicação:</span><span><strong id="val_http_code">200</strong></span></div>
-                <select id="input_http_code" class="scenario-pill" style="width:100%; text-align:left; background:rgba(0,0,0,0.4);" onchange="updateVal('http_code', this.value)">
+                <div class="slider-label"><span>Status HTTP da Aplicação:</span><span><strong id="val_http_code">200</strong></span></div>
+                <select id="input_http_code" class="sim-select" onchange="updateVal('http_code', this.value)" aria-label="Status HTTP da Aplicação">
                     <option value="200">200 OK (Saudável)</option>
                     <option value="500">500 Internal Server Error</option>
                     <option value="502">502 Bad Gateway</option>
                     <option value="503">503 Service Unavailable</option>
                     <option value="504">504 Gateway Timeout</option>
-                    <option value="0">0 Connection Refused (Down)</option>
+                    <option value="0">0 Connection Refused (Host Down)</option>
                 </select>
             </div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 1.5rem; padding-top: 1rem; border-top:1px solid rgba(255,255,255,0.1);">
-            <button type="button" class="sim-btn sim-btn-secondary" onclick="randomizeCustomNoise()">🎲 Injetar Ruído Aleatório</button>
-            <button type="button" class="sim-btn sim-btn-accent" onclick="applyCustomScenarioAndClassify()">🚀 Testar & Classificar Meu Cenário</button>
+        <div class="modal-actions">
+            <button type="button" class="btn-secondary-action" onclick="randomizeCustomNoise()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                <span>Injetar Ruído Aleatório</span>
+            </button>
+            <button type="button" class="btn-primary" onclick="applyCustomScenarioAndClassify()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Aplicar & Classificar</span>
+            </button>
         </div>
     </div>
 </div>

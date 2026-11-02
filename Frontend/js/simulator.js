@@ -92,24 +92,22 @@ function renderScenarioCards(scenariosList) {
 
 async function checkGenAIStatus() {
     const badge = document.getElementById("genaiStatusBadge");
+    if (!badge) return;
     try {
         const resp = await fetch(`${API_BASE}/genai/status`);
         if (resp.ok) {
             const data = await resp.json();
             if (data.ollama_available) {
-                badge.style.background = "rgba(16, 185, 129, 0.2)";
-                badge.style.color = "#34d399";
-                badge.textContent = "🧠 Ollama Local LLM On";
+                badge.className = "status-pill status-pill-active";
+                badge.textContent = "🧠 Ollama Local LLM Ativo";
             } else {
-                badge.style.background = "rgba(168, 85, 247, 0.2)";
-                badge.style.color = "#c084fc";
-                badge.textContent = "⚡ Engine GenAI + RAG Ready";
+                badge.className = "status-pill status-pill-scenario";
+                badge.textContent = "⚡ Engine GenAI + RAG Pronto";
             }
         }
     } catch (e) {
-        badge.style.background = "rgba(245, 158, 11, 0.2)";
-        badge.style.color = "#fbbf24";
-        badge.textContent = "⚡ Engine GenAI + RAG Ready";
+        badge.className = "status-pill status-pill-scenario";
+        badge.textContent = "⚡ Engine GenAI + RAG Pronto";
     }
 }
 
@@ -275,21 +273,21 @@ function updateVisualTelemetryMeters(sample) {
     document.getElementById("meterCpuVal").textContent = `${cpu}%`;
     const cpuBar = document.getElementById("meterCpuBar");
     cpuBar.style.width = `${cpu}%`;
-    cpuBar.style.backgroundColor = cpu > 85 ? "#ef4444" : (cpu > 65 ? "#f59e0b" : "#10b981");
+    cpuBar.style.backgroundColor = cpu > 85 ? "var(--danger)" : (cpu > 65 ? "var(--warning)" : "var(--success)");
 
     // 2. RAM
     const ram = sample.ram_usage_pct;
     document.getElementById("meterRamVal").textContent = `${ram}%`;
     const ramBar = document.getElementById("meterRamBar");
     ramBar.style.width = `${ram}%`;
-    ramBar.style.backgroundColor = ram > 85 ? "#ef4444" : (ram > 65 ? "#f59e0b" : "#3b82f6");
+    ramBar.style.backgroundColor = ram > 85 ? "var(--danger)" : (ram > 65 ? "var(--warning)" : "var(--primary)");
 
     // 3. DISK
     const disk = sample.disk_usage_pct;
     document.getElementById("meterDiskVal").textContent = `${disk}%`;
     const diskBar = document.getElementById("meterDiskBar");
     diskBar.style.width = `${disk}%`;
-    diskBar.style.backgroundColor = disk > 90 ? "#ef4444" : "#8b5cf6";
+    diskBar.style.backgroundColor = disk > 90 ? "var(--danger)" : "#8e24aa";
 
     // 4. LATÊNCIA & PERDA ICMP
     const lat = sample.latency_ms;
@@ -299,7 +297,7 @@ function updateVisualTelemetryMeters(sample) {
     const latBar = document.getElementById("meterLatencyBar");
     const latPct = Math.min(100, Math.round((lat / 400) * 100));
     latBar.style.width = `${latPct}%`;
-    latBar.style.backgroundColor = lat > 200 || sample.packet_loss_pct > 20 ? "#ef4444" : "#10b981";
+    latBar.style.backgroundColor = lat > 200 || sample.packet_loss_pct > 20 ? "var(--danger)" : "var(--success)";
 
     // 5. BANDA ENTRADA (IN)
     const netInMb = (sample.network_in_bps / 1e6).toFixed(1);
@@ -362,6 +360,19 @@ function renderResults(res) {
     riskBadge.textContent = `RISCO ${res.risk_level}`;
     riskBadge.className = `risk-badge risk-${res.risk_level} risk-${cleanRisk}`;
 
+    const verdictBanner = document.getElementById("verdictBanner");
+    if (verdictBanner) {
+        const borderColors = {
+            "BAIXO": "var(--success)",
+            "MÉDIO": "var(--warning)",
+            "MEDIO": "var(--warning)",
+            "ALTO": "#ea580c",
+            "CRÍTICO": "var(--danger)",
+            "CRITICO": "var(--danger)"
+        };
+        verdictBanner.style.borderLeftColor = borderColors[res.risk_level] || "var(--primary)";
+    }
+
 
     // Motor 1: Heurística
     const h = res.heuristics;
@@ -410,18 +421,17 @@ function renderResults(res) {
     if (ragBadge && ragList) {
         if (g.rag_enabled && g.rag_chunks && g.rag_chunks.length > 0) {
             ragBadge.textContent = `⚡ RAG ChromaDB: ${g.rag_chunks.length} Vetores Recuperados`;
-            ragBadge.style.background = "rgba(16, 185, 129, 0.2)";
-            ragBadge.style.color = "#34d399";
-            ragBadge.style.borderColor = "#059669";
+            ragBadge.className = "status-pill status-pill-active";
 
             ragList.innerHTML = "";
             g.rag_chunks.forEach(c => {
                 const li = document.createElement("li");
-                li.innerHTML = `<strong style="color:#a855f7;">[Vetor: ${c.id}]</strong> (Distância: ${c.distance}) - ${c.text}`;
+                li.innerHTML = `<strong>[Vetor: ${c.id}]</strong> (Distância: ${c.distance}) — ${c.text}`;
                 ragList.appendChild(li);
             });
         } else {
             ragBadge.textContent = "⚡ RAG ChromaDB: Standby";
+            ragBadge.className = "status-pill";
             ragList.innerHTML = "<li>Sem vetores adicionais recuperados nesta amostragem.</li>";
         }
     }
@@ -454,13 +464,12 @@ async function runBenchmark() {
             table.innerHTML = "";
             data.results_matrix.forEach(r => {
                 const tr = document.createElement("tr");
-                tr.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
                 tr.innerHTML = `
-                    <td style="padding:6px 0;"><strong>${r.expected}</strong></td>
-                    <td style="color:${r.heuristics === r.expected ? '#34d399' : '#f87171'}">${r.heuristics}</td>
-                    <td style="color:${r.ml === r.expected ? '#34d399' : '#f87171'}">${r.ml}</td>
-                    <td style="color:${r.genai === r.expected ? '#34d399' : '#f87171'}">${r.genai}</td>
-                    <td style="color:${r.ensemble === r.expected ? '#34d399' : '#f87171'}; font-weight:bold;">${r.ensemble}</td>
+                    <td><strong>${r.expected}</strong></td>
+                    <td style="color:${r.heuristics === r.expected ? 'var(--success)' : 'var(--danger)'}; font-weight:600;">${r.heuristics}</td>
+                    <td style="color:${r.ml === r.expected ? 'var(--success)' : 'var(--danger)'}; font-weight:600;">${r.ml}</td>
+                    <td style="color:${r.genai === r.expected ? 'var(--success)' : 'var(--danger)'}; font-weight:600;">${r.genai}</td>
+                    <td style="color:${r.ensemble === r.expected ? 'var(--success)' : 'var(--danger)'}; font-weight:700;">${r.ensemble}</td>
                 `;
                 table.appendChild(tr);
             });
