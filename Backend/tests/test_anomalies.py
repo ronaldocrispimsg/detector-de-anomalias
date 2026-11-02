@@ -127,21 +127,43 @@ async def test_ensemble_consensus():
 
 
 def test_api_scenarios_endpoint():
-    """Testa GET /api/anomalies/scenarios"""
+    """Testa GET /api/anomalies/scenarios e rota direta /anomalies/scenarios"""
     resp = client.get("/api/anomalies/scenarios")
     assert resp.status_code == 200
     data = resp.json()
     assert data["count"] == 11
     assert len(data["scenarios"]) == 11
 
+    # Rota direta sem prefixo /api (atendida via proxy reverso Nginx)
+    resp_direct = client.get("/anomalies/scenarios")
+    assert resp_direct.status_code == 200
+    assert resp_direct.json()["count"] == 11
+
+
+def test_api_genai_status_endpoint():
+    """Testa GET /api/anomalies/genai/status e /anomalies/genai/status"""
+    resp = client.get("/api/anomalies/genai/status")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "ollama_available" in data
+    assert "rag_enabled" in data
+    assert "status" in data
+
+    resp_direct = client.get("/anomalies/genai/status")
+    assert resp_direct.status_code == 200
+
 
 def test_api_simulate_endpoint():
-    """Testa POST /api/anomalies/simulate"""
+    """Testa POST /api/anomalies/simulate e rota direta /anomalies/simulate"""
     resp = client.post("/api/anomalies/simulate", json={"scenario": "PORT_SCAN"})
     assert resp.status_code == 200
     data = resp.json()
     assert data["scenario"] == "PORT_SCAN"
     assert "latency_ms" in data
+
+    resp_direct = client.post("/anomalies/simulate", json={"scenario": "PORT_SCAN"})
+    assert resp_direct.status_code == 200
+    assert resp_direct.json()["scenario"] == "PORT_SCAN"
 
 
 def test_api_classify_endpoint():
@@ -152,6 +174,16 @@ def test_api_classify_endpoint():
     assert data["engine"] == "ensemble"
     assert "result" in data
     assert "final_scenario" in data["result"]
+
+
+def test_api_benchmark_endpoint():
+    """Testa POST /api/anomalies/benchmark com volume reduzido para teste unitário"""
+    resp = client.post("/api/anomalies/benchmark?samples_per_scenario=2")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["scenarios_tested"] == 11
+    assert "accuracy" in data
+    assert "results_matrix" in data
 
 
 def test_all_10_scenarios_classification_accuracy():

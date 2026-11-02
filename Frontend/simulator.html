@@ -28,26 +28,37 @@
 <body>
 <header class="app-topbar">
     <div class="app-topbar-inner">
-        <button id="openMenuBtn" class="menu-trigger-btn icon-btn nav" title="Abrir menu" aria-label="Abrir menu">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-        </button>
         <div class="hero-copy app-topbar-title">
             <a href="dashboard.html" class="app-logo-link" title="Ir para o início">
-                <img src="images/logo/Prancheta 1.png" alt="NetSpot" class="app-logo logo-light">
-                <img src="images/logo/Prancheta 2.png" alt="NetSpot" class="app-logo logo-dark">
+                <img src="images/logo/Prancheta 1.png" alt="NetSpot" class="app-logo logo-light" width="93" height="48">
+                <img src="images/logo/Prancheta 2.png" alt="NetSpot" class="app-logo logo-dark" width="93" height="48">
+            </a>
+            <span class="page-subtitle">/ Simulador IA</span>
+        </div>
+        <div class="topbar-right-group">
+            <button id="themeToggleBtn" class="theme-switch-pill" type="button" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro" aria-pressed="false">
+                <svg class="theme-switch-icon-sun" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <svg class="theme-switch-icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 109 9 9.75 9.75 0 00-.67-3.4 6.78 6.78 0 01-7.93-7.93A9.75 9.75 0 0012 3z"/></svg>
+                <span class="theme-switch-thumb">
+                    <svg id="themeToggleIcon" viewBox="0 0 24 24" width="14" height="14"></svg>
+                </span>
+            </button>
+            <a class="topbar-action-btn" href="dashboard.html" title="Voltar ao dashboard" aria-label="Voltar ao dashboard">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span class="topbar-btn-text">Dashboard</span>
+            </a>
+            <a class="topbar-action-btn incidents-btn" href="incidents.html" title="Abrir histórico completo de incidentes" aria-label="Abrir histórico completo de incidentes">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <span class="topbar-btn-text">Incidentes</span>
             </a>
         </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <a class="sim-btn sim-btn-secondary" href="dashboard.html" style="text-decoration:none; padding: 6px 14px; font-size:0.85rem;">📊 Dashboard</a>
-            <a class="sim-btn sim-btn-secondary" href="incidents.html" style="text-decoration:none; padding: 6px 14px; font-size:0.85rem;">🔔 Incidentes</a>
-        </div>
-        <button id="themeToggleBtn" class="theme-switch-pill" type="button" title="Alternar tema claro/escuro" aria-label="Alternar tema">
-            <svg class="theme-switch-icon-sun" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <svg class="theme-switch-icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 109 9 9.75 9.75 0 00-.67-3.4 6.78 6.78 0 01-7.93-7.93A9.75 9.75 0 0012 3z"/></svg>
-            <span class="theme-switch-thumb">
-                <svg id="themeToggleIcon" viewBox="0 0 24 24" width="14" height="14"></svg>
-            </span>
-        </button>
     </div>
 </header>
 

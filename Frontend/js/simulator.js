@@ -2,10 +2,10 @@
  * NetSpot - Lógica Front-End do Simulador & Classificador Visual de Anomalias (1 Clique & Personalizável)
  */
 
-const API_HOST = window.location.hostname || "127.0.0.1";
-const API_BASE = (window.location.port !== "8000") 
-    ? `${window.location.protocol}//${API_HOST}:8000/api/anomalies` 
-    : "/api/anomalies";
+const API = (window.location.protocol === "file:" || window.location.port === "5500" || window.location.port === "3000")
+    ? "http://127.0.0.1:8000/api"
+    : "/api";
+const API_BASE = `${API}/anomalies`;
 
 const DEFAULT_SCENARIOS = [
     { key: "NORMAL", title: "Operação Normal", description: "Infraestrutura saudável com métricas dentro dos parâmetros ideais de desempenho e SLA.", category: "SAUDÁVEL" },
